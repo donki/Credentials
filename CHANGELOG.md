@@ -2,6 +2,16 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.10 — Android: guardar lo que escribes en apps y navegadores
+
+`versionCode`: 2026091910 · Windows `2026.9.19.10`
+
+- **Autocompletar: guardar.** Al enviar un formulario de usuario y contraseña en una app o en el
+  navegador (con el servicio de autocompletar de Credentials activo), Android pregunta «¿Guardar la
+  contraseña en Credentials?». Si aceptas, se guarda en la bóveda: entrada nueva con el dominio o
+  el nombre de la app como título, o, si ya existía esa cuenta, se le cambia la contraseña (la
+  anterior queda en el historial). Con la bóveda bloqueada pide desbloquear antes.
+
 ## 2026.09.19.09 — El logo de Google no cambia al conectar
 
 `versionCode`: 2026091909 · Windows `2026.9.19.9`

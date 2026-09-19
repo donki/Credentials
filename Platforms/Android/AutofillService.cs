@@ -22,8 +22,13 @@ namespace Credentials.Platforms.Android;
 /// El usuario lo activa en Ajustes › Sistema › Idiomas e introduccion de texto › Servicio de
 /// autocompletar. Los campos se reconocen por las pistas de autocompletar (username, password,
 /// emailAddress), por el tipo de entrada (contraseña, correo) y, en las webs, por los atributos
-/// HTML (type, name, id, autocomplete). No se guarda nada nuevo desde aqui (sin OnSaveRequest de
-/// verdad) en esta primera version.
+/// HTML (type, name, id, autocomplete).
+///
+/// Guardar: cada respuesta lleva un SaveInfo con los campos de usuario y contraseña, asi que al
+/// enviar un formulario (nuevo registro, o una contraseña que no esta en la boveda) Android
+/// pregunta «¿Guardar la contraseña en Credentials?». Si el usuario acepta llega OnSaveRequest:
+/// con la boveda abierta se guarda al momento; bloqueada, se abre AutofillSaveActivity, que pide
+/// desbloquear y guarda.
 /// </remarks>
 [Service(Name = "com.socratic.credentials.AutofillService", Permission = "android.permission.BIND_AUTOFILL_SERVICE", Exported = true, Label = "Credentials")]
 [IntentFilter(["android.service.autofill.AutofillService"])]
@@ -53,14 +58,11 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
                 return;
             }
             var candidates = Match(store.Data!.Entries, fields.WebDomain, fields.Package);
-            if (candidates.Count == 0)
-            {
-                callback.OnSuccess(null);
-                return;
-            }
             var builder = new FillResponse.Builder();
             foreach (var entry in candidates.Take(8))
                 builder.AddDataset(Dataset(entry, fields));
+            // Aunque no haya nada que ofrecer, se pide guardar lo que el usuario escriba.
+            builder.SetSaveInfo(SaveInfoFor(fields));
             callback.OnSuccess(builder.Build());
         }
         catch (Exception ex)
@@ -69,7 +71,151 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
         }
     }
 
-    public override void OnSaveRequest(SaveRequest request, SaveCallback callback) => callback.OnSuccess();
+    public override void OnSaveRequest(SaveRequest request, SaveCallback callback)
+    {
+        try
+        {
+            var structure = request.FillContexts[^1].Structure;
+            var typed = ReadTyped(structure);
+            if (typed.Password.Length == 0 && typed.Username.Length == 0)
+            {
+                callback.OnSuccess();
+                return;
+            }
+            var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
+            if (store.IsUnlocked)
+            {
+                _ = SaveTypedAsync(this, store, typed);
+                callback.OnSuccess();
+                return;
+            }
+            // Boveda bloqueada: una actividad que desbloquea y guarda (Android 9+ deja lanzarla desde aqui).
+            var intent = new Intent(this, typeof(AutofillSaveActivity));
+            intent.PutExtra("user", typed.Username);
+            intent.PutExtra("pass", typed.Password);
+            intent.PutExtra("domain", typed.WebDomain ?? string.Empty);
+            intent.PutExtra("package", typed.Package ?? string.Empty);
+            var pending = PendingIntent.GetActivity(this, 1002, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Mutable)!;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+                callback.OnSuccess(pending.IntentSender);
+            else
+                callback.OnFailure(Helpers.ServiceHelper.GetRequiredService<ILocalizationService>()["Unlock"]);
+        }
+        catch (Exception ex)
+        {
+            callback.OnFailure(ex.Message);
+        }
+    }
+
+    /// <summary>Que campos hay que vigilar para ofrecer guardar: la contraseña es obligatoria; el usuario, si esta.</summary>
+    private static SaveInfo SaveInfoFor(Fields fields)
+    {
+        var required = new List<AutofillId>();
+        var optional = new List<AutofillId>();
+        var type = SaveDataType.Generic;
+        if (fields.PassId is not null) { required.Add(fields.PassId); type |= SaveDataType.Password; }
+        if (fields.UserId is not null) { (fields.PassId is null ? required : optional).Add(fields.UserId); type |= SaveDataType.Username; }
+        var builder = new SaveInfo.Builder(type, required.ToArray());
+        if (optional.Count > 0)
+            builder.SetOptionalIds(optional.ToArray());
+        // En las webs el formulario desaparece al enviarse sin «commit» explicito: que pregunte igual.
+        builder.SetFlags(SaveFlags.SaveOnAllViewsInvisible);
+        return builder.Build();
+    }
+
+    public sealed class Typed
+    {
+        public string Username = string.Empty;
+        public string Password = string.Empty;
+        public string? WebDomain;
+        public string? Package;
+    }
+
+    /// <summary>Lo que el usuario ha escrito en los campos de usuario y contraseña de la pantalla.</summary>
+    public static Typed ReadTyped(AssistStructure structure)
+    {
+        var typed = new Typed { Package = structure.ActivityComponent?.PackageName };
+        for (var i = 0; i < structure.WindowNodeCount; i++)
+            WalkTyped(structure.GetWindowNodeAt(i).RootViewNode, typed);
+        return typed;
+    }
+
+    private static void WalkTyped(AssistStructure.ViewNode? node, Typed typed)
+    {
+        if (node is null)
+            return;
+        if (!string.IsNullOrEmpty(node.WebDomain))
+            typed.WebDomain ??= node.WebDomain;
+        if (node.AutofillId is not null && node.AutofillValue is { IsText: true } value)
+        {
+            var text = value.TextValue?.ToString() ?? string.Empty;
+            var kind = Classify(node);
+            if (kind == 'p' && typed.Password.Length == 0 && text.Length > 0) typed.Password = text;
+            else if (kind == 'u' && typed.Username.Length == 0 && text.Length > 0) typed.Username = text;
+        }
+        for (var i = 0; i < node.ChildCount; i++)
+            WalkTyped(node.GetChildAt(i), typed);
+    }
+
+    /// <summary>
+    /// Guarda lo escrito: si ya hay una entrada del mismo sitio o app con ese usuario, se le cambia la
+    /// contraseña (la anterior queda en el historial); si no, se crea una nueva con el dominio o el
+    /// nombre de la app como titulo.
+    /// </summary>
+    public static async Task SaveTypedAsync(Context context, VaultStore store, Typed typed)
+    {
+        try
+        {
+            var entries = store.Data!.Entries;
+            var existing = Match(entries, typed.WebDomain, typed.Package)
+                .FirstOrDefault(e => typed.Username.Length == 0 || e.Username.Equals(typed.Username, StringComparison.OrdinalIgnoreCase));
+            var now = DateTimeOffset.UtcNow;
+            if (existing is not null)
+            {
+                if (typed.Password.Length == 0 || existing.Password == typed.Password)
+                    return;
+                if (existing.Password.Length > 0)
+                    existing.History.Insert(0, new PasswordHistoryItem(existing.Password, existing.ModifiedAt));
+                existing.Password = typed.Password;
+                if (existing.Username.Length == 0)
+                    existing.Username = typed.Username;
+                existing.ModifiedAt = now;
+            }
+            else
+            {
+                var web = !string.IsNullOrEmpty(typed.WebDomain);
+                var entry = new Credential
+                {
+                    Kind = web ? EntryKind.Login : EntryKind.App,
+                    Title = web ? typed.WebDomain! : AppLabel(context, typed.Package) ?? typed.Package ?? "App",
+                    Username = typed.Username,
+                    Password = typed.Password,
+                    Url = web ? "https://" + typed.WebDomain : string.Empty,
+                    CreatedAt = now,
+                    ModifiedAt = now,
+                };
+                if (!web && !string.IsNullOrEmpty(typed.Package))
+                    entry.Fields.Add(new CustomField { Name = "android", Value = typed.Package });
+                entries.Add(entry);
+            }
+            await store.SaveAsync();
+            var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
+            new Handler(Looper.MainLooper!).Post(() => Toast.MakeText(context, l["AutofillSaved"], ToastLength.Short)?.Show());
+        }
+        catch (Exception) { /* sin red para subir, o la boveda se cerro en medio: el sistema no muestra nada y ya */ }
+    }
+
+    private static string? AppLabel(Context context, string? package)
+    {
+        if (string.IsNullOrEmpty(package))
+            return null;
+        try
+        {
+            var pm = context.PackageManager!;
+            return pm.GetApplicationLabel(pm.GetApplicationInfo(package, 0)).ToString();
+        }
+        catch (Exception) { return null; }
+    }
 
     // ------------------------------------------------------------------ que se rellena
 
@@ -102,6 +248,7 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
         if (fields.PassId is not null) ids.Add(fields.PassId);
         return new FillResponse.Builder()
             .SetAuthentication(ids.ToArray(), pending.IntentSender, views)
+            .SetSaveInfo(SaveInfoFor(fields))
             .Build();
     }
 
@@ -270,5 +417,54 @@ public class AutofillAuthActivity : MauiAppCompatActivity
             return (null, null);
         var fields = CredentialsAutofillService.FindFields(structure);
         return (fields.UserId, fields.PassId);
+    }
+}
+
+/// <summary>
+/// Guardar con la boveda bloqueada: el usuario ya dijo que si al aviso del sistema; aqui se pide
+/// desbloquear (biometria o contraseña) y se guarda lo escrito.
+/// </summary>
+[Activity(Name = "com.socratic.credentials.AutofillSave", Theme = "@style/Maui.SplashTheme", Exported = false, ExcludeFromRecents = true, NoHistory = true)]
+public class AutofillSaveActivity : MauiAppCompatActivity
+{
+    protected override async void OnCreate(Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+        try
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
+            var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
+            if (!store.IsUnlocked)
+            {
+                var settings = Helpers.ServiceHelper.GetRequiredService<ISettingsService>();
+                var bio = Helpers.ServiceHelper.GetRequiredService<IBiometric>();
+                if (settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
+                    await store.UnlockWithStoredKeyAsync();
+            }
+            if (!store.IsUnlocked)
+            {
+                var page = new Pages.UnlockPage();
+                var tcs = new TaskCompletionSource();
+                page.Disappearing += (_, _) => tcs.TrySetResult();
+                if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page is { } root)
+                {
+                    await root.Navigation.PushModalAsync(page, animated: false);
+                    await tcs.Task;
+                }
+            }
+            if (store.IsUnlocked)
+            {
+                var typed = new CredentialsAutofillService.Typed
+                {
+                    Username = Intent?.GetStringExtra("user") ?? string.Empty,
+                    Password = Intent?.GetStringExtra("pass") ?? string.Empty,
+                    WebDomain = Intent?.GetStringExtra("domain") is { Length: > 0 } d ? d : null,
+                    Package = Intent?.GetStringExtra("package") is { Length: > 0 } p ? p : null,
+                };
+                await CredentialsAutofillService.SaveTypedAsync(this, store, typed);
+            }
+        }
+        catch (Exception) { }
+        Finish();
     }
 }
