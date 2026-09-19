@@ -96,11 +96,12 @@ public partial class SettingsPage : ContentPage
     {
         _loading = true;
         var mode = _settings.Storage;
-        // El boton del modo activo va en primario con una marca; los otros, de contorno. El logo
-        // de Google tiene version blanca para el fondo primario; el de Microsoft se ve bien en los dos.
-        StyleStorageButton(LocalButton, _l["StorageLocal"], mode == StorageMode.Local, "ic_lock.png", "ic_lock_w.png");
-        StyleStorageButton(GoogleButton, _l["StorageGoogle"], mode == StorageMode.GoogleDrive, "ic_google.png", "ic_google_w.png");
-        StyleStorageButton(OneDriveButton, _l["StorageOneDrive"], mode == StorageMode.OneDrive, "ic_microsoft.png", "ic_microsoft.png");
+        // El boton del modo activo va en primario con una marca; los otros, de contorno. Los logos
+        // de Google y Microsoft no cambian con el estado (el de Google en color, como piden sus
+        // normas de marca); el candado es monocromo y sigue al color del texto.
+        StyleStorageButton(LocalButton, _l["StorageLocal"], mode == StorageMode.Local, mode == StorageMode.Local ? "ic_lock_w.png" : "ic_lock.png");
+        StyleStorageButton(GoogleButton, _l["StorageGoogle"], mode == StorageMode.GoogleDrive, "ic_google.png");
+        StyleStorageButton(OneDriveButton, _l["StorageOneDrive"], mode == StorageMode.OneDrive, "ic_microsoft.png");
         var cloud = mode != StorageMode.Local;
         AccountLabel.Text = cloud && _settings.AccountEmail.Length > 0 ? string.Format(_l.CurrentCulture, _l["SignedInAs"], _settings.AccountEmail) : string.Empty;
         AccountLabel.IsVisible = AccountLabel.Text.Length > 0;
@@ -117,11 +118,11 @@ public partial class SettingsPage : ContentPage
     private static Style? LookupStyle(string key)
         => Application.Current?.Resources.TryGetValue(key, out var s) == true ? s as Style : null;
 
-    private static void StyleStorageButton(Button button, string text, bool active, string icon, string activeIcon)
+    private static void StyleStorageButton(Button button, string text, bool active, string icon)
     {
         button.Style = LookupStyle(active ? "PrimaryButton" : "OutlineButton");
         button.Text = active ? "✓ " + text : text;
-        button.ImageSource = active ? activeIcon : icon;
+        button.ImageSource = icon;
     }
 
     // ------------------------------------------------------------------ idioma

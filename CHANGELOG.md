@@ -2,6 +2,13 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.09 — El logo de Google no cambia al conectar
+
+`versionCode`: 2026091909 · Windows `2026.9.19.9`
+
+- En Ajustes, el botón de Google Drive enseñaba el logo en blanco al estar conectado; ahora es
+  siempre el logo en color, esté conectado o no.
+
 ## 2026.09.19.08 — Correcciones al entrar con OneDrive
 
 `versionCode`: 2026091908 · Windows `2026.9.19.8`
