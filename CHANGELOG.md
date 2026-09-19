@@ -2,6 +2,14 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.07 — Google con proyecto propio
+
+`versionCode`: 2026091907 · Windows `2026.9.19.7`
+
+- El cliente de Google es ahora del proyecto propio «sOC Credentials»: la pantalla de
+  consentimiento enseña el nombre de la aplicación (antes salía el de RCManager, porque el
+  cliente estaba en su proyecto).
+
 ## 2026.09.19.06 — OneDrive activado
 
 `versionCode`: 2026091906 · Windows `2026.9.19.6`
