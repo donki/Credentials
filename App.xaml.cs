@@ -8,6 +8,14 @@ public partial class App : Application
         InitializeComponent();
     }
 
+#if WINDOWS
+    private static bool IsPackaged()
+    {
+        try { return global::Windows.ApplicationModel.Package.Current is not null; }
+        catch (Exception) { return false; }
+    }
+#endif
+
     protected override Window CreateWindow(IActivationState? activationState)
     {
         var window = new Window(new AppShell()) { Title = "sOC Credentials" };
@@ -15,6 +23,12 @@ public partial class App : Application
         // Tamaño de arranque razonable en el escritorio: la lista es alta y estrecha, como en el movil.
         window.Width = 900;
         window.Height = 760;
+        // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
+        window.HandlerChanged += (_, _) =>
+        {
+            if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window native && !IsPackaged())
+                Platforms.Windows.TaskbarIdentity.Apply(WinRT.Interop.WindowNative.GetWindowHandle(native), "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
+        };
 #endif
 #if DEBUG
         SocShared.AuthorNotes.Attach(window);   // notas de autor: SOLO Debug, desactivado en Release/produccion

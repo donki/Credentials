@@ -2,6 +2,13 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.01 — Anclaje a la barra de tareas
+
+`versionCode`: 2026091901 · Windows `2026.9.19.1`
+
+- La ventana lleva identidad y comando de relanzamiento hacia `sOCCredentials.exe`: se puede
+  anclar a la barra de tareas y el anclaje sobrevive a las actualizaciones.
+
 ## 2026.09.19.00 — Primera versión
 
 `versionCode`: 2026091900 · Windows `2026.9.19.0`
