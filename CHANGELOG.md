@@ -2,6 +2,14 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.06 — OneDrive activado
+
+`versionCode`: 2026091906 · Windows `2026.9.19.6`
+
+- Compilada con el registro propio de Entra ID («sOC Credentials», multiinquilino y cuentas
+  personales): la opción **OneDrive** de Ajustes ya entra con la cuenta y sincroniza la bóveda en la
+  carpeta de la aplicación. Con esto los tres almacenes están operativos.
+
 ## 2026.09.19.05 — Cliente de Google correcto
 
 `versionCode`: 2026091905 · Windows `2026.9.19.5`
