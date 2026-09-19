@@ -2,6 +2,13 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.05 — Cliente de Google correcto
+
+`versionCode`: 2026091905 · Windows `2026.9.19.5`
+
+- La 2026.09.19.04 llevaba un cliente OAuth de Google de tipo equivocado; esta lleva el de
+  «Aplicación de escritorio». Si la anterior no dejaba entrar en Google Drive, esta sí.
+
 ## 2026.09.19.04 — Google Drive activado
 
 `versionCode`: 2026091904 · Windows `2026.9.19.4`
