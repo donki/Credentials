@@ -2,6 +2,16 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.02 — Autocompletar en Android, fichas y registro de Entra
+
+`versionCode`: 2026091902 · Windows `2026.9.19.2`
+
+- **Autocompletar de Android**: servicio de autocompletar del sistema que, en apps y navegadores,
+  propone las credenciales que casan con el sitio o la aplicación; si la bóveda está bloqueada,
+  pide desbloquear (huella o contraseña) y rellena después.
+- Fichas de Google Play y Microsoft Store (textos, logos, capturas provisionales) y el script
+  `tools\Registrar-Entra.ps1` para dar de alta el cliente de Microsoft.
+
 ## 2026.09.19.01 — Anclaje a la barra de tareas
 
 `versionCode`: 2026091901 · Windows `2026.9.19.1`

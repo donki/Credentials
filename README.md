@@ -36,7 +36,13 @@ de Proyectos de Software de sOCratic.
   **Google Authenticator** (`otpauth-migration://`, protobuf decodificado a mano); y el JSON en
   claro de la propia aplicación. Las repetidas se saltan.
 - **Exportar** la bóveda cifrada (`.soccred`) o en JSON en claro (con aviso).
+- **Autocompletar de Android** (`Platforms/Android/AutofillService.cs`): en apps y navegadores
+  ofrece las entradas que casan con el dominio o con el paquete; con la bóveda bloqueada, la
+  sugerencia abre la puerta de desbloqueo (biometría o contraseña) y luego rellena. Se activa en
+  Ajustes de Android › Servicio de autocompletar.
 - En Android la ventana va con `FLAG_SECURE` (sin capturas ni miniatura en recientes).
+- Fichas de las tiendas en `store/google-play/` y `store/microsoft/` (espejo en
+  `Mobile/GooglePlayConsole/Credentials/` y `Mobile/MicrosoftStore/Credentials/`).
 
 ## Estructura (constitución 5, 7 y anexo A.1)
 
