@@ -2,8 +2,9 @@
 
 `com.socratic.credentials` · pista de pruebas cerradas (`alpha`), el día que se dé de alta.
 
-Límites de Play: título 30 caracteres, descripción breve 80, completa 4000. El nombre es
-**sOC Credentials**, el mismo que en el aparato y en la Microsoft Store.
+Límites de Play: título 30 caracteres, descripción breve 80, completa 4000. El nombre en Play es
+**sOC Credentials** (en el aparato la app se llama «Credentials»; en la Microsoft Store, «sOC
+Credentials»).
 
 ---
 

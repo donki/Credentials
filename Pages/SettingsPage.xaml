@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Credentials.Pages.SettingsPage">
@@ -6,16 +6,27 @@
     <ScrollView>
         <VerticalStackLayout Padding="12" Spacing="10" MaximumWidthRequest="760" HorizontalOptions="Fill">
 
-            <!-- Donde vive la boveda -->
+            <!-- Idioma -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Padding="16,12" Spacing="10">
+                    <Label x:Name="LanguageTitle" Style="{StaticResource SectionTitle}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Grid.Column="0" x:Name="SpanishButton" Text="🇪🇸 Español" FontSize="14" Padding="10,10" Clicked="OnSpanishClicked" />
+                        <Button Grid.Column="1" x:Name="EnglishButton" Text="🇺🇸 English" FontSize="14" Padding="10,10" Clicked="OnEnglishClicked" />
+                    </Grid>
+                    <Label x:Name="LanguageHint" Style="{StaticResource HintText}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Donde vive la boveda: tres botones, como los de entrar en Task Manager; el elegido
+                 va con el estilo primario y una marca. -->
             <Border Style="{StaticResource Card}">
                 <VerticalStackLayout Padding="16,12" Spacing="8">
                     <Label x:Name="StorageTitle" Style="{StaticResource SectionTitle}" />
                     <Label x:Name="StorageHint" Style="{StaticResource HintText}" />
-                    <VerticalStackLayout x:Name="StorageOptions" Spacing="2" RadioButtonGroup.GroupName="storage">
-                        <RadioButton x:Name="LocalRadio" Value="Local" CheckedChanged="OnStorageChanged" />
-                        <RadioButton x:Name="GoogleRadio" Value="GoogleDrive" CheckedChanged="OnStorageChanged" />
-                        <RadioButton x:Name="OneDriveRadio" Value="OneDrive" CheckedChanged="OnStorageChanged" />
-                    </VerticalStackLayout>
+                    <Button x:Name="LocalButton" ImageSource="ic_lock.png" ContentLayout="Left,10" HorizontalOptions="Fill" Clicked="OnStorageClicked" CommandParameter="Local" />
+                    <Button x:Name="GoogleButton" ImageSource="ic_google.png" ContentLayout="Left,10" HorizontalOptions="Fill" Clicked="OnStorageClicked" CommandParameter="GoogleDrive" />
+                    <Button x:Name="OneDriveButton" ImageSource="ic_microsoft.png" ContentLayout="Left,10" HorizontalOptions="Fill" Clicked="OnStorageClicked" CommandParameter="OneDrive" />
                     <Label x:Name="AccountLabel" Style="{StaticResource HintText}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button Grid.Column="0" x:Name="SyncButton" Style="{StaticResource OutlineButton}" ImageSource="ic_sync.png" ContentLayout="Left,6" Clicked="OnSyncClicked" />
@@ -60,6 +71,27 @@
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button Grid.Column="0" x:Name="ExportEncButton" Style="{StaticResource OutlineButton}" ImageSource="ic_export.png" ContentLayout="Left,6" Clicked="OnExportEncryptedClicked" />
                         <Button Grid.Column="1" x:Name="ExportPlainButton" Style="{StaticResource OutlineButton}" ImageSource="ic_export.png" ContentLayout="Left,6" Clicked="OnExportPlainClicked" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Windows: bandeja y arranque -->
+            <Border x:Name="WindowsCard" Style="{StaticResource Card}" IsVisible="False">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="WindowsTitle" Style="{StaticResource SectionTitle}" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="TrayLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="TrayHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="TraySwitch" OnColor="{StaticResource Primary}" Toggled="OnTrayToggled" VerticalOptions="Center" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="StartupLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="StartupHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="StartupSwitch" OnColor="{StaticResource Primary}" Toggled="OnStartupToggled" VerticalOptions="Center" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>

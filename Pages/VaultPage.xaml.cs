@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Credentials.Helpers;
 using Credentials.Models;
@@ -63,6 +63,14 @@ public partial class VaultPage : ContentPage
         _toast = ServiceHelper.GetRequiredService<IToastService>();
         List.ItemsSource = _rows;
         _store.Changed += () => MainThread.BeginInvokeOnMainThread(Refresh);
+        // Al bloquearse (boton o inactividad) la lista se vacia y sale la pantalla de desbloqueo,
+        // sin esperar a que el usuario toque nada.
+        _store.Locked += () => MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            _rows.Clear();
+            if (await Gate.EnsureUnlockedAsync(this))
+                Refresh();
+        });
         _l.LanguageChanged += (_, _) => ApplyTexts();
         ApplyTexts();
     }

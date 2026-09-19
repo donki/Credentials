@@ -2,6 +2,19 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.03 — Ajustes: idioma, almacenamiento con botones, bandeja y arranque con Windows
+
+`versionCode`: 2026091903 · Windows `2026.9.19.3`
+
+- **Dónde vive la bóveda** ahora son tres botones (solo en este aparato, Google Drive, OneDrive),
+  con el elegido resaltado, como los de entrar en Task Manager.
+- El **idioma** se cambia en Ajustes (antes en «Acerca de»).
+- **Windows**: al minimizar se queda en el área de notificación (clic para volver; botón derecho,
+  Abrir o Salir) y hay interruptor para **arrancar con Windows** escondida en la bandeja. Los dos
+  en la tarjeta «Windows» de Ajustes.
+- En **Android** la aplicación se llama «Credentials» (icono, ajustes del sistema, autocompletar).
+- Al bloquearse la bóveda (botón o inactividad) la lista se vacía y sale el desbloqueo en el acto.
+
 ## 2026.09.19.02 — Autocompletar en Android, fichas y registro de Entra
 
 `versionCode`: 2026091902 · Windows `2026.9.19.2`

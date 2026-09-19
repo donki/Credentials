@@ -23,7 +23,7 @@
         <Grid BackgroundColor="{StaticResource Primary}" HeightRequest="150" Padding="20,44,20,16">
             <VerticalStackLayout VerticalOptions="End" Spacing="4">
                 <Image Source="app_logo.png" WidthRequest="52" HeightRequest="52" HorizontalOptions="Start" />
-                <Label Text="sOC Credentials" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource OnPrimary}" />
+                <Label Text="{OnPlatform Android=Credentials, Default='sOC Credentials'}" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource OnPrimary}" />
             </VerticalStackLayout>
         </Grid>
     </Shell.FlyoutHeader>

@@ -1,4 +1,4 @@
-namespace Credentials.Services;
+﻿namespace Credentials.Services;
 
 /// <summary>Preferencias del usuario (Preferences del sistema). Nada sensible: eso va en la boveda o en SecureStorage.</summary>
 public interface ISettingsService
@@ -23,4 +23,7 @@ public interface ISettingsService
 
     /// <summary>Ultimo orden elegido en la lista.</summary>
     string SortMode { get; set; }
+
+    /// <summary>Windows: al minimizar, esconderse en el area de notificacion en vez de a la barra de tareas.</summary>
+    bool TrayOnMinimize { get; set; }
 }

@@ -2,6 +2,12 @@
 
 public partial class App : Application
 {
+#if WINDOWS
+    private Platforms.Windows.TrayIcon? _tray;
+
+    /// <summary>El icono de bandeja de la ventana principal (para que Ajustes cambie su comportamiento).</summary>
+    public static Platforms.Windows.TrayIcon? Tray { get; private set; }
+#endif
 
     public App()
     {
@@ -23,11 +29,24 @@ public partial class App : Application
         // Tamaño de arranque razonable en el escritorio: la lista es alta y estrecha, como en el movil.
         window.Width = 900;
         window.Height = 760;
-        // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
+        // Al minimizar, a la bandeja (icono en el area de notificacion con Abrir y Salir), si el
+        // usuario no lo ha quitado en Ajustes.
         window.HandlerChanged += (_, _) =>
         {
-            if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window native && !IsPackaged())
-                Platforms.Windows.TaskbarIdentity.Apply(WinRT.Interop.WindowNative.GetWindowHandle(native), "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
+            if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window native && _tray is null)
+            {
+                var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(native);
+                var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
+                _tray = new Platforms.Windows.TrayIcon(hwnd, key => loc[key], () => native.Close()) { MinimizeToTray = settings.TrayOnMinimize };
+                Tray = _tray;
+                // «--tray» (arranque con Windows): escondida en la bandeja desde el principio.
+                if (Environment.GetCommandLineArgs().Contains("--tray"))
+                    native.DispatcherQueue.TryEnqueue(() => _tray.HideToTray());
+                // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
+                if (!IsPackaged())
+                    Platforms.Windows.TaskbarIdentity.Apply(hwnd, "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
+            }
         };
 #endif
 #if DEBUG

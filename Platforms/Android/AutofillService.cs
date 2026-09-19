@@ -1,4 +1,4 @@
-using Android.App;
+﻿using Android.App;
 using Android.App.Assist;
 using Android.Content;
 using Android.OS;
@@ -25,7 +25,7 @@ namespace Credentials.Platforms.Android;
 /// HTML (type, name, id, autocomplete). No se guarda nada nuevo desde aqui (sin OnSaveRequest de
 /// verdad) en esta primera version.
 /// </remarks>
-[Service(Name = "com.socratic.credentials.AutofillService", Permission = "android.permission.BIND_AUTOFILL_SERVICE", Exported = true, Label = "sOC Credentials")]
+[Service(Name = "com.socratic.credentials.AutofillService", Permission = "android.permission.BIND_AUTOFILL_SERVICE", Exported = true, Label = "Credentials")]
 [IntentFilter(["android.service.autofill.AutofillService"])]
 [MetaData("android.autofill", Resource = "@xml/autofill_service")]
 public class CredentialsAutofillService : global::Android.Service.Autofill.AutofillService

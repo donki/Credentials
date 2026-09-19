@@ -1,4 +1,4 @@
-namespace Credentials.Services;
+﻿namespace Credentials.Services;
 
 /// <inheritdoc cref="ISettingsService"/>
 public class SettingsService : ISettingsService
@@ -43,5 +43,11 @@ public class SettingsService : ISettingsService
     {
         get => Preferences.Get("sort_mode", "title");
         set => Preferences.Set("sort_mode", value ?? "title");
+    }
+
+    public bool TrayOnMinimize
+    {
+        get => Preferences.Get("tray_on_minimize", true);
+        set => Preferences.Set("tray_on_minimize", value);
     }
 }

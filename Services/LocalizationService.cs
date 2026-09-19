@@ -6,6 +6,9 @@ namespace Credentials.Services;
 /// <inheritdoc cref="ILocalizationService"/>
 public class LocalizationService : ILocalizationService
 {
+    /// <summary>Nombre visible de la aplicacion: «Credentials» en Android y «sOC Credentials» en Windows y la Store.</summary>
+    public static readonly string AppName = OperatingSystem.IsAndroid() ? "Credentials" : "sOC Credentials";
+
     public const string SystemLanguage = "";
     public const string DefaultLanguage = "en";
 
@@ -130,7 +133,14 @@ public class LocalizationService : ILocalizationService
         ["LinkCopied"] = "The link was copied to the clipboard",
         ["ErrorBrowser"] = "The browser could not be opened",
 
-        ["AppName"] = "sOC Credentials",
+        ["AppName"] = AppName,
+        ["TrayOpen"] = "Open",
+        ["TrayExit"] = "Exit",
+        ["WindowsSection"] = "Windows",
+        ["TrayOnMinimize"] = "Keep in the notification area when minimised",
+        ["TrayOnMinimizeHint"] = "Click the tray icon to bring it back; right-click for Open or Exit.",
+        ["StartWithWindows"] = "Start with Windows",
+        ["StartWithWindowsHint"] = "Starts hidden in the notification area when you sign in.",
         ["AppDescription"] = "Your passwords and two-factor codes in an encrypted vault: on this device, or in your own Google Drive or OneDrive.",
         ["AboutPrivacyText"] = "Everything you store is encrypted on your device with a key derived from your master password (Argon2id + AES-256-GCM). The vault file lives on this device or, if you choose so, in the private app folder of your own Google Drive or OneDrive. There is no server of ours, no account of ours, no analytics.",
         ["MenuVault"] = "Vault",
@@ -232,8 +242,8 @@ public class LocalizationService : ILocalizationService
         ["SettingsTitle"] = "Settings",
         ["StorageTitle"] = "Where the vault lives",
         ["StorageLocal"] = "Only on this device",
-        ["StorageGoogle"] = "Google Drive (app folder)",
-        ["StorageOneDrive"] = "OneDrive (app folder)",
+        ["StorageGoogle"] = "Google Drive",
+        ["StorageOneDrive"] = "OneDrive",
         ["StorageHint"] = "In the cloud the file goes to the private folder of the app in your own account, encrypted with your master password. Open the same account on another device and use the same master password.",
         ["StorageNotConfigured"] = "This build has no client for {0}: fill in oauth.local.props.",
         ["SignedInAs"] = "Signed in as {0}",
@@ -322,7 +332,14 @@ public class LocalizationService : ILocalizationService
         ["LinkCopied"] = "El enlace se ha copiado al portapapeles",
         ["ErrorBrowser"] = "No se ha podido abrir el navegador",
 
-        ["AppName"] = "sOC Credentials",
+        ["AppName"] = AppName,
+        ["TrayOpen"] = "Abrir",
+        ["TrayExit"] = "Salir",
+        ["WindowsSection"] = "Windows",
+        ["TrayOnMinimize"] = "Quedarse en el área de notificación al minimizar",
+        ["TrayOnMinimizeHint"] = "Clic en el icono de la bandeja para volver; botón derecho para Abrir o Salir.",
+        ["StartWithWindows"] = "Arrancar con Windows",
+        ["StartWithWindowsHint"] = "Arranca escondida en el área de notificación al iniciar sesión.",
         ["AppDescription"] = "Tus contraseñas y códigos de segundo factor en una bóveda cifrada: en este aparato, o en tu propio Google Drive u OneDrive.",
         ["AboutPrivacyText"] = "Todo lo que guardas se cifra en tu aparato con una clave derivada de tu contraseña maestra (Argon2id + AES-256-GCM). El fichero de la bóveda vive en este aparato o, si tú lo eliges, en la carpeta privada de la aplicación de tu propio Google Drive u OneDrive. No hay servidor nuestro, ni cuenta nuestra, ni analítica.",
         ["MenuVault"] = "Bóveda",
@@ -424,8 +441,8 @@ public class LocalizationService : ILocalizationService
         ["SettingsTitle"] = "Ajustes",
         ["StorageTitle"] = "Dónde vive la bóveda",
         ["StorageLocal"] = "Solo en este aparato",
-        ["StorageGoogle"] = "Google Drive (carpeta de la aplicación)",
-        ["StorageOneDrive"] = "OneDrive (carpeta de la aplicación)",
+        ["StorageGoogle"] = "Google Drive",
+        ["StorageOneDrive"] = "OneDrive",
         ["StorageHint"] = "En la nube el fichero va a la carpeta privada de la aplicación en tu propia cuenta, cifrado con tu contraseña maestra. Abre la misma cuenta en otro aparato y usa la misma contraseña maestra.",
         ["StorageNotConfigured"] = "Esta compilación no lleva cliente de {0}: hay que rellenar oauth.local.props.",
         ["SignedInAs"] = "Sesión iniciada como {0}",

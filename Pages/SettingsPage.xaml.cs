@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Credentials.Helpers;
 using Credentials.Services;
 using SocShared;
@@ -38,11 +38,23 @@ public partial class SettingsPage : ContentPage
     {
         _loading = true;
         Title = _l["SettingsTitle"];
+        LanguageTitle.Text = $"🌐 {_l["SettingsLanguage"]}";
+        LanguageHint.Text = _l["AboutLanguageHint"];
+        var isSpanish = _l.CurrentLanguage == "es";
+        SpanishButton.Style = LookupStyle(isSpanish ? "PrimaryButton" : "OutlineButton");
+        EnglishButton.Style = LookupStyle(isSpanish ? "OutlineButton" : "PrimaryButton");
         StorageTitle.Text = _l["StorageTitle"];
         StorageHint.Text = _l["StorageHint"];
-        LocalRadio.Content = _l["StorageLocal"];
-        GoogleRadio.Content = _l["StorageGoogle"];
-        OneDriveRadio.Content = _l["StorageOneDrive"];
+        WindowsTitle.Text = _l["WindowsSection"];
+        TrayLabel.Text = _l["TrayOnMinimize"];
+        TrayHint.Text = _l["TrayOnMinimizeHint"];
+        StartupLabel.Text = _l["StartWithWindows"];
+        StartupHint.Text = _l["StartWithWindowsHint"];
+        TraySwitch.IsToggled = _settings.TrayOnMinimize;
+#if WINDOWS
+        WindowsCard.IsVisible = true;
+        StartupSwitch.IsToggled = Platforms.Windows.WindowsStartup.IsEnabled("sOCCredentials");
+#endif
         SyncButton.Text = _l["SyncNow"];
         SignOutButton.Text = _l["SignOut"];
         SecurityTitle.Text = _l["SecurityTitle"];
@@ -84,11 +96,14 @@ public partial class SettingsPage : ContentPage
     {
         _loading = true;
         var mode = _settings.Storage;
-        LocalRadio.IsChecked = mode == StorageMode.Local;
-        GoogleRadio.IsChecked = mode == StorageMode.GoogleDrive;
-        OneDriveRadio.IsChecked = mode == StorageMode.OneDrive;
+        // El boton del modo activo va en primario con una marca; los otros, de contorno. El logo
+        // de Google tiene version blanca para el fondo primario; el de Microsoft se ve bien en los dos.
+        StyleStorageButton(LocalButton, _l["StorageLocal"], mode == StorageMode.Local, "ic_lock.png", "ic_lock_w.png");
+        StyleStorageButton(GoogleButton, _l["StorageGoogle"], mode == StorageMode.GoogleDrive, "ic_google.png", "ic_google_w.png");
+        StyleStorageButton(OneDriveButton, _l["StorageOneDrive"], mode == StorageMode.OneDrive, "ic_microsoft.png", "ic_microsoft.png");
         var cloud = mode != StorageMode.Local;
         AccountLabel.Text = cloud && _settings.AccountEmail.Length > 0 ? string.Format(_l.CurrentCulture, _l["SignedInAs"], _settings.AccountEmail) : string.Empty;
+        AccountLabel.IsVisible = AccountLabel.Text.Length > 0;
         SyncButton.IsVisible = SignOutButton.IsVisible = cloud;
         _loading = false;
     }
@@ -96,15 +111,62 @@ public partial class SettingsPage : ContentPage
     private void ShowStatus(string status)
     {
         SyncStatus.Text = status.StartsWith("cloud:ok:") ? string.Empty : status.StartsWith("cloud:error:") ? string.Format(_l.CurrentCulture, _l["SyncFailed"], status[12..]) : status;
+        SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
+    }
+
+    private static Style? LookupStyle(string key)
+        => Application.Current?.Resources.TryGetValue(key, out var s) == true ? s as Style : null;
+
+    private static void StyleStorageButton(Button button, string text, bool active, string icon, string activeIcon)
+    {
+        button.Style = LookupStyle(active ? "PrimaryButton" : "OutlineButton");
+        button.Text = active ? "✓ " + text : text;
+        button.ImageSource = active ? activeIcon : icon;
+    }
+
+    // ------------------------------------------------------------------ idioma
+
+    private void OnSpanishClicked(object? sender, EventArgs e) => SetLanguage("es");
+
+    private void OnEnglishClicked(object? sender, EventArgs e) => SetLanguage("en");
+
+    private void SetLanguage(string code)
+    {
+        if (code == _l.CurrentLanguage)
+            return;
+        _settings.Language = code;
+        _l.SetLanguage(code);
+    }
+
+    // ------------------------------------------------------------------ Windows
+
+    private void OnTrayToggled(object? sender, ToggledEventArgs e)
+    {
+        if (_loading)
+            return;
+        _settings.TrayOnMinimize = e.Value;
+#if WINDOWS
+        if (App.Tray is { } tray)
+            tray.MinimizeToTray = e.Value;
+#endif
+    }
+
+    private void OnStartupToggled(object? sender, ToggledEventArgs e)
+    {
+        if (_loading)
+            return;
+#if WINDOWS
+        Platforms.Windows.WindowsStartup.Set("sOCCredentials", e.Value);
+#endif
     }
 
     // ------------------------------------------------------------------ almacenamiento
 
-    private async void OnStorageChanged(object? sender, CheckedChangedEventArgs e)
+    private async void OnStorageClicked(object? sender, EventArgs e)
     {
-        if (_loading || !e.Value || sender is not RadioButton rb)
+        if (_loading || sender is not Button button || button.CommandParameter is not string value)
             return;
-        var mode = Enum.Parse<StorageMode>((string)rb.Value);
+        var mode = Enum.Parse<StorageMode>(value);
         if (mode == _settings.Storage)
             return;
         if (mode == StorageMode.Local)
@@ -122,6 +184,7 @@ public partial class SettingsPage : ContentPage
         try
         {
             SyncStatus.Text = "…";
+            SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
             await _store.SignInAsync(mode, cts.Token);
             RefreshStorage();
@@ -146,8 +209,10 @@ public partial class SettingsPage : ContentPage
         try
         {
             SyncStatus.Text = "…";
+            SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
             var changed = await _store.SyncAsync();
             SyncStatus.Text = changed > 0 ? string.Format(_l.CurrentCulture, _l["SyncDone"], changed) : _l["SyncNothing"];
+            SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
         }
         catch (VaultPasswordNeededException needed)
         {
@@ -155,25 +220,30 @@ public partial class SettingsPage : ContentPage
             if (string.IsNullOrEmpty(password))
             {
                 SyncStatus.Text = string.Empty;
+                SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
                 return;
             }
             try
             {
                 var changed = await _store.MergeRemoteWithPasswordAsync(needed.RemoteContent, password);
                 SyncStatus.Text = string.Format(_l.CurrentCulture, _l["SyncDone"], changed);
+                SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
             }
             catch (Exception)
             {
                 SyncStatus.Text = _l["MasterPasswordWrong"];
+                SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
             }
         }
         catch (CloudException ex) when (ex.IsScopeProblem)
         {
             SyncStatus.Text = _l["SyncScope"];
+            SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
         }
         catch (Exception ex)
         {
             SyncStatus.Text = string.Format(_l.CurrentCulture, _l["SyncFailed"], ex.Message);
+            SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
         }
     }
 
