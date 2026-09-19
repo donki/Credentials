@@ -2,6 +2,23 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.20.00 — Extensiones para Edge, Chrome y Firefox
+
+`versionCode`: 2026092000 · Windows `2026.9.20.0`
+
+- **Extensión de navegador** (Windows): en Edge, Chrome y Firefox, el icono de la barra enseña las
+  entradas del sitio con rellenar, copiar usuario y contraseña y el código de segundo factor en
+  vivo; busca en toda la bóveda; genera contraseñas y las pone en la página; y al enviar un
+  formulario nuevo ofrece **guardarlo** (o actualizar la contraseña). Habla con la aplicación del
+  PC por mensajería nativa: nada sale del equipo. Con la bóveda bloqueada trae la aplicación y
+  pide desbloquear; si está cerrada, la arranca en la bandeja.
+- **Instalación desde la aplicación**: tras desbloquear, si algún navegador del PC no tiene la
+  extensión, pregunta si instalarla (también en Ajustes › Extensiones del navegador, con el estado
+  por navegador y un interruptor para no volver a preguntar). Registra el host y deja la extensión
+  desempaquetada; el paso de cargarla en el navegador lo guía paso a paso (los navegadores no
+  dejan hacerlo solo hasta que esté publicada en sus tiendas). En Firefox, temporal hasta firmarla.
+- La versión de la Store (MSIX) no puede registrar el host: las extensiones necesitan el exe.
+
 ## 2026.09.19.10 — Android: guardar lo que escribes en apps y navegadores
 
 `versionCode`: 2026091910 · Windows `2026.9.19.10`

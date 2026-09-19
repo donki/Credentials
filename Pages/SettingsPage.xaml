@@ -96,6 +96,22 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Windows: extensiones de navegador -->
+            <Border x:Name="ExtensionsCard" Style="{StaticResource Card}" IsVisible="False">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="ExtTitle" Style="{StaticResource SectionTitle}" />
+                    <Label x:Name="ExtHint" Style="{StaticResource HintText}" />
+                    <VerticalStackLayout x:Name="BrowsersBox" Spacing="6" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="ExtAskLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="ExtAskHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="ExtAskSwitch" OnColor="{StaticResource Primary}" Toggled="OnExtAskToggled" VerticalOptions="Center" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
             <!-- Zona peligrosa -->
             <Border Style="{StaticResource Card}">
                 <VerticalStackLayout Padding="16,12" Spacing="8">

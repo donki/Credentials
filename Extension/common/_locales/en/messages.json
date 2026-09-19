@@ -1,0 +1,102 @@
+{
+ "name": {
+  "message": "sOC Credentials"
+ },
+ "description": {
+  "message": "Fills usernames, passwords and two-factor codes from your sOC Credentials vault, with no server: it talks to the app on your PC."
+ },
+ "fill": {
+  "message": "Fill"
+ },
+ "copyUser": {
+  "message": "Copy username"
+ },
+ "copyPass": {
+  "message": "Copy password"
+ },
+ "copyTotp": {
+  "message": "Copy code"
+ },
+ "copied": {
+  "message": "Copied"
+ },
+ "noMatches": {
+  "message": "No entries for this site."
+ },
+ "search": {
+  "message": "Search the vault…"
+ },
+ "locked": {
+  "message": "The vault is locked. Unlock it in sOC Credentials."
+ },
+ "openApp": {
+  "message": "Open sOC Credentials"
+ },
+ "noHost": {
+  "message": "sOC Credentials was not found on this PC. Open it once and press “Install” in Settings › Browser extensions."
+ },
+ "generator": {
+  "message": "Generate password"
+ },
+ "length": {
+  "message": "Length"
+ },
+ "upper": {
+  "message": "Uppercase"
+ },
+ "digits": {
+  "message": "Digits"
+ },
+ "symbols": {
+  "message": "Symbols"
+ },
+ "generate": {
+  "message": "Generate"
+ },
+ "useInPage": {
+  "message": "Use in page"
+ },
+ "saveQuestion": {
+  "message": "Save the $USER$ account in sOC Credentials for $SITE$?",
+  "placeholders": {
+   "user": {
+    "content": "$1"
+   },
+   "site": {
+    "content": "$2"
+   }
+  }
+ },
+ "updateQuestion": {
+  "message": "Update the password of $USER$ in sOC Credentials for $SITE$?",
+  "placeholders": {
+   "user": {
+    "content": "$1"
+   },
+   "site": {
+    "content": "$2"
+   }
+  }
+ },
+ "save": {
+  "message": "Save"
+ },
+ "update": {
+  "message": "Update"
+ },
+ "notNow": {
+  "message": "Not now"
+ },
+ "saved": {
+  "message": "Saved in sOC Credentials"
+ },
+ "contextFill": {
+  "message": "Fill with sOC Credentials"
+ },
+ "entries": {
+  "message": "entries"
+ },
+ "retrying": {
+  "message": "Waiting for the vault to be unlocked…"
+ }
+}

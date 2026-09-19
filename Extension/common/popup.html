@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/icon32.png" alt="">
+    <div>
+      <div class="title">sOC Credentials</div>
+      <div id="site" class="site"></div>
+    </div>
+  </header>
+
+  <input id="search" type="search" autocomplete="off">
+
+  <div id="status" class="status" hidden></div>
+  <button id="openApp" class="primary" hidden></button>
+
+  <ul id="list"></ul>
+
+  <details id="gen">
+    <summary id="genTitle"></summary>
+    <div class="gen">
+      <div class="row"><label id="lenLabel" for="len"></label><input id="len" type="range" min="8" max="64" value="20"><span id="lenVal">20</span></div>
+      <div class="row opts">
+        <label><input id="optUpper" type="checkbox" checked> <span id="upperLabel"></span></label>
+        <label><input id="optDigits" type="checkbox" checked> <span id="digitsLabel"></span></label>
+        <label><input id="optSymbols" type="checkbox" checked> <span id="symbolsLabel"></span></label>
+      </div>
+      <output id="generated"></output>
+      <div class="row right">
+        <button id="regen"></button>
+        <button id="copyGen"></button>
+        <button id="useGen" class="primary"></button>
+      </div>
+    </div>
+  </details>
+
+  <script src="popup.js"></script>
+</body>
+</html>

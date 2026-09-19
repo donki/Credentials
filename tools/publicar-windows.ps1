@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Genera los paquetes Windows de sOC Credentials: el exe de un solo fichero y el MSIX de la Store.
 .DESCRIPTION
@@ -26,6 +26,11 @@ $csproj = Get-Content $proyecto -Raw
 if ($csproj -notmatch "<ApplicationDisplayVersion>([\d\.]+)</ApplicationDisplayVersion>") { throw "No se encuentra ApplicationDisplayVersion." }
 $version = ($Matches[1].Split(".") | ForEach-Object { [int]$_ }) -join "."
 "Version Windows: $version"
+
+# 0. Host de mensajeria nativa (va dentro de la carpeta de la aplicacion como CredentialsHost.exe).
+"Compilando el host de las extensiones..."
+dotnet publish (Join-Path $raiz "Host\Host.csproj") -c Release -r win-x64 "-p:HostVersion=$version" -v q --nologo
+if ($LASTEXITCODE -ne 0) { throw "Ha fallado el publish del host." }
 
 # 1. Publicacion sin empaquetar.
 $publicado = Join-Path $raiz "bin\Release\$tfm\win-x64\publish"

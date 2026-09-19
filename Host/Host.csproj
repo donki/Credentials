@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Host de mensajeria nativa para las extensiones de navegador (Chrome, Edge, Firefox). El
+    navegador lo arranca con la extension y le habla por stdin/stdout (marcos de 4 bytes de longitud
+    + JSON). Este exe no sabe nada de la boveda: pasa cada mensaje a la aplicacion por una tuberia
+    con nombre (\\.\pipe\sOCCredentials) y devuelve la respuesta. Si la aplicacion no esta abierta,
+    la arranca escondida en la bandeja. Lo compila tools\publicar-windows.ps1 y va dentro de la
+    carpeta de la aplicacion como CredentialsHost.exe.
+  -->
+  <PropertyGroup>
+    <!-- WinExe: sin ventana de consola (el navegador lo arranca en segundo plano); stdin/stdout
+         siguen siendo las tuberias que le pasa el navegador. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyName>CredentialsHost</AssemblyName>
+    <RootNamespace>Credentials.Host</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <Product>sOC Credentials</Product>
+    <Company>sOCratic</Company>
+    <Copyright>Copyright © 2026 sOCratic</Copyright>
+    <Version>$(HostVersion)</Version>
+    <FileVersion>$(HostVersion)</FileVersion>
+    <AssemblyVersion>$(HostVersion)</AssemblyVersion>
+  </PropertyGroup>
+
+</Project>

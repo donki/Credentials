@@ -4,6 +4,7 @@ public partial class App : Application
 {
 #if WINDOWS
     private Platforms.Windows.TrayIcon? _tray;
+    private Platforms.Windows.ExtensionServer? _extensions;
 
     /// <summary>El icono de bandeja de la ventana principal (para que Ajustes cambie su comportamiento).</summary>
     public static Platforms.Windows.TrayIcon? Tray { get; private set; }
@@ -15,6 +16,38 @@ public partial class App : Application
     }
 
 #if WINDOWS
+    /// <summary>
+    /// Extensiones de navegador: la tuberia que atiende al host de mensajeria nativa, el refresco de
+    /// lo ya registrado (la carpeta cambia con la version) y, al desbloquear, la oferta de instalarla
+    /// en los navegadores que no la tengan.
+    /// </summary>
+    private void StartExtensions(Window window)
+    {
+        try
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
+            var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
+            var toast = Helpers.ServiceHelper.GetRequiredService<Services.IToastService>();
+            Platforms.Windows.ExtensionInstaller.RefreshIfRegistered();
+            _extensions = new Platforms.Windows.ExtensionServer(store, settings);
+            _extensions.BrowserConnected += browser =>
+            {
+                var name = Platforms.Windows.ExtensionInstaller.Known.FirstOrDefault(b => b.Key == browser)?.Name ?? browser;
+                toast.Show(string.Format(loc.CurrentCulture, loc["ExtConnected"], name));
+            };
+            _extensions.Start();
+            store.Unlocked += () => MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                // Un respiro para que la pagina de desbloqueo se haya cerrado antes de preguntar.
+                await Task.Delay(600);
+                if (window.Page is { } page)
+                    await Platforms.Windows.ExtensionSetup.OfferAfterUnlockAsync(page, settings, loc);
+            });
+        }
+        catch (Exception) { /* sin extensiones no pasa nada: la aplicacion sigue */ }
+    }
+
     private static bool IsPackaged()
     {
         try { return global::Windows.ApplicationModel.Package.Current is not null; }
@@ -46,6 +79,7 @@ public partial class App : Application
                 // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
                 if (!IsPackaged())
                     Platforms.Windows.TaskbarIdentity.Apply(hwnd, "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
+                StartExtensions(window);
             }
         };
 #endif

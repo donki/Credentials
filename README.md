@@ -40,6 +40,23 @@ de Proyectos de Software de sOCratic.
   ofrece las entradas que casan con el dominio o con el paquete; con la bóveda bloqueada, la
   sugerencia abre la puerta de desbloqueo (biometría o contraseña) y luego rellena. Se activa en
   Ajustes de Android › Servicio de autocompletar.
+- **Autocompletar de Android: guardar**: al enviar un formulario con usuario y contraseña, Android
+  pregunta «¿Guardar la contraseña en Credentials?»; entrada nueva o cambio de contraseña (la
+  anterior al historial), con desbloqueo previo si hace falta.
+- **Extensiones de navegador (Windows)** para **Edge, Chrome y Firefox** (`Extension/`): el icono
+  de la barra enseña las entradas del sitio con **rellenar**, copiar usuario/contraseña y el
+  **código TOTP** en vivo, busca en toda la bóveda, genera contraseñas y, al enviar un formulario
+  nuevo, **ofrece guardarlo** (o actualizar la contraseña). Sin servidor: la extensión habla por
+  **mensajería nativa** con `CredentialsHost.exe`, que pasa cada petición a la aplicación por una
+  tubería con nombre solo accesible por el mismo usuario (`Platforms/Windows/ExtensionBridge.cs`);
+  si la aplicación está cerrada, la arranca en la bandeja, y si la bóveda está bloqueada, trae la
+  ventana y pide desbloquear. La aplicación la instala desde **Ajustes › Extensiones del navegador**
+  (o lo ofrece tras desbloquear): registra el host en `HKCU`, deja la extensión desempaquetada en
+  `%LOCALAPPDATA%\sOCCredentials\extension` y abre el navegador en su página de extensiones para
+  cargarla («Cargar desempaquetada»); en cuanto conecta, sale como instalada. Firefox solo admite
+  extensiones firmadas por Mozilla: hasta publicarla, se carga temporal desde `about:debugging`.
+  El MSIX de la Store no puede registrar el host (virtualización del registro): las extensiones
+  necesitan la versión exe.
 - En Android la ventana va con `FLAG_SECURE` (sin capturas ni miniatura en recientes).
 - Fichas de las tiendas en `store/google-play/` y `store/microsoft/` (espejo en
   `Mobile/GooglePlayConsole/Credentials/` y `Mobile/MicrosoftStore/Credentials/`).
@@ -56,6 +73,12 @@ de Proyectos de Software de sOCratic.
   navegador OAuth (WebAuthenticator con esquema propio / servidor local en 127.0.0.1) y toast.
 - `Launcher/`: el exe de un solo fichero para Windows (WinUI no admite el single-file de .NET); lo
   genera `tools\publicar-windows.ps1 -Msix` junto con el zip y el MSIX.
+- `Host/`: `CredentialsHost.exe`, el host de mensajería nativa (un solo exe, sin ventana) que va
+  dentro de la carpeta de la aplicación. `Extension/`: la extensión (Manifest V3; `common/` +
+  `chromium/manifest.json` con la clave fija, id `hbimfdiggibkbjnmkagdcnddpghhckho`, y
+  `firefox/manifest.json`, id `credentials@socratic.app`); se copia tal cual a la salida Windows.
+- `Services/AutofillLogic.cs`: lo común al autocompletar de Android y a las extensiones (qué
+  entradas casan con un dominio o una app; cómo se guarda lo que el usuario acaba de escribir).
 - Los identificadores OAuth van en `oauth.local.props` (ignorado; ver `oauth.local.props.example`)
   y llegan al binario como `AssemblyMetadata`; sin ellos, el proveedor no se ofrece.
 
@@ -68,7 +91,10 @@ dotnet build -f net10.0-windows10.0.19041.0 -c Debug  # Windows
 ```
 
 En Debug, `Credentials.exe --master <clave> --demo` crea o abre la bóveda con esa clave y siembra
-entradas inventadas (solo para probar y capturar pantallas; no existe en Release).
+entradas inventadas (solo para probar y capturar pantallas; no existe en Release). Con la variable
+`SOC_SANDBOX=<carpeta>` la bóveda y los ajustes van a esa carpeta y no se tocan los del usuario.
+El host de las extensiones se compila aparte (`dotnet publish Host\Host.csproj -c Release`) y el
+proyecto lo copia a la salida si existe.
 
 ## Licencia
 

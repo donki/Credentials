@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text.Json;
 using Credentials.Models;
 
@@ -38,7 +38,23 @@ public sealed class VaultStore
         _browser = browser;
     }
 
-    public static string FilePath => Path.Combine(FileSystem.AppDataDirectory, "vault.soccred");
+    public static string FilePath => Path.Combine(DataDirectory, "vault.soccred");
+
+    /// <summary>La carpeta de datos; en Debug, SOC_SANDBOX la cambia para probar sin tocar la boveda real.</summary>
+    public static string DataDirectory
+    {
+        get
+        {
+#if DEBUG
+            if (Environment.GetEnvironmentVariable("SOC_SANDBOX") is { Length: > 0 } sandbox)
+            {
+                Directory.CreateDirectory(sandbox);
+                return sandbox;
+            }
+#endif
+            return FileSystem.AppDataDirectory;
+        }
+    }
 
     public VaultData? Data { get; private set; }
     public bool Exists => File.Exists(FilePath);
@@ -48,6 +64,9 @@ public sealed class VaultStore
     public event Action? Changed;
     /// <summary>Se ha bloqueado (a mano o por inactividad).</summary>
     public event Action? Locked;
+
+    /// <summary>Se acaba de abrir (contraseña, biometria o al crearla).</summary>
+    public event Action? Unlocked;
     /// <summary>Estado de la nube en una linea (para la barra de estado o un aviso).</summary>
     public event Action<string>? Status;
 
@@ -62,6 +81,8 @@ public sealed class VaultStore
         _header = header;
         Data = data;
         await SaveAsync(upload: false);
+        Touch();
+        Unlocked?.Invoke();
     }
 
     /// <summary>Abre con la contraseña maestra. Lanza <see cref="CryptographicException"/> si no es.</summary>
@@ -76,6 +97,7 @@ public sealed class VaultStore
         _header = header;
         Touch();
         Changed?.Invoke();
+        Unlocked?.Invoke();
     }
 
     /// <summary>Abre con la clave guardada en la boveda del sistema (tras la biometria). False si no hay clave o no vale.</summary>
@@ -95,6 +117,7 @@ public sealed class VaultStore
             _header = header;
             Touch();
             Changed?.Invoke();
+            Unlocked?.Invoke();
             return true;
         }
         catch (Exception)

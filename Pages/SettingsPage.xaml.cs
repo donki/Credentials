@@ -54,6 +54,12 @@ public partial class SettingsPage : ContentPage
 #if WINDOWS
         WindowsCard.IsVisible = true;
         StartupSwitch.IsToggled = Platforms.Windows.WindowsStartup.IsEnabled("sOCCredentials");
+        ExtTitle.Text = _l["ExtSection"];
+        ExtHint.Text = _l["ExtSectionHint"];
+        ExtAskLabel.Text = _l["ExtAskOnUnlock"];
+        ExtAskHint.Text = _l["ExtAskOnUnlockHint"];
+        ExtAskSwitch.IsToggled = _settings.AskExtensions;
+        RefreshBrowsers();
 #endif
         SyncButton.Text = _l["SyncNow"];
         SignOutButton.Text = _l["SignOut"];
@@ -160,6 +166,35 @@ public partial class SettingsPage : ContentPage
         Platforms.Windows.WindowsStartup.Set("sOCCredentials", e.Value);
 #endif
     }
+
+    private void OnExtAskToggled(object? sender, ToggledEventArgs e)
+    {
+        if (!_loading)
+            _settings.AskExtensions = e.Value;
+    }
+
+#if WINDOWS
+    /// <summary>Una fila por navegador del PC: nombre, si la extension ya ha conectado, y el boton de instalar.</summary>
+    private void RefreshBrowsers()
+    {
+        ExtensionsCard.IsVisible = Platforms.Windows.ExtensionInstaller.Available;
+        BrowsersBox.Clear();
+        foreach (var b in Platforms.Windows.ExtensionInstaller.Detected())
+        {
+            var seen = _settings.ExtensionSeen(b.Key) is not null;
+            var grid = new Grid { ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)], ColumnSpacing = 8 };
+            var text = new VerticalStackLayout();
+            text.Add(new Label { Text = b.Name, Style = (Style)Application.Current!.Resources["BodyText"] });
+            text.Add(new Label { Text = seen ? "✓ " + _l["ExtInstalled"] : _l["ExtNotInstalled"], Style = (Style)Application.Current.Resources["HintText"], FontSize = 11 });
+            grid.Add(text, 0, 0);
+            var button = new Button { Text = _l["ExtInstallButton"], Style = (Style)Application.Current.Resources[seen ? "OutlineButton" : "PrimaryButton"], Padding = new Thickness(12, 6), VerticalOptions = LayoutOptions.Center };
+            var browser = b;
+            button.Clicked += async (_, _) => { await Platforms.Windows.ExtensionSetup.InstallAsync(this, browser, _l); RefreshBrowsers(); };
+            grid.Add(button, 1, 0);
+            BrowsersBox.Add(grid);
+        }
+    }
+#endif
 
     // ------------------------------------------------------------------ almacenamiento
 

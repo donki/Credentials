@@ -157,48 +157,14 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
             WalkTyped(node.GetChildAt(i), typed);
     }
 
-    /// <summary>
-    /// Guarda lo escrito: si ya hay una entrada del mismo sitio o app con ese usuario, se le cambia la
-    /// contraseña (la anterior queda en el historial); si no, se crea una nueva con el dominio o el
-    /// nombre de la app como titulo.
-    /// </summary>
+    /// <summary>Guarda lo escrito (AutofillLogic.UpsertAsync) y avisa con un toast.</summary>
     public static async Task SaveTypedAsync(Context context, VaultStore store, Typed typed)
     {
         try
         {
-            var entries = store.Data!.Entries;
-            var existing = Match(entries, typed.WebDomain, typed.Package)
-                .FirstOrDefault(e => typed.Username.Length == 0 || e.Username.Equals(typed.Username, StringComparison.OrdinalIgnoreCase));
-            var now = DateTimeOffset.UtcNow;
-            if (existing is not null)
-            {
-                if (typed.Password.Length == 0 || existing.Password == typed.Password)
-                    return;
-                if (existing.Password.Length > 0)
-                    existing.History.Insert(0, new PasswordHistoryItem(existing.Password, existing.ModifiedAt));
-                existing.Password = typed.Password;
-                if (existing.Username.Length == 0)
-                    existing.Username = typed.Username;
-                existing.ModifiedAt = now;
-            }
-            else
-            {
-                var web = !string.IsNullOrEmpty(typed.WebDomain);
-                var entry = new Credential
-                {
-                    Kind = web ? EntryKind.Login : EntryKind.App,
-                    Title = web ? typed.WebDomain! : AppLabel(context, typed.Package) ?? typed.Package ?? "App",
-                    Username = typed.Username,
-                    Password = typed.Password,
-                    Url = web ? "https://" + typed.WebDomain : string.Empty,
-                    CreatedAt = now,
-                    ModifiedAt = now,
-                };
-                if (!web && !string.IsNullOrEmpty(typed.Package))
-                    entry.Fields.Add(new CustomField { Name = "android", Value = typed.Package });
-                entries.Add(entry);
-            }
-            await store.SaveAsync();
+            var web = !string.IsNullOrEmpty(typed.WebDomain);
+            if (!await AutofillLogic.UpsertAsync(store, typed.WebDomain, typed.Package, web ? null : AppLabel(context, typed.Package), typed.Username, typed.Password))
+                return;
             var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
             new Handler(Looper.MainLooper!).Post(() => Toast.MakeText(context, l["AutofillSaved"], ToastLength.Short)?.Show());
         }
@@ -252,28 +218,8 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
             .Build();
     }
 
-    /// <summary>Entradas que casan con el dominio (web) o con el paquete (app).</summary>
-    public static List<Credential> Match(IEnumerable<Credential> entries, string? domain, string? package)
-    {
-        var live = entries.Where(e => !e.Deleted && e.Kind is EntryKind.Login or EntryKind.App && (e.Username.Length > 0 || e.Password.Length > 0)).ToList();
-        if (!string.IsNullOrEmpty(domain))
-        {
-            var d = domain.ToLowerInvariant();
-            var byHost = live.Where(e => e.Host.Length > 0 && (d.EndsWith(e.Host.ToLowerInvariant(), StringComparison.Ordinal) || e.Host.ToLowerInvariant().EndsWith(d, StringComparison.Ordinal))).ToList();
-            if (byHost.Count > 0)
-                return byHost.OrderByDescending(e => e.Favorite).ThenBy(e => e.Title).ToList();
-        }
-        if (!string.IsNullOrEmpty(package))
-        {
-            // com.twitter.android → «twitter»: se busca en la URL, el titulo y un campo extra «android».
-            var parts = package.Split('.').Where(p => p.Length > 3 && p is not ("com" or "org" or "net" or "android" or "app" or "mobile")).ToList();
-            var byApp = live.Where(e =>
-                e.Fields.Any(f => f.Name.Equals("android", StringComparison.OrdinalIgnoreCase) && f.Value.Equals(package, StringComparison.OrdinalIgnoreCase)) ||
-                parts.Any(p => e.Host.Contains(p, StringComparison.OrdinalIgnoreCase) || e.Title.Contains(p, StringComparison.OrdinalIgnoreCase))).ToList();
-            return byApp.OrderByDescending(e => e.Favorite).ThenBy(e => e.Title).ToList();
-        }
-        return [];
-    }
+    /// <summary>Entradas que casan con el dominio (web) o con el paquete (app): logica comun en AutofillLogic.</summary>
+    public static List<Credential> Match(IEnumerable<Credential> entries, string? domain, string? package) => AutofillLogic.Match(entries, domain, package);
 
     // ------------------------------------------------------------------ que campos hay en pantalla
 

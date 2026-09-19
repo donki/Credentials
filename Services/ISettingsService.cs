@@ -26,4 +26,11 @@ public interface ISettingsService
 
     /// <summary>Windows: al minimizar, esconderse en el area de notificacion en vez de a la barra de tareas.</summary>
     bool TrayOnMinimize { get; set; }
+
+    /// <summary>Windows: al desbloquear, ofrecer instalar la extension en los navegadores que no la tengan.</summary>
+    bool AskExtensions { get; set; }
+
+    /// <summary>Windows: cuando conecto por ultima vez la extension de ese navegador (chrome/edge/firefox); null si nunca.</summary>
+    DateTimeOffset? ExtensionSeen(string browser);
+    void SetExtensionSeen(string browser);
 }

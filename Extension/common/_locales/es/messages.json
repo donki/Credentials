@@ -1,0 +1,102 @@
+{
+ "name": {
+  "message": "sOC Credentials"
+ },
+ "description": {
+  "message": "Rellena usuarios, contraseñas y códigos de segundo factor desde tu bóveda de sOC Credentials, sin servidor: habla con la aplicación de tu PC."
+ },
+ "fill": {
+  "message": "Rellenar"
+ },
+ "copyUser": {
+  "message": "Copiar usuario"
+ },
+ "copyPass": {
+  "message": "Copiar contraseña"
+ },
+ "copyTotp": {
+  "message": "Copiar código"
+ },
+ "copied": {
+  "message": "Copiado"
+ },
+ "noMatches": {
+  "message": "No hay entradas para este sitio."
+ },
+ "search": {
+  "message": "Buscar en la bóveda…"
+ },
+ "locked": {
+  "message": "La bóveda está bloqueada. Desbloquéala en sOC Credentials."
+ },
+ "openApp": {
+  "message": "Abrir sOC Credentials"
+ },
+ "noHost": {
+  "message": "No encuentro sOC Credentials en este PC. Ábrela una vez y, en Ajustes › Extensiones del navegador, pulsa «Instalar»."
+ },
+ "generator": {
+  "message": "Generar contraseña"
+ },
+ "length": {
+  "message": "Longitud"
+ },
+ "upper": {
+  "message": "Mayúsculas"
+ },
+ "digits": {
+  "message": "Números"
+ },
+ "symbols": {
+  "message": "Símbolos"
+ },
+ "generate": {
+  "message": "Generar"
+ },
+ "useInPage": {
+  "message": "Usar en la página"
+ },
+ "saveQuestion": {
+  "message": "¿Guardar la cuenta de $USER$ en sOC Credentials para $SITE$?",
+  "placeholders": {
+   "user": {
+    "content": "$1"
+   },
+   "site": {
+    "content": "$2"
+   }
+  }
+ },
+ "updateQuestion": {
+  "message": "¿Actualizar la contraseña de $USER$ en sOC Credentials para $SITE$?",
+  "placeholders": {
+   "user": {
+    "content": "$1"
+   },
+   "site": {
+    "content": "$2"
+   }
+  }
+ },
+ "save": {
+  "message": "Guardar"
+ },
+ "update": {
+  "message": "Actualizar"
+ },
+ "notNow": {
+  "message": "Ahora no"
+ },
+ "saved": {
+  "message": "Guardado en sOC Credentials"
+ },
+ "contextFill": {
+  "message": "Rellenar con sOC Credentials"
+ },
+ "entries": {
+  "message": "entradas"
+ },
+ "retrying": {
+  "message": "Esperando a que se desbloquee…"
+ }
+}

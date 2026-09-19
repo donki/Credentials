@@ -33,6 +33,9 @@ public sealed class TrayIcon
     /// <summary>Esconder ahora (arranque con --tray).</summary>
     public void HideToTray() => Hide();
 
+    /// <summary>Traer la ventana al frente (desde la bandeja o desde detras de otras).</summary>
+    public void Show() => Restore();
+
     public TrayIcon(IntPtr hwnd, Func<string, string> text, Action exit)
     {
         _hwnd = hwnd;
