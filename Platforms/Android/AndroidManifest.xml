@@ -19,10 +19,19 @@
                android:icon="@mipmap/appicon"
                android:roundIcon="@mipmap/appicon_round"
                android:supportsRtl="true">
-    <!-- Vuelta de Google tras entrar: el esquema es el identificador de cliente invertido, que
-         pone oauth.props como marcador. La actividad la define WebAuthenticationCallbackActivity;
-         aqui solo se le añade este intent-filter. -->
-    <activity android:name="com.socratic.credentials.AuthCallback" android:exported="true">
+    <!-- Vuelta del navegador tras entrar con Microsoft (esquema propio) o Google (el identificador
+         de cliente invertido, que pone oauth.props como marcador). La clase es
+         WebAuthenticationCallbackActivity, pero al declarar aqui la actividad el generador ya no
+         añade nada de sus atributos de C#: TODO lo suyo (los dos filtros, noHistory, launchMode)
+         tiene que estar en este bloque. -->
+    <activity android:name="com.socratic.credentials.AuthCallback" android:exported="true"
+              android:noHistory="true" android:launchMode="singleTop">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="com.socratic.credentials" />
+      </intent-filter>
       <intent-filter>
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />

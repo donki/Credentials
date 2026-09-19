@@ -185,7 +185,9 @@ public partial class SettingsPage : ContentPage
         {
             SyncStatus.Text = "…";
             SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            // Entrar por primera vez (cuenta, contraseña, segundo factor, consentimiento) puede llevar
+            // un rato largo: diez minutos antes de darlo por abandonado.
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
             await _store.SignInAsync(mode, cts.Token);
             RefreshStorage();
             await SyncAsync();
@@ -193,6 +195,8 @@ public partial class SettingsPage : ContentPage
         catch (OperationCanceledException)
         {
             RefreshStorage();
+            SyncStatus.Text = _l["SignInTimeout"];
+            SyncStatus.IsVisible = true;
         }
         catch (Exception ex)
         {

@@ -2,6 +2,17 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.08 — Correcciones al entrar con OneDrive
+
+`versionCode`: 2026091908 · Windows `2026.9.19.8`
+
+- **Android**: la vuelta del navegador tras entrar con Microsoft no llegaba a la aplicación (el
+  filtro `com.socratic.credentials://auth` se perdía al fusionar el manifiesto); ahora los dos
+  filtros, el de Microsoft y el de Google, están declarados en el manifiesto.
+- **Windows**: si la entrada tardaba más de la cuenta salía «Cannot access a disposed object
+  (HttpListener)»; ahora hay diez minutos, el aviso es claro («La entrada no se completó a tiempo»)
+  y el servidor local ignora peticiones del navegador que no son la vuelta (favicon, etc.).
+
 ## 2026.09.19.07 — Google con proyecto propio
 
 `versionCode`: 2026091907 · Windows `2026.9.19.7`

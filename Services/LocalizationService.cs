@@ -252,6 +252,8 @@ public class LocalizationService : ILocalizationService
         ["SyncDone"] = "Synchronised: {0} entries updated here.",
         ["SyncNothing"] = "Synchronised: nothing new.",
         ["SyncFailed"] = "Could not synchronise: {0}",
+        ["SignInTimeout"] = "Sign-in was not completed in time. Try again.",
+        ["SignInTimeout"] = "La entrada no se completó a tiempo. Vuelve a intentarlo.",
         ["SyncScope"] = "The account did not grant access to the app folder. Sign in again and tick that permission.",
         ["SyncPasswordNeeded"] = "The copy in the cloud was created with a different master password. Type it to merge it here (your current password stays).",
         ["SecurityTitle"] = "Security",
