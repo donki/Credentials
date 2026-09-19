@@ -1,0 +1,22 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+.vs/
+
+# Firmas y secretos (constitucion 6): nunca al repositorio
+*.keystore
+*.jks
+keystore.password.txt
+
+# Logs (constitucion 10): no se versionan
+*.log
+
+# Usuario/entorno
+*.user
+releases/
+
+# Zip temporal del lanzador (lo genera tools/publicar-windows.ps1)
+Launcher/app.zip
+
+# Identificadores OAuth (constitucion 6)
+oauth.local.props

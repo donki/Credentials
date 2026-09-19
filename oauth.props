@@ -1,0 +1,38 @@
+<Project>
+
+  <!--
+    Identificadores OAuth de sOC Credentials (Google Drive appdata y OneDrive AppFolder).
+
+    Los valores reales NO viven en el repositorio (constitucion 6, push protection de GitHub): se
+    leen de oauth.local.props (ignorado) o de variables de entorno. Viajan al ensamblado como
+    AssemblyMetadata (los lee Services\OAuthSecrets en tiempo de ejecucion) y a Android como
+    marcador del manifiesto (${googleScheme}), sin generar codigo: el mecanismo de generar una clase
+    con un target propio no se ejecutaba en la compilacion de Windows de MAUI.
+
+    - CrMicrosoftClientId: registro de Entra ID (multi-tenant + personales, cliente publico, con
+      http://127.0.0.1/auth/ y com.socratic.credentials://auth como URIs de vuelta).
+    - CrGoogleClientId / CrGoogleClientSecret: cliente de Google de tipo aplicacion de escritorio
+      (sirve tambien en Android por el esquema invertido; no valida paquete ni huella).
+    Sin valores, la compilacion no se rompe: el proveedor no se ofrece.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)oauth.local.props" Condition="Exists('$(MSBuildThisFileDirectory)oauth.local.props')" />
+
+  <PropertyGroup>
+    <CrMicrosoftClientId Condition="'$(CrMicrosoftClientId)' == ''">$(CR_MS_CLIENT_ID)</CrMicrosoftClientId>
+    <CrGoogleClientId Condition="'$(CrGoogleClientId)' == ''">$(CR_GOOGLE_CLIENT_ID)</CrGoogleClientId>
+    <CrGoogleClientSecret Condition="'$(CrGoogleClientSecret)' == ''">$(CR_GOOGLE_CLIENT_SECRET)</CrGoogleClientSecret>
+    <!-- Esquema de vuelta de Google en Android: el identificador de cliente invertido. -->
+    <CrGoogleRedirectScheme Condition="'$(CrGoogleClientId)' != ''">com.googleusercontent.apps.$(CrGoogleClientId.Replace('.apps.googleusercontent.com', ''))</CrGoogleRedirectScheme>
+    <CrGoogleRedirectScheme Condition="'$(CrGoogleClientId)' == ''">com.socratic.credentials.google</CrGoogleRedirectScheme>
+    <!-- El manifiesto de Android lo recoge como ${googleScheme}. -->
+    <AndroidManifestPlaceholders>$(AndroidManifestPlaceholders);googleScheme=$(CrGoogleRedirectScheme)</AndroidManifestPlaceholders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="CrMicrosoftClientId" Value="$(CrMicrosoftClientId)" />
+    <AssemblyMetadata Include="CrGoogleClientId" Value="$(CrGoogleClientId)" />
+    <AssemblyMetadata Include="CrGoogleClientSecret" Value="$(CrGoogleClientSecret)" />
+    <AssemblyMetadata Include="CrGoogleRedirectScheme" Value="$(CrGoogleRedirectScheme)" />
+  </ItemGroup>
+
+</Project>

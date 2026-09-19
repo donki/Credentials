@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Credentials.Pages.SettingsPage">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="12" Spacing="10" MaximumWidthRequest="760" HorizontalOptions="Fill">
+
+            <!-- Donde vive la boveda -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="StorageTitle" Style="{StaticResource SectionTitle}" />
+                    <Label x:Name="StorageHint" Style="{StaticResource HintText}" />
+                    <VerticalStackLayout x:Name="StorageOptions" Spacing="2" RadioButtonGroup.GroupName="storage">
+                        <RadioButton x:Name="LocalRadio" Value="Local" CheckedChanged="OnStorageChanged" />
+                        <RadioButton x:Name="GoogleRadio" Value="GoogleDrive" CheckedChanged="OnStorageChanged" />
+                        <RadioButton x:Name="OneDriveRadio" Value="OneDrive" CheckedChanged="OnStorageChanged" />
+                    </VerticalStackLayout>
+                    <Label x:Name="AccountLabel" Style="{StaticResource HintText}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" x:Name="SyncButton" Style="{StaticResource OutlineButton}" ImageSource="ic_sync.png" ContentLayout="Left,6" Clicked="OnSyncClicked" />
+                        <Button Grid.Column="1" x:Name="SignOutButton" Style="{StaticResource OutlineButton}" Clicked="OnSignOutClicked" />
+                    </Grid>
+                    <Label x:Name="SyncStatus" Style="{StaticResource HintText}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Seguridad -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="SecurityTitle" Style="{StaticResource SectionTitle}" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="BiometricsLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="BiometricsHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="BiometricsSwitch" OnColor="{StaticResource Primary}" Toggled="OnBiometricsToggled" VerticalOptions="Center" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" x:Name="AutoLockLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" />
+                        <Picker Grid.Column="1" x:Name="AutoLockPicker" SelectedIndexChanged="OnAutoLockChanged" MinimumWidthRequest="120" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" x:Name="ClipboardLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" />
+                        <Picker Grid.Column="1" x:Name="ClipboardPicker" SelectedIndexChanged="OnClipboardChanged" MinimumWidthRequest="120" />
+                    </Grid>
+                    <Button x:Name="ChangeMasterButton" Style="{StaticResource OutlineButton}" ImageSource="ic_key.png" ContentLayout="Left,6" Clicked="OnChangeMasterClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Importar y exportar -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="DataTitle" Style="{StaticResource SectionTitle}" />
+                    <Label x:Name="ImportHint" Style="{StaticResource HintText}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" x:Name="ImportButton" Style="{StaticResource PrimaryButton}" ImageSource="ic_import_w.png" ContentLayout="Left,6" Clicked="OnImportClicked" />
+                        <Button Grid.Column="1" x:Name="ImportGaButton" Style="{StaticResource OutlineButton}" ImageSource="ic_scan.png" ContentLayout="Left,6" Clicked="OnImportGaClicked" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" x:Name="ExportEncButton" Style="{StaticResource OutlineButton}" ImageSource="ic_export.png" ContentLayout="Left,6" Clicked="OnExportEncryptedClicked" />
+                        <Button Grid.Column="1" x:Name="ExportPlainButton" Style="{StaticResource OutlineButton}" ImageSource="ic_export.png" ContentLayout="Left,6" Clicked="OnExportPlainClicked" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Zona peligrosa -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="DangerTitle" Style="{StaticResource SectionTitle}" TextColor="{StaticResource Danger}" />
+                    <Button x:Name="DeleteVaultButton" Style="{StaticResource DangerButton}" Clicked="OnDeleteVaultClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

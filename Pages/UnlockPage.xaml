@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Credentials.Pages.UnlockPage"
+             Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,48,24,24" Spacing="16" MaximumWidthRequest="520" HorizontalOptions="Center">
+
+            <Image Source="app_logo.png" WidthRequest="84" HeightRequest="84" HorizontalOptions="Center">
+                <Image.Clip>
+                    <RoundRectangleGeometry CornerRadius="20" Rect="0,0,84,84" />
+                </Image.Clip>
+            </Image>
+            <Label x:Name="TitleLabel" Style="{StaticResource CardTitle}" FontSize="24" HorizontalOptions="Center" />
+            <Label x:Name="IntroLabel" Style="{StaticResource HintText}" HorizontalTextAlignment="Center" />
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Padding="16,12" Spacing="6">
+                    <Label x:Name="PasswordTitle" Style="{StaticResource FieldLabel}" Margin="0" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Entry x:Name="PasswordEntry" Style="{StaticResource Field}" IsPassword="True" ReturnType="Go" Completed="OnGo" />
+                        <ImageButton Grid.Column="1" x:Name="EyeButton" Style="{StaticResource RowIconButton}" Source="ic_eye.png" Clicked="OnEyeClicked" />
+                    </Grid>
+                    <!-- Al crear: repetir. -->
+                    <Label x:Name="RepeatTitle" Style="{StaticResource FieldLabel}" IsVisible="False" />
+                    <Entry x:Name="RepeatEntry" Style="{StaticResource Field}" IsPassword="True" ReturnType="Go" Completed="OnGo" IsVisible="False" />
+                    <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" FontSize="13" IsVisible="False" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button x:Name="GoButton" Style="{StaticResource PrimaryButton}" ImageSource="ic_unlock_w.png" ContentLayout="Left,8" Clicked="OnGo" />
+
+            <!-- Biometria: solo al desbloquear, y solo si se activo en Ajustes. -->
+            <Button x:Name="BiometricButton" Style="{StaticResource OutlineButton}" ImageSource="ic_fingerprint.png" ContentLayout="Left,8" Clicked="OnBiometricClicked" IsVisible="False" />
+
+            <ActivityIndicator x:Name="Busy" IsRunning="False" IsVisible="False" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

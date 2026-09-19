@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!--
+    Permisos (constitucion 6 y A.3: justificar cada permiso, minimo privilegio).
+
+    CAMERA: leer el QR que enseñan los sitios al activar el segundo factor y el QR de exportacion
+    de Google Authenticator. Se pide solo al pulsar «Escanear».
+    INTERNET: solo para la boveda en Google Drive u OneDrive (entrar con la cuenta y subir/bajar el
+    fichero cifrado). Con la boveda en local no se usa.
+    USE_BIOMETRIC: desbloquear con huella o cara (BiometricPrompt).
+  -->
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+  <application android:allowBackup="false"
+               android:icon="@mipmap/appicon"
+               android:roundIcon="@mipmap/appicon_round"
+               android:supportsRtl="true">
+    <!-- Vuelta de Google tras entrar: el esquema es el identificador de cliente invertido, que
+         pone oauth.props como marcador. La actividad la define WebAuthenticationCallbackActivity;
+         aqui solo se le añade este intent-filter. -->
+    <activity android:name="com.socratic.credentials.AuthCallback" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="${googleScheme}" />
+      </intent-filter>
+    </activity>
+  </application>
+
+  <queries>
+    <!-- Boton de contacto de la pagina Acerca de. -->
+    <intent>
+      <action android:name="android.intent.action.SENDTO" />
+      <data android:scheme="mailto" />
+    </intent>
+    <!-- Abrir el sitio web de una entrada. -->
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="https" />
+    </intent>
+  </queries>
+
+</manifest>

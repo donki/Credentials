@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Tokens semanticos (constitucion 24): por rol, sin prefijo de aplicacion. -->
+
+    <!-- Marca -->
+    <Color x:Key="Primary">#3525CD</Color>
+    <Color x:Key="PrimaryDark">#2A1CB8</Color>
+    <Color x:Key="Accent">#4F46E5</Color>
+    <Color x:Key="Danger">#BA1A1A</Color>
+    <Color x:Key="Success">#27AE60</Color>
+
+    <!-- Texto blanco fijo sobre la barra/superficies de la marca (mismo color en ambos temas) -->
+    <Color x:Key="OnPrimary">#FFFFFF</Color>
+
+    <!-- Superficies -->
+    <Color x:Key="PageBackgroundLight">#F8F9FA</Color>
+    <Color x:Key="PageBackgroundDark">#141318</Color>
+    <Color x:Key="CardBackgroundLight">#FFFFFF</Color>
+    <Color x:Key="CardBackgroundDark">#201F27</Color>
+    <Color x:Key="SeparatorLight">#C7C4D8</Color>
+    <Color x:Key="SeparatorDark">#48454F</Color>
+
+    <!-- Texto -->
+    <Color x:Key="TextPrimaryLight">#191C1D</Color>
+    <Color x:Key="TextPrimaryDark">#E6E1E9</Color>
+    <Color x:Key="TextSecondaryLight">#464555</Color>
+    <Color x:Key="TextSecondaryDark">#C7C4D8</Color>
+
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+
+    <!-- Superficies semanticas derivadas (sin literales hex sueltos en el markup, constitucion 24) -->
+    <!-- Subtitulo sobre la barra teal de la marca -->
+    <!-- Fondo del circulo que envuelve el icono de cada app en la lista -->
+    <Color x:Key="IconTileLight">#EDEEEF</Color>
+    <Color x:Key="IconTileDark">#2A2833</Color>
+    <!-- Recuadro de advertencia del aviso legal (rojo muy tenue) -->
+    <Color x:Key="WarningSurfaceLight">#FDF2F2</Color>
+    <Color x:Key="WarningSurfaceDark">#2B1E1E</Color>
+
+</ResourceDictionary>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Credentials.Pages.EntryPage">
+
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="12" Spacing="10" MaximumWidthRequest="760" HorizontalOptions="Fill">
+
+                <!-- Lo principal -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Padding="16,10,16,14" Spacing="2">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" x:Name="KindLabel" Style="{StaticResource HintText}" VerticalOptions="Center" />
+                            <ImageButton Grid.Column="1" x:Name="FavoriteButton" Style="{StaticResource RowIconButton}" Source="ic_star.png" Clicked="OnFavoriteClicked" />
+                        </Grid>
+                        <Label x:Name="TitleTitle" Style="{StaticResource FieldLabel}" />
+                        <Entry x:Name="TitleEntry" Style="{StaticResource Field}" TextChanged="OnAnyChanged" />
+
+                        <Label x:Name="UsernameTitle" Style="{StaticResource FieldLabel}" />
+                        <Grid x:Name="UsernameRow" ColumnDefinitions="*,Auto">
+                            <Entry x:Name="UsernameEntry" Style="{StaticResource Field}" TextChanged="OnAnyChanged" />
+                            <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopyUserClicked" />
+                        </Grid>
+
+                        <Label x:Name="PasswordTitle" Style="{StaticResource FieldLabel}" />
+                        <Grid x:Name="PasswordRow" ColumnDefinitions="*,Auto,Auto,Auto">
+                            <Entry x:Name="PasswordEntry" Style="{StaticResource Field}" IsPassword="True" FontFamily="Consolas" TextChanged="OnPasswordChanged" />
+                            <ImageButton Grid.Column="1" x:Name="EyeButton" Style="{StaticResource RowIconButton}" Source="ic_eye.png" Clicked="OnEyeClicked" />
+                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopyPasswordClicked" />
+                            <ImageButton Grid.Column="3" Style="{StaticResource RowIconButton}" Source="ic_generate.png" Clicked="OnGenerateClicked" />
+                        </Grid>
+                        <Grid x:Name="StrengthRow" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <ProgressBar Grid.Column="0" x:Name="StrengthBar" HeightRequest="4" VerticalOptions="Center" />
+                            <Label Grid.Column="1" x:Name="StrengthLabel" Style="{StaticResource HintText}" FontSize="11" />
+                        </Grid>
+
+                        <Label x:Name="UrlTitle" Style="{StaticResource FieldLabel}" />
+                        <Grid x:Name="UrlRow" ColumnDefinitions="*,Auto">
+                            <Entry x:Name="UrlEntry" Style="{StaticResource Field}" Keyboard="Url" TextChanged="OnAnyChanged" />
+                            <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_open.png" Clicked="OnOpenUrlClicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Generador (se despliega) -->
+                <Border x:Name="GeneratorCard" Style="{StaticResource Card}" IsVisible="False">
+                    <VerticalStackLayout Padding="16,12" Spacing="8">
+                        <Label x:Name="GeneratorTitle" Style="{StaticResource SectionTitle}" />
+                        <Label x:Name="GeneratedLabel" FontFamily="Consolas" FontSize="16" LineBreakMode="CharacterWrap" Style="{StaticResource BodyText}" />
+                        <Label x:Name="LengthLabel" Style="{StaticResource HintText}" />
+                        <Slider x:Name="LengthSlider" Minimum="8" Maximum="64" Value="20" ValueChanged="OnGeneratorChanged" />
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                            <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6"><CheckBox x:Name="UpperCheck" IsChecked="True" CheckedChanged="OnGeneratorChanged" /><Label x:Name="UpperLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" /></HorizontalStackLayout>
+                            <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6"><CheckBox x:Name="LowerCheck" IsChecked="True" CheckedChanged="OnGeneratorChanged" /><Label x:Name="LowerLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" /></HorizontalStackLayout>
+                            <HorizontalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6"><CheckBox x:Name="DigitsCheck" IsChecked="True" CheckedChanged="OnGeneratorChanged" /><Label x:Name="DigitsLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" /></HorizontalStackLayout>
+                            <HorizontalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6"><CheckBox x:Name="SymbolsCheck" IsChecked="True" CheckedChanged="OnGeneratorChanged" /><Label x:Name="SymbolsLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" /></HorizontalStackLayout>
+                            <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6"><CheckBox x:Name="AmbiguousCheck" IsChecked="True" CheckedChanged="OnGeneratorChanged" /><Label x:Name="AmbiguousLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" /></HorizontalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Grid.Column="0" x:Name="RegenerateButton" Style="{StaticResource OutlineButton}" ImageSource="ic_generate.png" ContentLayout="Left,6" Clicked="OnGeneratorChanged" />
+                            <Button Grid.Column="1" x:Name="UseButton" Style="{StaticResource PrimaryButton}" Clicked="OnUseGeneratedClicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Segundo factor -->
+                <Border x:Name="TotpCard" Style="{StaticResource Card}">
+                    <VerticalStackLayout Padding="16,12" Spacing="6">
+                        <Label x:Name="TotpTitle" Style="{StaticResource SectionTitle}" />
+                        <Grid x:Name="TotpLive" ColumnDefinitions="*,Auto,Auto" IsVisible="False">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label x:Name="TotpCode" TextColor="{StaticResource Primary}" FontAttributes="Bold" FontSize="28" FontFamily="Consolas" />
+                                <ProgressBar x:Name="TotpProgress" HeightRequest="4" ProgressColor="{StaticResource Primary}" />
+                                <Label x:Name="TotpIssuer" Style="{StaticResource HintText}" />
+                            </VerticalStackLayout>
+                            <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopyCodeClicked" />
+                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_trash.png" Clicked="OnRemoveTotpClicked" />
+                        </Grid>
+                        <Label x:Name="TotpHint" Style="{StaticResource HintText}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <Entry Grid.Column="0" x:Name="TotpEntry" Style="{StaticResource Field}" Completed="OnTotpEntered" />
+                            <Button Grid.Column="1" x:Name="ScanButton" Style="{StaticResource IconButton}" ImageSource="ic_scan.png" Clicked="OnScanClicked" />
+                        </Grid>
+                        <Label x:Name="TotpError" TextColor="{StaticResource Danger}" FontSize="13" IsVisible="False" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Organizar: carpeta, etiquetas, notas -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Padding="16,10,16,14" Spacing="2">
+                        <Label x:Name="FolderTitle" Style="{StaticResource FieldLabel}" />
+                        <Entry x:Name="FolderEntry" Style="{StaticResource Field}" TextChanged="OnAnyChanged" />
+                        <Label x:Name="TagsTitle" Style="{StaticResource FieldLabel}" />
+                        <Entry x:Name="TagsEntry" Style="{StaticResource Field}" TextChanged="OnAnyChanged" />
+                        <Label x:Name="NotesTitle" Style="{StaticResource FieldLabel}" />
+                        <Editor x:Name="NotesEditor" Style="{StaticResource FieldEditor}" TextChanged="OnAnyChanged" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Campos extra -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Padding="16,12" Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" x:Name="FieldsTitle" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                            <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_add.png" Clicked="OnAddFieldClicked" />
+                        </Grid>
+                        <VerticalStackLayout x:Name="FieldsBox" Spacing="6" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Historial de contraseñas y fechas -->
+                <Border x:Name="HistoryCard" Style="{StaticResource Card}" IsVisible="False">
+                    <VerticalStackLayout Padding="16,12" Spacing="4">
+                        <Label x:Name="HistoryTitle" Style="{StaticResource SectionTitle}" />
+                        <VerticalStackLayout x:Name="HistoryBox" Spacing="2" />
+                    </VerticalStackLayout>
+                </Border>
+                <Label x:Name="DatesLabel" Style="{StaticResource HintText}" FontSize="11" HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Guardar y borrar -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="12,6,12,12">
+            <Button Grid.Column="0" x:Name="DeleteButton" Style="{StaticResource IconButton}" BorderColor="{StaticResource Danger}" ImageSource="ic_trash_danger.png" Clicked="OnDeleteClicked" />
+            <Button Grid.Column="1" x:Name="SaveButton" Style="{StaticResource PrimaryButton}" ImageSource="ic_save_w.png" ContentLayout="Left,8" Clicked="OnSaveClicked" />
+        </Grid>
+    </Grid>
+</ContentPage>

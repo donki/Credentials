@@ -1,0 +1,8 @@
+<Project>
+  <!-- Copia este fichero como oauth.local.props y rellena los valores (nunca al repositorio). -->
+  <PropertyGroup>
+    <CrMicrosoftClientId></CrMicrosoftClientId>
+    <CrGoogleClientId></CrGoogleClientId>
+    <CrGoogleClientSecret></CrGoogleClientSecret>
+  </PropertyGroup>
+</Project>

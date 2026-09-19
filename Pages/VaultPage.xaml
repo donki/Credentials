@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Credentials.Pages"
+             x:Class="Credentials.Pages.VaultPage">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Cabecera: buscador, filtros (todas, favoritas, clases, carpetas, etiquetas) y botones. -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="12,12,12,6">
+            <VerticalStackLayout Padding="16,12" Spacing="10">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                    <Entry Grid.Column="0" x:Name="SearchEntry" Style="{StaticResource Field}" ReturnType="Search" ClearButtonVisibility="WhileEditing" TextChanged="OnSearchChanged" />
+                    <Button Grid.Column="1" x:Name="SortButton" Style="{StaticResource IconButton}" ImageSource="ic_refresh.png" Clicked="OnSortClicked" />
+                    <Button Grid.Column="2" x:Name="LockButton" Style="{StaticResource IconButton}" ImageSource="ic_lock.png" Clicked="OnLockClicked" />
+                    <Button Grid.Column="3" x:Name="AddButton" Style="{StaticResource IconButton}" BackgroundColor="{StaticResource Primary}" ImageSource="ic_add_w.png" Clicked="OnAddClicked" />
+                </Grid>
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout x:Name="Chips" Spacing="6" />
+                </ScrollView>
+                <Label x:Name="CountLabel" Style="{StaticResource HintText}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <CollectionView Grid.Row="1" x:Name="List" Margin="12,6,12,12" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="pages:EntryRow">
+                    <Border Style="{StaticResource Card}" Margin="0,3" Padding="0">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnRowTapped" />
+                            </Grid.GestureRecognizers>
+                            <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" Padding="9" StrokeThickness="0" VerticalOptions="Center"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource IconTileLight}, Dark={StaticResource IconTileDark}}">
+                                <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
+                                <Image Source="{Binding Icon}" Aspect="AspectFit" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="{Binding Title}" Style="{StaticResource BodyText}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                <Label Text="{Binding Subtitle}" Style="{StaticResource HintText}" LineBreakMode="MiddleTruncation" />
+                                <Label Text="{Binding Code}" IsVisible="{Binding HasCode}" TextColor="{StaticResource Primary}" FontAttributes="Bold" FontSize="16" FontFamily="Consolas" />
+                            </VerticalStackLayout>
+                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_copy.png" IsVisible="{Binding HasUser}" Clicked="OnCopyUserClicked" />
+                            <ImageButton Grid.Column="3" Style="{StaticResource RowIconButton}" Source="ic_key.png" IsVisible="{Binding HasPassword}" Clicked="OnCopyPasswordClicked" />
+                            <ImageButton Grid.Column="4" Style="{StaticResource RowIconButton}" Source="ic_totp.png" IsVisible="{Binding HasCode}" Clicked="OnCopyCodeClicked" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <VerticalStackLayout Padding="30" Spacing="8" VerticalOptions="Center">
+                    <Label x:Name="EmptyLabel" Style="{StaticResource CardTitle}" HorizontalTextAlignment="Center" HorizontalOptions="Center" />
+                    <Label x:Name="EmptyHint" Style="{StaticResource HintText}" HorizontalTextAlignment="Center" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+    </Grid>
+</ContentPage>

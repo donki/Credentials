@@ -1,0 +1,65 @@
+﻿namespace Credentials;
+
+public partial class App : Application
+{
+
+    public App()
+    {
+        InitializeComponent();
+    }
+
+    protected override Window CreateWindow(IActivationState? activationState)
+    {
+        var window = new Window(new AppShell()) { Title = "sOC Credentials" };
+#if WINDOWS
+        // Tamaño de arranque razonable en el escritorio: la lista es alta y estrecha, como en el movil.
+        window.Width = 900;
+        window.Height = 760;
+#endif
+#if DEBUG
+        SocShared.AuthorNotes.Attach(window);   // notas de autor: SOLO Debug, desactivado en Release/produccion
+        // Solo en Debug, para probar sin teclear: «--master clave» crea o abre la boveda con esa
+        // contraseña y «--demo» siembra unas entradas inventadas. Jamas en Release.
+        var args = Environment.GetCommandLineArgs();
+        var master = Array.IndexOf(args, "--master");
+        if (master >= 0 && master + 1 < args.Length)
+        {
+            var password = args[master + 1];
+            var demo = args.Contains("--demo");
+            window.Created += async (_, _) =>
+            {
+                var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+                try
+                {
+                    if (store.Exists) await store.UnlockAsync(password); else await store.CreateAsync(password);
+                    if (demo && store.Data!.Entries.Count == 0)
+                    {
+                        store.Data.Entries.AddRange(
+                        [
+                            new Models.Credential { Kind = Models.EntryKind.Login, Title = "GitHub", Username = "ana@example.com", Password = "correct-horse-battery-staple", Url = "https://github.com", Folder = "Trabajo", Tags = ["dev"], Favorite = true, Totp = "otpauth://totp/GitHub:ana@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub" },
+                            new Models.Credential { Kind = Models.EntryKind.Login, Title = "Banco Ejemplo", Username = "12345678A", Password = "Tr0ub4dor&3", Url = "https://banco.example", Folder = "Personal", Tags = ["dinero"] },
+                            new Models.Credential { Kind = Models.EntryKind.App, Title = "Wi-Fi de casa", Username = "MiRed", Password = "casa-2026-segura", Folder = "Personal" },
+                            new Models.Credential { Kind = Models.EntryKind.Totp, Title = "Microsoft", Username = "ana@example.com", Totp = "otpauth://totp/Microsoft:ana@example.com?secret=GEZDGNBVGY3TQOJQ&issuer=Microsoft" },
+                            new Models.Credential { Kind = Models.EntryKind.Note, Title = "Licencia del NAS", Notes = "XXXX-YYYY-ZZZZ-1234 · Comprada el 3 de marzo.", Folder = "Trabajo" },
+                        ]);
+                        await store.SaveAsync(upload: false);
+                    }
+                    // «--page settings» o «--page entry:Titulo»: para capturar pantallas.
+                    var page = Array.IndexOf(args, "--page");
+                    if (page >= 0 && page + 1 < args.Length)
+                    {
+                        await Task.Delay(500);
+                        var which = args[page + 1];
+                        if (which == "settings")
+                            await Shell.Current.GoToAsync("//SettingsPage");
+                        else if (which.StartsWith("entry:") && store.Data!.Entries.FirstOrDefault(x => x.Title == which[6..]) is { } entry)
+                            await Shell.Current.Navigation.PushAsync(new Pages.EntryPage(entry, isNew: false));
+                    }
+                }
+                catch (Exception) { }
+            };
+        }
+#endif
+        return window;
+    }
+}
