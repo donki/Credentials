@@ -2,6 +2,14 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.19.04 — Google Drive activado
+
+`versionCode`: 2026091904 · Windows `2026.9.19.4`
+
+- Compilada con el cliente OAuth propio de Google: la opción **Google Drive** de Ajustes ya entra
+  con la cuenta y sincroniza la bóveda en la carpeta privada de la aplicación. OneDrive sigue
+  pendiente del registro de Entra.
+
 ## 2026.09.19.03 — Ajustes: idioma, almacenamiento con botones, bandeja y arranque con Windows
 
 `versionCode`: 2026091903 · Windows `2026.9.19.3`
