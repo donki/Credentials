@@ -2,6 +2,15 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.20.02 — Icono con el candado más pequeño y splash propio
+
+`versionCode`: 2026092002 · Windows `2026.9.20.2`
+
+- El candado del icono es más pequeño y está centrado (icono adaptativo de Android, icono de
+  Windows, tienda y extensión, todos del mismo dibujo).
+- La pantalla de arranque de Android enseñaba la papelera de Uninstaller (quedó del proyecto del
+  que se partió); ahora es el candado.
+
 ## 2026.09.20.01 — Autocompletar de Android probado y con el nombre de la app
 
 `versionCode`: 2026092001 · Windows `2026.9.20.1`

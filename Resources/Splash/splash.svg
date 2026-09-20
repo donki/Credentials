@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Splash: papelera blanca centrada sobre fondo indigo (#3525CD). -->
+<!-- Splash: el candado blanco del icono, centrado sobre fondo indigo (#3525CD). -->
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect x="214" y="132" width="84" height="22" rx="11" fill="#C3C0FF"/>
-  <rect x="150" y="158" width="212" height="30" rx="15" fill="#FFFFFF"/>
-  <path fill="#FFFFFF" d="M172 200 h168 l-16 176 a26 26 0 0 1 -26 24 H214 a26 26 0 0 1 -26 -24 Z"/>
-  <rect x="212" y="232" width="16" height="120" rx="8" fill="#3525CD"/>
-  <rect x="248" y="232" width="16" height="120" rx="8" fill="#3525CD"/>
-  <rect x="284" y="232" width="16" height="120" rx="8" fill="#3525CD"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="156" y="236" width="200" height="150" rx="26" fill="#FFFFFF" fill-opacity="0.12"/>
+    <path d="M198 236v-42a58 58 0 0 1 116 0v42"/>
+  </g>
+  <circle cx="256" cy="300" r="20" fill="#FFFFFF"/>
+  <rect x="247" y="312" width="18" height="40" rx="9" fill="#FFFFFF"/>
 </svg>
