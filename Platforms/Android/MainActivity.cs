@@ -18,6 +18,20 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnCreate(savedInstanceState);
         ApplySystemBarInsets();
+#if DEBUG
+        // Solo en Debug: extras del intent para probar y capturar sin teclear (Helpers.DemoData).
+        if (Intent?.GetStringExtra("master") is { } master)
+        {
+            var demo = Intent.GetBooleanExtra("demo", false);
+            var page = Intent.GetStringExtra("page");
+            var lang = Intent.GetStringExtra("lang");
+            Microsoft.Maui.Controls.Application.Current!.Dispatcher.Dispatch(async () =>
+            {
+                await Task.Delay(1500);
+                await Helpers.DemoData.ApplyAsync(master, demo, page, lang);
+            });
+        }
+#endif
     }
 
     /// <summary>Al volver a primer plano se comprueba el bloqueo por inactividad: la boveda no espera al siguiente toque.</summary>
@@ -31,7 +45,10 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnStart()
     {
         base.OnStart();
+#if !DEBUG
+        // En Debug se deja capturar (pantallas para las tiendas, con datos inventados).
         Window?.SetFlags(global::Android.Views.WindowManagerFlags.Secure, global::Android.Views.WindowManagerFlags.Secure);
+#endif
     }
 
     /// <summary>

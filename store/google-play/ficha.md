@@ -98,7 +98,7 @@ Password generator with the length and character sets you like. Free software un
 |---|---|---|
 | Icono 512×512 | `icon_512.png` | Hecho (el mismo dibujo que `appicon.svg`). |
 | Gráfico destacado 1024×500 | `feature_graphic.png` | Hecho. |
-| Capturas de teléfono | `capturas/es-ES/` | Provisionales: hechas con la compilación de Windows a proporción de móvil y datos inventados (`--master … --demo`, solo en Debug). Se rehacen en el Xiaomi antes de publicar. |
+| Capturas de teléfono | `capturas/es-ES/` | Hechas en Android (emulador Pixel 6, 1080×2400, tema oscuro) con datos inventados (gancho de Debug `--es master … --ez demo true`): bóveda, detalle con TOTP, ajustes y desbloqueo. |
 
 ## Lo que Play pide aparte de esto
 

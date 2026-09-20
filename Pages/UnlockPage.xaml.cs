@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Credentials.Helpers;
 using Credentials.Services;
 
@@ -30,6 +30,8 @@ public partial class UnlockPage : ContentPage
         // Si la boveda se abre por otro camino (biometria desde otra pagina, el gancho de pruebas
         // en Debug), esta puerta se retira sola.
         _store.Changed += OnStoreChanged;
+        _store.Unlocked += OnStoreChanged;
+        _l.LanguageChanged += (_, _) => ApplyTexts();
     }
 
     private void OnStoreChanged()
@@ -144,6 +146,7 @@ public partial class UnlockPage : ContentPage
             return;
         _closed = true;
         _store.Changed -= OnStoreChanged;
+        _store.Unlocked -= OnStoreChanged;
         PasswordEntry.Text = string.Empty;
         RepeatEntry.Text = string.Empty;
         if (Navigation.ModalStack.Contains(this))

@@ -94,7 +94,10 @@ En Debug, `Credentials.exe --master <clave> --demo` crea o abre la bóveda con e
 entradas inventadas (solo para probar y capturar pantallas; no existe en Release). Con la variable
 `SOC_SANDBOX=<carpeta>` la bóveda y los ajustes van a esa carpeta y no se tocan los del usuario.
 El host de las extensiones se compila aparte (`dotnet publish Host\Host.csproj -c Release`) y el
-proyecto lo copia a la salida si existe.
+proyecto lo copia a la salida si existe. `tools\empaquetar-extension.ps1` deja en `bin\extension\`
+los zips para Chrome Web Store / Edge Add-ons (chromium) y AMO (firefox). En Android (Debug), los
+mismos ganchos van como extras del intent: `am start … --es master <clave> --ez demo true --es lang es
+--es page settings`; y en Debug no hay `FLAG_SECURE`, para poder capturar.
 
 ## Licencia
 
