@@ -42,6 +42,13 @@
   </application>
 
   <queries>
+    <!-- Autocompletar: el nombre visible de la app en la que se escribio la contraseña (titulo de la
+         entrada nueva). Desde Android 11 solo se ven los paquetes declarados aqui; con esto se ven
+         las apps que tienen icono en el lanzador, que son las que tienen pantallas de acceso. -->
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
     <!-- Boton de contacto de la pagina Acerca de. -->
     <intent>
       <action android:name="android.intent.action.SENDTO" />

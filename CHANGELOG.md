@@ -2,6 +2,17 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.20.01 — Autocompletar de Android probado y con el nombre de la app
+
+`versionCode`: 2026092001 · Windows `2026.9.20.1`
+
+- **Guardar desde el autocompletar**, probado en el móvil de punta a punta: al escribir un usuario y
+  contraseña que la bóveda no tiene (o con otra contraseña), Android pregunta «¿Guardar en
+  Credentials?»; con la bóveda bloqueada pide desbloquear y guarda; si ya la tiene igual, no
+  pregunta; y la entrada nueva sale después como sugerencia para rellenar.
+- La entrada nueva lleva el **nombre de la app** («AutofillTest»), no su paquete
+  («com.socratic.autofilltest»): el manifiesto declara la visibilidad de las apps con icono.
+
 ## 2026.09.20.00 — Extensiones para Edge, Chrome y Firefox
 
 `versionCode`: 2026092000 · Windows `2026.9.20.0`
