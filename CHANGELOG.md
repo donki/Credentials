@@ -2,6 +2,12 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.20.03 — Textos de biometría por plataforma
+
+\ersionCode\: 2026092003 · Windows 6.9.20.3
+- En Android ya no se habla de Windows Hello: el botón de la pantalla de desbloqueo y el ajuste
+  dicen «Desbloquear con huella o cara»; en Windows, «Desbloquear con Windows Hello».
+
 ## 2026.09.20.02 — Icono con el candado más pequeño y splash propio
 
 `versionCode`: 2026092002 · Windows `2026.9.20.2`

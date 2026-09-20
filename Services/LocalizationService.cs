@@ -9,6 +9,9 @@ public class LocalizationService : ILocalizationService
     /// <summary>Nombre visible de la aplicacion: «Credentials» en Android y «sOC Credentials» en Windows y la Store.</summary>
     public static readonly string AppName = OperatingSystem.IsAndroid() ? "Credentials" : "sOC Credentials";
 
+    /// <summary>Como se llama la verificacion del sistema en cada plataforma: Windows Hello o la huella/cara del movil.</summary>
+    private static readonly bool Android = OperatingSystem.IsAndroid();
+
     public const string SystemLanguage = "";
     public const string DefaultLanguage = "en";
 
@@ -178,7 +181,7 @@ public class LocalizationService : ILocalizationService
         ["MasterPasswordWrong"] = "That is not the master password.",
         ["Unlock"] = "Unlock",
         ["Create"] = "Create",
-        ["UnlockBiometric"] = "Unlock with Windows Hello / biometrics",
+        ["UnlockBiometric"] = Android ? "Unlock with fingerprint or face" : "Unlock with Windows Hello",
         ["BiometricReason"] = "Unlock your vault",
         ["OrTypePassword"] = "or type the master password",
         ["OpenExisting"] = "I already have a vault in Google Drive / OneDrive",
@@ -277,8 +280,8 @@ public class LocalizationService : ILocalizationService
         ["SyncScope"] = "The account did not grant access to the app folder. Sign in again and tick that permission.",
         ["SyncPasswordNeeded"] = "The copy in the cloud was created with a different master password. Type it to merge it here (your current password stays).",
         ["SecurityTitle"] = "Security",
-        ["Biometrics"] = "Unlock with Windows Hello / biometrics",
-        ["BiometricsHint"] = "The key is kept in the system vault (DPAPI / Keystore) and only released after the system verifies you.",
+        ["Biometrics"] = Android ? "Unlock with fingerprint or face" : "Unlock with Windows Hello",
+        ["BiometricsHint"] = Android ? "The key is kept in the Android Keystore and only released after your fingerprint or face is verified." : "The key is kept in the Windows vault (DPAPI) and only released after Windows Hello verifies you.",
         ["BiometricsUnavailable"] = "Not available on this device.",
         ["AutoLock"] = "Lock after inactivity",
         ["AutoLockNever"] = "Never",
@@ -399,7 +402,7 @@ public class LocalizationService : ILocalizationService
         ["MasterPasswordWrong"] = "Esa no es la contraseña maestra.",
         ["Unlock"] = "Desbloquear",
         ["Create"] = "Crear",
-        ["UnlockBiometric"] = "Desbloquear con Windows Hello / biometría",
+        ["UnlockBiometric"] = Android ? "Desbloquear con huella o cara" : "Desbloquear con Windows Hello",
         ["BiometricReason"] = "Desbloquear tu bóveda",
         ["OrTypePassword"] = "o escribe la contraseña maestra",
         ["OpenExisting"] = "Ya tengo una bóveda en Google Drive / OneDrive",
@@ -494,8 +497,8 @@ public class LocalizationService : ILocalizationService
         ["SyncScope"] = "La cuenta no concedió el acceso a la carpeta de la aplicación. Vuelve a entrar y marca ese permiso.",
         ["SyncPasswordNeeded"] = "La copia de la nube se creó con otra contraseña maestra. Escríbela para mezclarla aquí (tu contraseña actual se mantiene).",
         ["SecurityTitle"] = "Seguridad",
-        ["Biometrics"] = "Desbloquear con Windows Hello / biometría",
-        ["BiometricsHint"] = "La clave queda en la bóveda del sistema (DPAPI / Keystore) y solo se libera cuando el sistema te verifica.",
+        ["Biometrics"] = Android ? "Desbloquear con huella o cara" : "Desbloquear con Windows Hello",
+        ["BiometricsHint"] = Android ? "La clave queda en el Keystore de Android y solo se libera cuando se verifica tu huella o tu cara." : "La clave queda en la bóveda de Windows (DPAPI) y solo se libera cuando Windows Hello te verifica.",
         ["BiometricsUnavailable"] = "No disponible en este aparato.",
         ["AutoLock"] = "Bloquear tras inactividad",
         ["AutoLockNever"] = "Nunca",
