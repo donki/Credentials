@@ -98,5 +98,26 @@
  },
  "retrying": {
   "message": "Esperando a que se desbloquee…"
+ },
+ "saveTyped": {
+  "message": "Guardar lo escrito en sOC Credentials"
+ },
+ "unlockApp": {
+  "message": "Desbloquear sOC Credentials"
+ },
+ "lockedShort": {
+  "message": "La bóveda está bloqueada"
+ },
+ "browserPmQuestion": {
+  "message": "El navegador también guarda y rellena contraseñas, y los dos gestores se estorban. ¿Desactivar el del navegador y dejar solo sOC Credentials?"
+ },
+ "browserPmKeep": {
+  "message": "Dejarlo"
+ },
+ "browserPmDisable": {
+  "message": "Desactivar el del navegador"
+ },
+ "browserPmDisabled": {
+  "message": "El navegador ya no guardará contraseñas"
  }
 }

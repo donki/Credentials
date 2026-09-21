@@ -2,6 +2,34 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.21.00 — Rellenar desde el propio campo, guardar lo escrito y la bóveda abierta mientras usas el PC
+
+`versionCode`: 2026092100 · Windows `2026.9.21.0` · extensión `2026.9.21.0`
+
+- **Lista pegada al campo (web)**: al entrar en el usuario o la contraseña de una página, la
+  extensión enseña debajo las entradas del sitio; una pulsación rellena. Si hay algo escrito que no
+  está en la bóveda, la primera opción es **«Guardar lo escrito en sOC Credentials»** (también
+  como botón en el popup de la extensión). Con la bóveda bloqueada, la lista ofrece desbloquear.
+- **Rellenar en las aplicaciones de Windows**: cuando un campo de contraseña de un programa recibe
+  el foco, aparece a su lado la lista con las entradas que casan (por el nombre del ejecutable y el
+  título de la ventana); al elegir una se teclean el usuario y la contraseña. La entrada aprende el
+  programa (campo `windows`) y sale la primera la próxima vez. Los navegadores van por la
+  extensión. Interruptor en Ajustes › Autocompletar. La lista no roba el foco y todo el trabajo con
+  otros procesos va en un hilo aparte.
+- **Un solo gestor de contraseñas**: la extensión propone (una vez) desactivar el guardado de
+  contraseñas del navegador; en Android, al desbloquear se propone que sOC Credentials sea el
+  servicio de autocompletar si otro gestor lo es (Android solo admite uno), y Ajustes ›
+  Autocompletar enseña el estado y permite cambiarlo.
+- **La bóveda sigue abierta mientras usas el PC**: la inactividad es la del sistema (teclado y
+  ratón, `GetLastInputInfo`), no la de la aplicación; se cierra al bloquear la sesión de Windows
+  (Win+L) y, en Android, al apagarse la pantalla. La cuenta atrás corre aunque la ventana esté en
+  la bandeja. Ajuste por defecto: 15 min (antes 5).
+- **Instancia única en Windows**: si la aplicación ya está abierta (aunque esté en el área de
+  notificación), volver a ejecutarla la trae al frente en vez de abrir otra.
+- **Borrar desde la lista**: botón de papelera en cada entrada, con confirmación (mismo borrado
+  lógico que en la ficha). Los botones de la fila llevan pista (tooltip / pulsación larga).
+- «Aparato» pasa a ser «dispositivo» en todos los textos.
+
 ## 2026.09.20.03 — Textos de biometría por plataforma
 
 `versionCode`: 2026092003 · Windows `2026.9.20.3`
@@ -108,7 +136,7 @@ Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11
 
 `versionCode`: 2026091903 · Windows `2026.9.19.3`
 
-- **Dónde vive la bóveda** ahora son tres botones (solo en este aparato, Google Drive, OneDrive),
+- **Dónde vive la bóveda** ahora son tres botones (solo en este dispositivo, Google Drive, OneDrive),
   con el elegido resaltado, como los de entrar en Task Manager.
 - El **idioma** se cambia en Ajustes (antes en «Acerca de»).
 - **Windows**: al minimizar se queda en el área de notificación (clic para volver; botón derecho,
@@ -138,9 +166,9 @@ Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11
 
 `versionCode`: 2026091900 · Windows `2026.9.19.0`
 
-- **Bóveda cifrada** con contraseña maestra (Argon2id + AES-256-GCM), en el aparato o en la
+- **Bóveda cifrada** con contraseña maestra (Argon2id + AES-256-GCM), en el dispositivo o en la
   carpeta privada de la aplicación de tu Google Drive u OneDrive, con mezcla por entrada entre
-  aparatos. Desbloqueo con Windows Hello / huella (clave en la bóveda del sistema), bloqueo por
+  dispositivos. Desbloqueo con Windows Hello / huella (clave en la bóveda del sistema), bloqueo por
   inactividad y vaciado del portapapeles.
 - Entradas de sitio web, aplicación, código de segundo factor y nota segura: usuario, contraseña
   con fortaleza e historial, URL, carpeta, etiquetas, favorita, notas y campos extra.

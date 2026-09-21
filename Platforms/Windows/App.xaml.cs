@@ -7,6 +7,12 @@ public partial class App : MauiWinUIApplication
 {
     public App()
     {
+        // Una sola instancia: si ya hay otra (aunque este en la bandeja), se le pide que se enseñe y esta se va.
+        if (!Credentials.Platforms.Windows.SingleInstance.Claim())
+        {
+            Environment.Exit(0);
+            return;
+        }
         InitializeComponent();
     }
 

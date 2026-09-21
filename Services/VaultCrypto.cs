@@ -6,7 +6,7 @@ using Konscious.Security.Cryptography;
 namespace Credentials.Services;
 
 /// <summary>
-/// El cifrado de la boveda. Lo unico que sale del aparato (a Google Drive, a OneDrive, a una copia)
+/// El cifrado de la boveda. Lo unico que sale del dispositivo (a Google Drive, a OneDrive, a una copia)
 /// es lo que produce <see cref="Encrypt"/>; sin la contraseña maestra no hay nada que leer.
 /// </summary>
 /// <remarks>

@@ -5,6 +5,7 @@ public partial class App : Application
 #if WINDOWS
     private Platforms.Windows.TrayIcon? _tray;
     private Platforms.Windows.ExtensionServer? _extensions;
+    private Platforms.Windows.DesktopAutofill? _desktopAutofill;
 
     /// <summary>El icono de bandeja de la ventana principal (para que Ajustes cambie su comportamiento).</summary>
     public static Platforms.Windows.TrayIcon? Tray { get; private set; }
@@ -73,6 +74,18 @@ public partial class App : Application
                 var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
                 _tray = new Platforms.Windows.TrayIcon(hwnd, key => loc[key], () => native.Close()) { MinimizeToTray = settings.TrayOnMinimize };
                 Tray = _tray;
+                // La boveda queda abierta mientras se usa el PC: la inactividad es la del sistema
+                // (teclado y raton), y al bloquear la sesion de Windows (Win+L) se cierra al momento.
+                Services.VaultStore.SystemIdle = Platforms.Windows.TrayIcon.SystemIdle;
+                var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+                _tray.SessionLocked += () => native.DispatcherQueue.TryEnqueue(() => { try { store.Lock(); } catch (Exception) { } });
+                // Autocompletar en las aplicaciones del escritorio (lista pegada al campo de contraseña).
+                try
+                {
+                    _desktopAutofill = new Platforms.Windows.DesktopAutofill(store, settings, loc);
+                    _desktopAutofill.Start();
+                }
+                catch (Exception) { _desktopAutofill = null; }
                 // «--tray» (arranque con Windows): escondida en la bandeja desde el principio.
                 if (Environment.GetCommandLineArgs().Contains("--tray"))
                     native.DispatcherQueue.TryEnqueue(() => _tray.HideToTray());
@@ -82,6 +95,24 @@ public partial class App : Application
                 StartExtensions(window);
             }
         };
+#endif
+#if ANDROID
+        // Al desbloquear: si otro gestor (o ninguno) rellena las contraseñas, se propone que lo haga esta.
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
+            var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
+            store.Unlocked += () => MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Task.Delay(600);
+                try
+                {
+                    if (window.Page is { } page)
+                        await Platforms.Android.AutofillSetup.OfferAfterUnlockAsync(page, settings, loc);
+                }
+                catch (Exception) { }
+            });
+        }
 #endif
 #if DEBUG
         SocShared.AuthorNotes.Attach(window);   // notas de autor: SOLO Debug, desactivado en Release/produccion

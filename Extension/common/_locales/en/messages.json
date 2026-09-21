@@ -98,5 +98,26 @@
  },
  "retrying": {
   "message": "Waiting for the vault to be unlocked…"
+ },
+ "saveTyped": {
+  "message": "Save what is typed in sOC Credentials"
+ },
+ "unlockApp": {
+  "message": "Unlock sOC Credentials"
+ },
+ "lockedShort": {
+  "message": "The vault is locked"
+ },
+ "browserPmQuestion": {
+  "message": "The browser also saves and fills in passwords, and the two managers get in each other's way. Turn off the browser's one and keep only sOC Credentials?"
+ },
+ "browserPmKeep": {
+  "message": "Keep it"
+ },
+ "browserPmDisable": {
+  "message": "Turn off the browser's"
+ },
+ "browserPmDisabled": {
+  "message": "The browser will no longer save passwords"
  }
 }

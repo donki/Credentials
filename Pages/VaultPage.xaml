@@ -26,7 +26,7 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="pages:EntryRow">
                     <Border Style="{StaticResource Card}" Margin="0,3" Padding="0">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnRowTapped" />
                             </Grid.GestureRecognizers>
@@ -40,9 +40,14 @@
                                 <Label Text="{Binding Subtitle}" Style="{StaticResource HintText}" LineBreakMode="MiddleTruncation" />
                                 <Label Text="{Binding Code}" IsVisible="{Binding HasCode}" TextColor="{StaticResource Primary}" FontAttributes="Bold" FontSize="16" FontFamily="Consolas" />
                             </VerticalStackLayout>
-                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_copy.png" IsVisible="{Binding HasUser}" Clicked="OnCopyUserClicked" />
-                            <ImageButton Grid.Column="3" Style="{StaticResource RowIconButton}" Source="ic_key.png" IsVisible="{Binding HasPassword}" Clicked="OnCopyPasswordClicked" />
-                            <ImageButton Grid.Column="4" Style="{StaticResource RowIconButton}" Source="ic_totp.png" IsVisible="{Binding HasCode}" Clicked="OnCopyCodeClicked" />
+                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_copy.png" IsVisible="{Binding HasUser}" Clicked="OnCopyUserClicked"
+                                         ToolTipProperties.Text="{Binding CopyUserTip}" SemanticProperties.Description="{Binding CopyUserTip}" />
+                            <ImageButton Grid.Column="3" Style="{StaticResource RowIconButton}" Source="ic_key.png" IsVisible="{Binding HasPassword}" Clicked="OnCopyPasswordClicked"
+                                         ToolTipProperties.Text="{Binding CopyPasswordTip}" SemanticProperties.Description="{Binding CopyPasswordTip}" />
+                            <ImageButton Grid.Column="4" Style="{StaticResource RowIconButton}" Source="ic_totp.png" IsVisible="{Binding HasCode}" Clicked="OnCopyCodeClicked"
+                                         ToolTipProperties.Text="{Binding CopyCodeTip}" SemanticProperties.Description="{Binding CopyCodeTip}" />
+                            <ImageButton Grid.Column="5" Style="{StaticResource RowIconButton}" Source="ic_trash_danger.png" Clicked="OnDeleteRowClicked"
+                                         ToolTipProperties.Text="{Binding DeleteTip}" SemanticProperties.Description="{Binding DeleteTip}" />
                         </Grid>
                     </Border>
                 </DataTemplate>

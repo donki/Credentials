@@ -38,7 +38,7 @@ QUÉ GUARDA
   escanea el QR con la cámara; el código se ve con su cuenta atrás y se copia con un clic.
 • Notas seguras.
 
-EN TODOS TUS APARATOS
+EN TODOS TUS DISPOSITIVOS
 • Elige la misma cuenta de Google o Microsoft en el PC y en el móvil (hay aplicación para Android) y
   usa la misma contraseña maestra: los cambios se mezclan entrada a entrada, gana la más reciente.
 

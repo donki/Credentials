@@ -153,7 +153,7 @@ api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         case "search": return await ask({ type: "search", query: msg.query });
         case "show": return await ask({ type: "show" }, 5000);
         case "save":
-          return await ask({ type: "save", host: msg.host, username: msg.username, password: msg.password }, 120000);
+          return await ask({ type: "save", host: msg.host || hostOf(sender.tab?.url ?? sender.url ?? ""), username: msg.username, password: msg.password }, 120000);
         case "saveOffered": {
           const o = offered.get(msg.token);
           if (!o) return { error: "expired" };

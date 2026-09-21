@@ -55,7 +55,7 @@ public sealed class Credential
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset ModifiedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    /// <summary>Borrada: se conserva un tiempo para que la baja llegue a los demas aparatos al mezclar.</summary>
+    /// <summary>Borrada: se conserva un tiempo para que la baja llegue a los demas dispositivos al mezclar.</summary>
     public bool Deleted { get; set; }
 
     [JsonIgnore] public bool HasTotp => Totp.Length > 0;
@@ -98,7 +98,7 @@ public sealed class VaultData
     public List<string> Folders { get; set; } = [];
 
     /// <summary>
-    /// Mezcla otra copia (la de la nube, o la de otro aparato) con esta: por entrada, gana la mas
+    /// Mezcla otra copia (la de la nube, o la de otro dispositivo) con esta: por entrada, gana la mas
     /// nueva; las que solo estan en un lado se añaden. Devuelve cuantas han cambiado aqui.
     /// </summary>
     public int Merge(VaultData other)

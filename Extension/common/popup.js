@@ -15,7 +15,7 @@ function hostOf(url) {
 }
 
 async function init() {
-  for (const [id, key] of [["genTitle", "generator"], ["lenLabel", "length"], ["upperLabel", "upper"], ["digitsLabel", "digits"], ["symbolsLabel", "symbols"], ["regen", "generate"], ["copyGen", "copyPass"], ["useGen", "useInPage"], ["openApp", "openApp"]])
+  for (const [id, key] of [["genTitle", "generator"], ["lenLabel", "length"], ["upperLabel", "upper"], ["digitsLabel", "digits"], ["symbolsLabel", "symbols"], ["regen", "generate"], ["copyGen", "copyPass"], ["useGen", "useInPage"], ["openApp", "openApp"], ["saveTyped", "saveTyped"], ["pmText", "browserPmQuestion"], ["pmKeep", "browserPmKeep"], ["pmDisable", "browserPmDisable"]])
     $(id).textContent = t(key);
   $("search").placeholder = t("search");
   const tabs = await api.tabs.query({ active: true, currentWindow: true });
@@ -33,9 +33,57 @@ async function init() {
     await api.runtime.sendMessage({ type: "fillText", tabId: tab.id, text: $("generated").value });
     window.close();
   });
+  $("saveTyped").addEventListener("click", saveTyped);
   regen();
   await load();
+  await offerTyped();
+  await offerDisableBrowserManager();
   setInterval(tickTotp, 1000);
+}
+
+// ------------------------------------------------------------------ guardar lo escrito en la página
+
+// Si la página tiene usuario y contraseña tecleados y no hay una entrada igual, se ofrece guardarlos.
+let typed = null;
+async function offerTyped() {
+  if (!tab || !host) return;
+  try { typed = await api.tabs.sendMessage(tab.id, { type: "typed" }); } catch { typed = null; }
+  const show = typed?.password && !entries.some(e => e.password === typed.password && (!typed.username || e.username.toLowerCase() === typed.username.toLowerCase()));
+  $("saveTyped").hidden = !show;
+  if (show) $("saveTyped").textContent = t("saveTyped") + (typed.username ? ` · ${typed.username}` : "");
+}
+
+async function saveTyped() {
+  if (!typed?.password) return;
+  const btn = $("saveTyped");
+  btn.disabled = true;
+  const r = await api.runtime.sendMessage({ type: "save", host, username: typed.username ?? "", password: typed.password });
+  btn.disabled = false;
+  if (r?.ok) { toast(t("saved")); btn.hidden = true; await load(); }
+  else toast(r?.locked ? t("locked") : (r?.error ?? "?"));
+}
+
+// ------------------------------------------------------------------ el gestor de contraseñas del navegador
+
+// Dos gestores a la vez se estorban (los dos preguntan si guardar, los dos rellenan). Una vez se
+// propone apagar el del navegador; si el usuario dice que no, no se vuelve a preguntar.
+async function offerDisableBrowserManager() {
+  const setting = api.privacy?.services?.passwordSavingEnabled;
+  if (!setting) return;
+  try {
+    const { pmAsked } = await api.storage.local.get("pmAsked");
+    if (pmAsked) return;
+    const { value, levelOfControl } = await setting.get({});
+    if (!value || (levelOfControl !== "controllable_by_this_extension" && levelOfControl !== "controlled_by_this_extension")) return;
+    $("pm").hidden = false;
+    $("pmKeep").addEventListener("click", async () => { await api.storage.local.set({ pmAsked: true }); $("pm").hidden = true; });
+    $("pmDisable").addEventListener("click", async () => {
+      try { await setting.set({ value: false }); toast(t("browserPmDisabled")); }
+      catch (e) { toast(String(e?.message ?? e)); }
+      await api.storage.local.set({ pmAsked: true });
+      $("pm").hidden = true;
+    });
+  } catch { }
 }
 
 async function load() {

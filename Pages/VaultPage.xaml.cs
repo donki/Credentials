@@ -8,9 +8,14 @@ using SocShared;
 namespace Credentials.Pages;
 
 /// <summary>Una fila de la lista: la entrada, su icono y el codigo TOTP vivo si lo tiene.</summary>
-public sealed class EntryRow(Credential entry) : INotifyPropertyChanged
+public sealed class EntryRow(Credential entry, ILocalizationService l) : INotifyPropertyChanged
 {
     public Credential Entry { get; } = entry;
+    // Pistas de los botones de la fila (tooltip en Windows, pulsacion larga en Android).
+    public string CopyUserTip => l["CopyUser"];
+    public string CopyPasswordTip => l["CopyPassword"];
+    public string CopyCodeTip => l["CopyCode"];
+    public string DeleteTip => l["DeleteEntry"];
     public string Title => Entry.Title;
     public string Subtitle => Entry.Kind switch
     {
@@ -156,7 +161,7 @@ public partial class VaultPage : ContentPage
         var list = entries.ToList();
         _rows.Clear();
         foreach (var e in list)
-            _rows.Add(new EntryRow(e));
+            _rows.Add(new EntryRow(e, _l));
         OnTick(null, EventArgs.Empty);
         CountLabel.Text = list.Count == 1 ? _l["OneEntry"] : string.Format(_l.CurrentCulture, _l["EntriesCount"], list.Count);
         BuildChips();
@@ -224,6 +229,19 @@ public partial class VaultPage : ContentPage
             return;
         _store.Touch();
         await Navigation.PushAsync(new EntryPage(row.Entry, isNew: false));
+    }
+
+    /// <summary>Borrar desde la fila, con confirmacion: mismo borrado logico que en la ficha.</summary>
+    private async void OnDeleteRowClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not EntryRow row)
+            return;
+        _store.Touch();
+        var ok = await ModernDialog.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], row.Entry.Title), _l["Delete"], _l["Cancel"]);
+        if (!ok)
+            return;
+        await _store.DeleteAsync(row.Entry.Id);
+        _toast.Show(_l["EntryDeleted"]);
     }
 
     // ------------------------------------------------------------------ copiar desde la fila

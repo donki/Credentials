@@ -1,6 +1,8 @@
-// sOC Credentials — script de contenido. Dos cosas: rellenar los campos de usuario y contraseña
-// cuando lo pide el popup (o el menú contextual) y, al enviar un formulario con contraseña, avisar
-// al fondo para que ofrezca guardarlo. No manda nada a ningún sitio: solo habla con la extensión.
+// sOC Credentials — script de contenido. Tres cosas: la lista desplegable pegada al campo de
+// usuario o contraseña con las entradas del sitio (y «Guardar lo escrito» cuando hay algo tecleado
+// que no está en la bóveda); rellenar cuando lo pide el popup (o el menú contextual); y, al enviar
+// un formulario con contraseña, avisar al fondo para que ofrezca guardarlo. No manda nada a ningún
+// sitio: solo habla con la extensión.
 (() => {
   if (globalThis.__socCredentials) return;   // inyectado dos veces (scripting.executeScript): una basta
   globalThis.__socCredentials = true;
@@ -160,11 +162,158 @@
   }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
+  // ---------------------------------------------------------------- lista pegada al campo
+
+  // Al entrar en un campo de usuario o contraseña se pide al fondo las entradas del sitio y se
+  // enseñan debajo del campo, como hace el gestor del navegador. Si hay algo escrito que no está en
+  // la bóveda, la primera opción es guardarlo. Cada marco tiene su script, así que vale también
+  // para los formularios dentro de un iframe.
+  let dd = null;          // el contenedor del desplegable
+  let ddField = null;     // el campo al que está pegado
+  let ddTimer = null;
+  let ddDismissed = null; // campo en el que el usuario cerró la lista con Escape
+
+  function isLoginField(el) {
+    if (!(el instanceof HTMLInputElement) || !visible(el)) return false;
+    if (el.type === "password") return true;
+    const { user } = findFields(false);
+    return el === user;
+  }
+
+  async function openDropdown(field) {
+    if (!isLoginField(field) || ddDismissed === field) return;
+    let r;
+    try { r = await api.runtime.sendMessage({ type: "list", host: location.hostname }); } catch { return; }
+    if (document.activeElement !== field) return;   // el foco ya se fue
+    if (!r || r.error) return;                        // sin aplicación: nada que enseñar
+    const items = [];
+    const { user, pass } = findFields(false);
+    const typedUser = user?.value?.trim() ?? "";
+    const typedPass = pass?.value ?? "";
+    const entries = r.locked ? [] : (r.entries ?? []);
+    // Lo escrito que no está en la bóveda: ofrecer guardarlo.
+    if (!r.locked && typedPass && !entries.some(e => e.password === typedPass && (!typedUser || e.username.toLowerCase() === typedUser.toLowerCase())))
+      items.push({ kind: "save", username: typedUser, password: typedPass });
+    for (const e of entries) items.push({ kind: "entry", entry: e });
+    if (r.locked) items.push({ kind: "locked" });
+    if (items.length === 0) { closeDropdown(); return; }
+    renderDropdown(field, items);
+  }
+
+  function renderDropdown(field, items) {
+    closeDropdown();
+    ddField = field;
+    dd = document.createElement("div");
+    dd.setAttribute("data-soc-credentials", items.map(i => i.kind).join(","));   // solo los tipos, sin datos
+    dd.style.cssText = "all:initial;position:fixed;z-index:2147483647;";
+    const root = dd.attachShadow({ mode: "closed" });
+    root.innerHTML = `
+      <style>
+        .b{font:13px 'Segoe UI',system-ui,sans-serif;background:#1E2130;color:#EEE;border:1px solid #3525CD;border-radius:10px;
+           box-shadow:0 8px 24px rgba(0,0,0,.35);min-width:240px;max-width:360px;padding:4px;display:flex;flex-direction:column;gap:2px}
+        .h{display:flex;align-items:center;gap:6px;font-size:11px;opacity:.7;padding:4px 8px 2px}
+        .h img{width:14px;height:14px;border-radius:3px}
+        .i{all:unset;display:block;cursor:pointer;border-radius:7px;padding:6px 10px;line-height:1.3}
+        .i:hover,.i:focus{background:#3525CD;color:#fff}
+        .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .u{opacity:.75;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .i.s .t{color:#B5B0FF}.i.s:hover .t{color:#fff}
+      </style>
+      <div class="b"><div class="h"><img src="${api.runtime.getURL("icons/icon32.png")}" alt="">sOC Credentials</div></div>`;
+    const box = root.querySelector(".b");
+    for (const it of items) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "i" + (it.kind === "save" ? " s" : "");
+      const t = document.createElement("div"); t.className = "t";
+      const u = document.createElement("div"); u.className = "u";
+      if (it.kind === "entry") { t.textContent = it.entry.title; u.textContent = it.entry.username || it.entry.url || ""; }
+      else if (it.kind === "save") { t.textContent = "💾 " + tr("saveTyped"); u.textContent = it.username || location.hostname; }
+      else { t.textContent = "🔒 " + tr("unlockApp"); u.textContent = tr("lockedShort"); }
+      btn.appendChild(t); if (u.textContent) btn.appendChild(u);
+      // mousedown y no click: así el campo no pierde el foco antes de rellenar.
+      btn.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); pick(it); });
+      box.appendChild(btn);
+    }
+    (document.body ?? document.documentElement).appendChild(dd);
+    placeDropdown();
+    ddTimer = setTimeout(closeDropdown, 30000);
+  }
+
+  function placeDropdown() {
+    if (!dd || !ddField || !ddField.isConnected) { closeDropdown(); return; }
+    const r = ddField.getBoundingClientRect();
+    const h = dd.getBoundingClientRect().height || 0;
+    const below = r.bottom + 4 + h <= window.innerHeight || r.top - h - 4 < 0;
+    dd.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 260)) + "px";
+    dd.style.top = (below ? r.bottom + 4 : r.top - h - 4) + "px";
+    dd.style.minWidth = Math.max(240, Math.min(360, r.width)) + "px";
+  }
+
+  function closeDropdown() {
+    clearTimeout(ddTimer); ddTimer = null;
+    if (dd) { dd.remove(); dd = null; }
+    ddField = null;
+  }
+
+  async function pick(it) {
+    if (it.kind === "entry") {
+      closeDropdown();
+      fill({ username: it.entry.username, password: it.entry.password, totp: it.entry.totp });
+      return;
+    }
+    if (it.kind === "locked") {
+      closeDropdown();
+      try { await api.runtime.sendMessage({ type: "show" }); } catch { }
+      return;
+    }
+    if (it.kind === "save") {
+      closeDropdown();
+      try {
+        const r = await api.runtime.sendMessage({ type: "save", host: location.hostname, username: it.username, password: it.password });
+        toast(r?.ok ? tr("saved") : (r?.locked ? tr("locked") : (r?.error ?? "?")));
+      } catch (e) { toast(String(e?.message ?? e)); }
+    }
+  }
+
+  function toast(text) {
+    const d = document.createElement("div");
+    d.style.cssText = "all:initial;position:fixed;right:12px;bottom:12px;z-index:2147483647;font:13px 'Segoe UI',system-ui,sans-serif;background:#1E2130;color:#EEE;border:1px solid #3525CD;border-radius:10px;padding:8px 12px;box-shadow:0 8px 24px rgba(0,0,0,.35)";
+    d.textContent = text;
+    (document.body ?? document.documentElement).appendChild(d);
+    setTimeout(() => d.remove(), 2500);
+  }
+
+  function tr(k) {
+    const fallback = { saveTyped: "Guardar lo escrito en sOC Credentials", unlockApp: "Desbloquear sOC Credentials", lockedShort: "La bóveda está bloqueada" };
+    return api.i18n.getMessage(k) || fallback[k] || k;
+  }
+
+  document.addEventListener("focusin", (e) => { if (isLoginField(e.target)) openDropdown(e.target); }, true);
+  document.addEventListener("focusout", () => {
+    // Un respiro: si el foco vuelve al campo (o el mousedown de la lista ya ha rellenado), no se cierra.
+    setTimeout(() => { if (dd && document.activeElement !== ddField) closeDropdown(); }, 150);
+  }, true);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && dd) { ddDismissed = ddField; closeDropdown(); }
+  }, true);
+  // Mientras se escribe, la opción de guardar aparece o se va según lo tecleado.
+  document.addEventListener("input", (e) => {
+    if (e.target instanceof HTMLInputElement && isLoginField(e.target)) {
+      clearTimeout(ddTimer);
+      ddTimer = setTimeout(() => { if (document.activeElement === e.target) openDropdown(e.target); }, 700);
+    }
+  }, true);
+  window.addEventListener("scroll", placeDropdown, true);
+  window.addEventListener("resize", placeDropdown);
+  // Si el campo ya tiene el foco cuando carga el script (páginas que enfocan solas), también.
+  if (document.activeElement && isLoginField(document.activeElement)) openDropdown(document.activeElement);
+
   // ---------------------------------------------------------------- mensajes del fondo y del popup
 
   api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
-      case "fill": sendResponse({ filled: fill(msg) }); break;
+      case "fill": closeDropdown(); sendResponse({ filled: fill(msg) }); break;
       case "fillText": sendResponse({ filled: fillText(msg.text) }); break;
       case "showSaveBar":
         if (window !== window.top) { sendResponse({ ok: false }); break; }   // solo en la ventana principal
@@ -172,6 +321,13 @@
         sendResponse({ ok: true });
         break;
       case "hasLogin": { const f = findFields(false); sendResponse({ pass: !!f.pass, user: !!f.user }); break; }
+      case "typed": {
+        // Lo que hay escrito en los campos de acceso (para que el popup ofrezca guardarlo).
+        if (window !== window.top) { sendResponse({}); break; }
+        const f = findFields(false);
+        sendResponse({ username: f.user?.value?.trim() ?? "", password: f.pass?.value ?? "" });
+        break;
+      }
       default: sendResponse({});
     }
     return false;

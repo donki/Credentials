@@ -32,7 +32,7 @@ public class SettingsService : ISettingsService
 
     public int AutoLockMinutes
     {
-        get => Preferences.Get("autolock_minutes", 5, Shared);
+        get => Preferences.Get("autolock_minutes", 15, Shared);
         set => Preferences.Set("autolock_minutes", value, Shared);
     }
 
@@ -64,6 +64,18 @@ public class SettingsService : ISettingsService
     {
         get => Preferences.Get("ask_extensions", true, Shared);
         set => Preferences.Set("ask_extensions", value, Shared);
+    }
+
+    public bool AskAutofill
+    {
+        get => Preferences.Get("ask_autofill", true, Shared);
+        set => Preferences.Set("ask_autofill", value, Shared);
+    }
+
+    public bool DesktopAutofill
+    {
+        get => Preferences.Get("desktop_autofill", true, Shared);
+        set => Preferences.Set("desktop_autofill", value, Shared);
     }
 
     public DateTimeOffset? ExtensionSeen(string browser)

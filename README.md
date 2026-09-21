@@ -2,7 +2,7 @@
 
 Gestor de credenciales y de códigos de segundo factor (TOTP) para **Android y Windows**, en .NET
 MAUI (el mismo proyecto para los dos). Todo va en una **bóveda cifrada con tu contraseña maestra**
-que vive en tu aparato o, si lo eliges, en la carpeta privada de la aplicación de **tu propio Google
+que vive en tu dispositivo o, si lo eliges, en la carpeta privada de la aplicación de **tu propio Google
 Drive u OneDrive**. Sin servidor nuestro, sin cuenta nuestra, sin analítica. Cumple la Constitución
 de Proyectos de Software de sOCratic.
 
@@ -18,7 +18,7 @@ de Proyectos de Software de sOCratic.
 - **Bóveda cifrada**: clave derivada de la contraseña maestra con **Argon2id** (3 pasadas, 64 MB)
   y cifrado **AES-256-GCM**; la cabecera (parámetros de derivación) va autenticada. Formato de
   fichero de texto (`soccred1` + cabecera JSON + base64), `Services/VaultCrypto.cs`.
-- **Dónde vive**: solo en el aparato, o en **Google Drive** (`appDataFolder`, ámbito
+- **Dónde vive**: solo en el dispositivo, o en **Google Drive** (`appDataFolder`, ámbito
   `drive.appdata`) o **OneDrive** (`special/approot`, ámbito `Files.ReadWrite.AppFolder`). La copia
   de trabajo es siempre el fichero local; la nube se baja al abrir y se sube tras cada cambio, y se
   **mezcla por entrada** (gana la más nueva; las bajas se propagan como borrado lógico 90 días).
@@ -56,7 +56,23 @@ de Proyectos de Software de sOCratic.
   cargarla («Cargar desempaquetada»); en cuanto conecta, sale como instalada. Firefox solo admite
   extensiones firmadas por Mozilla: hasta publicarla, se carga temporal desde `about:debugging`.
   El MSIX de la Store no puede registrar el host (virtualización del registro): las extensiones
-  necesitan la versión exe.
+  necesitan la versión exe. En la página, al entrar en el usuario o la contraseña sale una **lista
+  pegada al campo** con las entradas del sitio (una pulsación rellena) y, si hay algo escrito que
+  no está en la bóveda, **«Guardar lo escrito»**. La extensión propone una vez **desactivar el
+  gestor de contraseñas del navegador** (`privacy.services.passwordSavingEnabled`).
+- **Rellenar en las aplicaciones de Windows** (`Platforms/Windows/DesktopAutofill.cs`): un gancho
+  de foco del escritorio (`SetWinEventHook`) detecta por accesibilidad (MSAA: texto + protegido)
+  los campos de contraseña de otros programas y enseña al lado una ventana que no se activa
+  (`WS_EX_NOACTIVATE`) con las entradas que casan por ejecutable y título de ventana; al elegir se
+  teclean usuario y contraseña con `SendInput`. La entrada aprende el programa (campo `windows`).
+  Todo el trabajo con otros procesos va en un hilo aparte para que la interfaz no se quede colgada.
+- **Un solo gestor**: en Android, tras desbloquear, si otro gestor es el servicio de autocompletar
+  se propone cambiar a este (`Platforms/Android/AutofillSetup.cs`, `ACTION_REQUEST_SET_AUTOFILL_SERVICE`).
+- **Bloqueo**: la bóveda se cierra por inactividad real del sistema (Windows: `GetLastInputInfo`;
+  Android: uso de la app) o al bloquear la sesión (Win+L: `WM_WTSSESSION_CHANGE`; Android:
+  `ACTION_SCREEN_OFF`). La cuenta atrás vive en `VaultStore` y corre aunque la ventana esté en la
+  bandeja. **Instancia única** en Windows (`Platforms/Windows/SingleInstance.cs`): un mutex y un
+  mensaje de ventana registrado que la instancia abierta atiende para ponerse delante.
 - En Android la ventana va con `FLAG_SECURE` (sin capturas ni miniatura en recientes).
 - Fichas de las tiendas en `store/google-play/` y `store/microsoft/` (espejo en
   `Mobile/GooglePlayConsole/Credentials/` y `Mobile/MicrosoftStore/Credentials/`).

@@ -3,7 +3,7 @@
 `com.socratic.credentials` · pista de pruebas cerradas (`alpha`), el día que se dé de alta.
 
 Límites de Play: título 30 caracteres, descripción breve 80, completa 4000. El nombre en Play es
-**sOC Credentials** (en el aparato la app se llama «Credentials»; en la Microsoft Store, «sOC
+**sOC Credentials** (en el dispositivo la app se llama «Credentials»; en la Microsoft Store, «sOC
 Credentials»).
 
 ---
@@ -25,10 +25,10 @@ Contraseñas y códigos 2FA en una bóveda cifrada: en tu móvil o en tu Drive/O
 ### Descripción completa
 
 ```
-sOC Credentials guarda tus contraseñas y tus códigos de segundo factor en una bóveda cifrada con una contraseña maestra que solo tú conoces. Sin servidor nuestro, sin cuenta nuestra y sin analítica: la bóveda vive en tu aparato o, si tú lo eliges, en la carpeta privada de la aplicación de tu propio Google Drive u OneDrive.
+sOC Credentials guarda tus contraseñas y tus códigos de segundo factor en una bóveda cifrada con una contraseña maestra que solo tú conoces. Sin servidor nuestro, sin cuenta nuestra y sin analítica: la bóveda vive en tu dispositivo o, si tú lo eliges, en la carpeta privada de la aplicación de tu propio Google Drive u OneDrive.
 
 CÓMO SE PROTEGE
-• La clave sale de tu contraseña maestra con Argon2id y todo se cifra con AES-256-GCM en tu propio aparato. Lo que sube a la nube ya va cifrado; nadie —nosotros tampoco— puede leerlo ni recuperar la contraseña.
+• La clave sale de tu contraseña maestra con Argon2id y todo se cifra con AES-256-GCM en tu propio dispositivo. Lo que sube a la nube ya va cifrado; nadie —nosotros tampoco— puede leerlo ni recuperar la contraseña.
 • Desbloqueo con huella o cara: la clave queda en la bóveda del sistema (Keystore) y solo se libera cuando Android te verifica.
 • Bloqueo automático por inactividad, vaciado del portapapeles a los segundos que elijas y pantalla protegida frente a capturas.
 
@@ -37,7 +37,7 @@ QUÉ GUARDA
 • Códigos de segundo factor (TOTP/HOTP), como una app de autenticación: pega el enlace o la clave, o escanea el QR que enseña el sitio; el código se ve con su cuenta atrás y se copia con un toque.
 • Notas seguras.
 
-EN TODOS TUS APARATOS
+EN TODOS TUS DISPOSITIVOS
 • Elige la misma cuenta de Google o Microsoft en el móvil y en el PC (también hay versión para Windows) y usa la misma contraseña maestra: los cambios se mezclan entrada a entrada, gana la más reciente.
 • Autocompletar de Android: en las apps y en el navegador, sOC Credentials te propone las credenciales que casan con el sitio o con la app.
 
@@ -107,7 +107,7 @@ Password generator with the length and character sets you like. Free software un
 - **Permisos**: cámara (leer QR), internet (solo con la bóveda en la nube), biometría.
 - **Servicio de autocompletar**: declarar que la app es un gestor de contraseñas.
 - **Política de privacidad**: la página del catálogo con el párrafo específico: «sOC Credentials no
-  recoge ningún dato. La bóveda se guarda cifrada en el aparato o, si el usuario lo elige, en la
+  recoge ningún dato. La bóveda se guarda cifrada en el dispositivo o, si el usuario lo elige, en la
   carpeta privada de la aplicación de su propio Google Drive u OneDrive; la aplicación no tiene
   servidor propio ni envía nada a terceros.»
 - Antes de nada, **crear la aplicación en Play Console** (no se puede por API) con el paquete

@@ -8,7 +8,7 @@ namespace Credentials.Pages;
 /// <summary>
 /// Una entrada: ver, editar, copiar, generar contraseña, dar de alta el segundo factor (a mano o
 /// con el QR) y ver el codigo vivo. Se trabaja sobre una copia y solo se escribe en la boveda al
-/// guardar; el borrado es logico, para que llegue a los demas aparatos.
+/// guardar; el borrado es logico, para que llegue a los demas dispositivos.
 /// </summary>
 public partial class EntryPage : ContentPage
 {
@@ -338,21 +338,8 @@ public partial class EntryPage : ContentPage
         var ok = await ModernDialog.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], _entry.Title), _l["Delete"], _l["Cancel"]);
         if (!ok)
             return;
-        var data = _store.Data!;
-        var index = data.Entries.FindIndex(x => x.Id == _entry.Id);
-        if (index >= 0)
-        {
-            // Borrado logico: la baja tiene que llegar a los demas aparatos al mezclar.
-            var tomb = data.Entries[index];
-            tomb.Deleted = true;
-            tomb.Password = string.Empty;
-            tomb.Totp = string.Empty;
-            tomb.Notes = string.Empty;
-            tomb.Fields.Clear();
-            tomb.History.Clear();
-            tomb.ModifiedAt = DateTimeOffset.UtcNow;
-        }
-        await _store.SaveAsync();
+        // Borrado logico (VaultStore.DeleteAsync): la baja tiene que llegar a los demas dispositivos al mezclar.
+        await _store.DeleteAsync(_entry.Id);
         await Navigation.PopAsync();
     }
 

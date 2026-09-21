@@ -16,6 +16,8 @@ public sealed class TrayIcon
     private const int WmLButtonDblClk = 0x0203;
     private const int WmTray = 0x8001;   // WM_APP + 1
     private const int ScMinimize = 0xF020;
+    private const int WmWtsSessionChange = 0x02B1;
+    private const int WtsSessionLock = 0x7;
     private const int IdOpen = 1, IdExit = 2;
 
     private readonly IntPtr _hwnd;
@@ -30,6 +32,19 @@ public sealed class TrayIcon
     /// <summary>Si al minimizar se esconde en la bandeja (ajuste del usuario) o se minimiza como siempre.</summary>
     public bool MinimizeToTray { get; set; } = true;
 
+    /// <summary>El usuario ha bloqueado la sesion de Windows (Win+L, o el bloqueo automatico del sistema).</summary>
+    public event Action? SessionLocked;
+
+    /// <summary>Cuanto lleva el PC sin teclado ni raton (GetLastInputInfo), para el bloqueo por inactividad real.</summary>
+    public static TimeSpan? SystemIdle()
+    {
+        var info = new LastInputInfo { cbSize = Marshal.SizeOf<LastInputInfo>() };
+        if (!GetLastInputInfo(ref info))
+            return null;
+        var ms = unchecked((uint)Environment.TickCount) - info.dwTime;
+        return TimeSpan.FromMilliseconds(ms);
+    }
+
     /// <summary>Esconder ahora (arranque con --tray).</summary>
     public void HideToTray() => Hide();
 
@@ -43,6 +58,8 @@ public sealed class TrayIcon
         _exit = exit;
         _proc = HandleMessage;
         _oldProc = SetWindowLongPtr(hwnd, -4 /* GWLP_WNDPROC */, Marshal.GetFunctionPointerForDelegate(_proc));
+        // Avisos de sesion (bloqueo, cierre) para esta ventana.
+        WTSRegisterSessionNotification(hwnd, 0 /* NOTIFY_FOR_THIS_SESSION */);
     }
 
     private IntPtr HandleMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -65,6 +82,13 @@ public sealed class TrayIcon
             case WmCommand when (int)((long)wParam & 0xFFFF) == IdExit:
                 Remove();
                 _exit();
+                return IntPtr.Zero;
+            case WmWtsSessionChange when (int)wParam == WtsSessionLock:
+                SessionLocked?.Invoke();
+                break;
+            case var m when m == SingleInstance.ShowMessage:
+                // Otra instancia ha arrancado y se ha ido: esta se enseña en su lugar.
+                Restore();
                 return IntPtr.Zero;
         }
         return CallWindowProc(_oldProc, hWnd, msg, wParam, lParam);
@@ -166,6 +190,12 @@ public sealed class TrayIcon
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Point { public int X, Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LastInputInfo { public int cbSize; public uint dwTime; }
+
+    [DllImport("user32.dll")] private static extern bool GetLastInputInfo(ref LastInputInfo info);
+    [DllImport("wtsapi32.dll")] private static extern bool WTSRegisterSessionNotification(IntPtr hWnd, int flags);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern bool Shell_NotifyIcon(int message, ref NotifyIconData data);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int index, IntPtr newLong);

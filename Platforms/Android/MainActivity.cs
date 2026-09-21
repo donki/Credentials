@@ -14,10 +14,16 @@ namespace Credentials;
     ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
+    private ScreenOffReceiver? _screenOff;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
         ApplySystemBarInsets();
+        // Al apagarse la pantalla (bloqueo del movil) la boveda se cierra: es el «bloqueo de sesion»
+        // del telefono. Mientras la pantalla siga encendida solo cuenta la inactividad.
+        _screenOff = new ScreenOffReceiver();
+        RegisterReceiver(_screenOff, new IntentFilter(Intent.ActionScreenOff));
 #if DEBUG
         // Solo en Debug: extras del intent para probar y capturar sin teclear (Helpers.DemoData).
         if (Intent?.GetStringExtra("master") is { } master)
@@ -32,6 +38,26 @@ public class MainActivity : MauiAppCompatActivity
             });
         }
 #endif
+    }
+
+    protected override void OnDestroy()
+    {
+        if (_screenOff is not null)
+        {
+            try { UnregisterReceiver(_screenOff); } catch (Exception) { }
+            _screenOff = null;
+        }
+        base.OnDestroy();
+    }
+
+    private sealed class ScreenOffReceiver : BroadcastReceiver
+    {
+        public override void OnReceive(Context? context, Intent? intent)
+        {
+            if (intent?.Action != Intent.ActionScreenOff)
+                return;
+            try { Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>().Lock(); } catch (Exception) { }
+        }
     }
 
     /// <summary>Al volver a primer plano se comprueba el bloqueo por inactividad: la boveda no espera al siguiente toque.</summary>

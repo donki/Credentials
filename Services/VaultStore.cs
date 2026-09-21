@@ -15,9 +15,9 @@ namespace Credentials.Services;
 /// (gana la mas nueva) y se sube.</para>
 /// <para><b>Clave envuelta.</b> Para desbloquear con Windows Hello o la huella se guarda la clave
 /// derivada (no la contraseña) en <c>SecureStorage</c>, que en Windows es DPAPI y en Android el
-/// Keystore; solo se lee tras pasar la biometria. Nada de eso sale del aparato.</para>
-/// <para><b>Misma contraseña en todos los aparatos.</b> La copia de la nube se descifra con la
-/// misma clave; si alguien cambia la contraseña maestra en un aparato, los demas la piden al abrir.</para>
+/// Keystore; solo se lee tras pasar la biometria. Nada de eso sale del dispositivo.</para>
+/// <para><b>Misma contraseña en todos los dispositivos.</b> La copia de la nube se descifra con la
+/// misma clave; si alguien cambia la contraseña maestra en un dispositivo, los demas la piden al abrir.</para>
 /// </remarks>
 public sealed class VaultStore
 {
@@ -31,6 +31,14 @@ public sealed class VaultStore
     private byte[]? _key;
     private VaultCrypto.Header? _header;
     private DateTimeOffset _lastActivity = DateTimeOffset.UtcNow;
+    private Timer? _idleTimer;
+
+    /// <summary>
+    /// Cuanto lleva el usuario sin tocar el dispositivo (teclado, raton, pantalla), si la plataforma
+    /// lo sabe (Windows: GetLastInputInfo). Con esto la inactividad es la real, no solo la de esta
+    /// aplicacion: mientras se usa el PC la boveda sigue abierta.
+    /// </summary>
+    public static Func<TimeSpan?>? SystemIdle { get; set; }
 
     public VaultStore(ISettingsService settings, IOAuthBrowser browser)
     {
@@ -146,24 +154,82 @@ public sealed class VaultStore
 
     public void Lock()
     {
+        if (_key is null && Data is null)
+            return;
         if (_key is not null)
             CryptographicOperations.ZeroMemory(_key);
         _key = null;
         Data = null;
+        StopIdleTimer();
         Locked?.Invoke();
     }
 
     /// <summary>Cualquier uso reinicia la cuenta atras del bloqueo automatico.</summary>
-    public void Touch() => _lastActivity = DateTimeOffset.UtcNow;
+    public void Touch()
+    {
+        _lastActivity = DateTimeOffset.UtcNow;
+        if (IsUnlocked && _idleTimer is null)
+            StartIdleTimer();
+    }
 
-    /// <summary>Si ha pasado el tiempo de inactividad configurado, bloquea. Lo llama un temporizador de la pagina.</summary>
+    /// <summary>Cuanto lleva el usuario sin hacer nada: lo que sepa el sistema o, si no, lo que lleva sin usar esta aplicacion.</summary>
+    public TimeSpan IdleTime
+    {
+        get
+        {
+            var app = DateTimeOffset.UtcNow - _lastActivity;
+            try
+            {
+                if (SystemIdle?.Invoke() is { } system)
+                    return system < app ? system : app;
+            }
+            catch (Exception) { }
+            return app;
+        }
+    }
+
+    /// <summary>Si ha pasado el tiempo de inactividad configurado, bloquea.</summary>
     public bool LockIfIdle()
     {
         var minutes = _settings.AutoLockMinutes;
-        if (!IsUnlocked || minutes <= 0 || DateTimeOffset.UtcNow - _lastActivity < TimeSpan.FromMinutes(minutes))
+        if (!IsUnlocked || minutes <= 0 || IdleTime < TimeSpan.FromMinutes(minutes))
             return false;
         Lock();
         return true;
+    }
+
+    // La cuenta atras corre mientras la boveda esta abierta, este la pagina que este a la vista (o la
+    // ventana en la bandeja): cada 15 s se mira si toca bloquear.
+    private void StartIdleTimer()
+    {
+        StopIdleTimer();
+        _idleTimer = new Timer(_ => MainThread.BeginInvokeOnMainThread(() => { try { LockIfIdle(); } catch (Exception) { } }), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
+    }
+
+    private void StopIdleTimer()
+    {
+        _idleTimer?.Dispose();
+        _idleTimer = null;
+    }
+
+    /// <summary>
+    /// Borra una entrada: borrado logico (queda una lapida sin secretos) para que la baja llegue a
+    /// los demas dispositivos al mezclar; VaultData.Purge la quita del todo pasado un tiempo.
+    /// </summary>
+    public async Task DeleteAsync(Guid id)
+    {
+        EnsureUnlocked();
+        var tomb = Data!.Entries.FirstOrDefault(x => x.Id == id);
+        if (tomb is null)
+            return;
+        tomb.Deleted = true;
+        tomb.Password = string.Empty;
+        tomb.Totp = string.Empty;
+        tomb.Notes = string.Empty;
+        tomb.Fields.Clear();
+        tomb.History.Clear();
+        tomb.ModifiedAt = DateTimeOffset.UtcNow;
+        await SaveAsync();
     }
 
     public async Task ChangeMasterPasswordAsync(string newPassword)

@@ -7,7 +7,7 @@ namespace Credentials.Platforms.Android;
 
 /// <inheritdoc cref="IBiometric"/>
 /// <remarks>BiometricPrompt de AndroidX: huella, cara o lo que tenga el movil, con el PIN del
-/// aparato como alternativa (DeviceCredential).</remarks>
+/// dispositivo como alternativa (DeviceCredential).</remarks>
 public class Biometric : IBiometric
 {
     private const int Allowed = BiometricManager.Authenticators.BiometricStrong | BiometricManager.Authenticators.DeviceCredential;

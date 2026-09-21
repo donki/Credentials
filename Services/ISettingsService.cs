@@ -30,6 +30,12 @@ public interface ISettingsService
     /// <summary>Windows: al desbloquear, ofrecer instalar la extension en los navegadores que no la tengan.</summary>
     bool AskExtensions { get; set; }
 
+    /// <summary>Android: al desbloquear, si otro gestor rellena las contraseñas, proponer que lo haga esta aplicacion.</summary>
+    bool AskAutofill { get; set; }
+
+    /// <summary>Windows: lista de entradas pegada a los campos de contraseña de las aplicaciones del escritorio.</summary>
+    bool DesktopAutofill { get; set; }
+
     /// <summary>Windows: cuando conecto por ultima vez la extension de ese navegador (chrome/edge/firefox); null si nunca.</summary>
     DateTimeOffset? ExtensionSeen(string browser);
     void SetExtensionSeen(string browser);

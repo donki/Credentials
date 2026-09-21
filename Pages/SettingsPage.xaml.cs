@@ -18,7 +18,7 @@ public partial class SettingsPage : ContentPage
     private readonly IBiometric _biometric;
     private readonly IToastService _toast;
     private bool _loading;
-    private static readonly int[] LockMinutes = [0, 1, 2, 5, 10, 30, 60];
+    private static readonly int[] LockMinutes = [0, 1, 2, 5, 10, 15, 30, 60];
     private static readonly int[] ClipSeconds = [0, 15, 30, 60, 120];
 
     public SettingsPage()
@@ -61,6 +61,7 @@ public partial class SettingsPage : ContentPage
         ExtAskSwitch.IsToggled = _settings.AskExtensions;
         RefreshBrowsers();
 #endif
+        RefreshAutofill();
         SyncButton.Text = _l["SyncNow"];
         SignOutButton.Text = _l["SignOut"];
         SecurityTitle.Text = _l["SecurityTitle"];
@@ -92,6 +93,7 @@ public partial class SettingsPage : ContentPage
         base.OnAppearing();
         if (!await Gate.EnsureUnlockedAsync(this))
             return;
+        RefreshAutofill();
         BiometricsSwitch.IsEnabled = await _biometric.IsAvailableAsync();
         if (!BiometricsSwitch.IsEnabled)
             BiometricsHint.Text = _l["BiometricsUnavailable"];
@@ -171,6 +173,61 @@ public partial class SettingsPage : ContentPage
     {
         if (!_loading)
             _settings.AskExtensions = e.Value;
+    }
+
+    // ------------------------------------------------------------------ autocompletar
+
+    /// <summary>Android: estado del servicio de autocompletar y boton para elegir este; Windows: interruptor de la lista en las aplicaciones.</summary>
+    private void RefreshAutofill()
+    {
+        var loading = _loading;
+        _loading = true;
+        AutofillTitle.Text = _l["AutofillSection"];
+        AutofillAskLabel.Text = _l["AutofillAskOnUnlock"];
+        AutofillAskHint.Text = _l["AutofillAskOnUnlockHint"];
+        AutofillAskSwitch.IsToggled = _settings.AskAutofill;
+        DesktopAutofillLabel.Text = _l["DesktopAutofill"];
+        DesktopAutofillHint.Text = _l["DesktopAutofillHint"];
+        DesktopAutofillSwitch.IsToggled = _settings.DesktopAutofill;
+#if ANDROID
+        var supported = Platforms.Android.AutofillSetup.Supported;
+        AutofillCard.IsVisible = supported;
+        DesktopAutofillRow.IsVisible = false;
+        var ours = supported && Platforms.Android.AutofillSetup.IsOurs;
+        AutofillStatus.Text = ours ? "✓ " + _l["AutofillIsOurs"] : _l["AutofillIsOther"];
+        AutofillButton.Text = ours ? _l["AutofillChange"] : _l["AutofillUseThis"];
+        AutofillButton.Style = LookupStyle(ours ? "OutlineButton" : "PrimaryButton");
+        AutofillButton.ImageSource = ours ? "ic_key.png" : "ic_key_w.png";
+        AutofillAskRow.IsVisible = !ours;
+#elif WINDOWS
+        AutofillCard.IsVisible = true;
+        AutofillStatus.IsVisible = false;
+        AutofillButton.IsVisible = false;
+        AutofillAskRow.IsVisible = false;
+#else
+        AutofillCard.IsVisible = false;
+#endif
+        _loading = loading;
+    }
+
+    private void OnAutofillClicked(object? sender, EventArgs e)
+    {
+#if ANDROID
+        try { Platforms.Android.AutofillSetup.Request(); }
+        catch (Exception ex) { _toast.Show(ex.Message); }
+#endif
+    }
+
+    private void OnAutofillAskToggled(object? sender, ToggledEventArgs e)
+    {
+        if (!_loading)
+            _settings.AskAutofill = e.Value;
+    }
+
+    private void OnDesktopAutofillToggled(object? sender, ToggledEventArgs e)
+    {
+        if (!_loading)
+            _settings.DesktopAutofill = e.Value;
     }
 
 #if WINDOWS

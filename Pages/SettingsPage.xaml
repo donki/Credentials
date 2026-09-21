@@ -75,6 +75,30 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Autocompletar: en Android, el servicio del sistema (solo uno: elegir este desconecta el
+                 otro gestor); en Windows, la lista pegada a los campos de contraseña de las aplicaciones. -->
+            <Border x:Name="AutofillCard" Style="{StaticResource Card}" IsVisible="False">
+                <VerticalStackLayout Padding="16,12" Spacing="8">
+                    <Label x:Name="AutofillTitle" Style="{StaticResource SectionTitle}" />
+                    <Label x:Name="AutofillStatus" Style="{StaticResource HintText}" />
+                    <Button x:Name="AutofillButton" ImageSource="ic_key_w.png" ContentLayout="Left,6" Style="{StaticResource PrimaryButton}" Clicked="OnAutofillClicked" />
+                    <Grid x:Name="AutofillAskRow" ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="AutofillAskLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="AutofillAskHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="AutofillAskSwitch" OnColor="{StaticResource Primary}" Toggled="OnAutofillAskToggled" VerticalOptions="Center" />
+                    </Grid>
+                    <Grid x:Name="DesktopAutofillRow" ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="DesktopAutofillLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="DesktopAutofillHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="DesktopAutofillSwitch" OnColor="{StaticResource Primary}" Toggled="OnDesktopAutofillToggled" VerticalOptions="Center" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
             <!-- Windows: bandeja y arranque -->
             <Border x:Name="WindowsCard" Style="{StaticResource Card}" IsVisible="False">
                 <VerticalStackLayout Padding="16,12" Spacing="8">

@@ -6,7 +6,7 @@ namespace Credentials.Services;
 
 /// <summary>
 /// Importadores: lo que exportan los navegadores y otros gestores. Se reconoce el formato por el
-/// contenido, no por la extension. Nada de esto sale del aparato: se lee el fichero, se convierten
+/// contenido, no por la extension. Nada de esto sale del dispositivo: se lee el fichero, se convierten
 /// las filas a entradas y se mezclan con la boveda (las repetidas —misma URL y usuario, o mismo
 /// TOTP— se saltan).
 /// </summary>
