@@ -77,6 +77,21 @@ public partial class UnlockPage : ContentPage
 
     private async void OnBiometricClicked(object? sender, EventArgs e) => await TryBiometricAsync();
 
+    /// <summary>
+    /// Volver a ofrecer la biometria sin que el usuario la pida: al volver a la sesion de Windows
+    /// tras Win+L, que cerro la boveda y saco esta puerta cuando aun no se podia contestar.
+    /// </summary>
+    public void RetryBiometric() => MainThread.BeginInvokeOnMainThread(async () =>
+    {
+        try
+        {
+            if (_store.IsUnlocked || _creating || !_settings.Biometrics || !_store.HasStoredKey || !await _biometric.IsAvailableAsync())
+                return;
+            await TryBiometricAsync();
+        }
+        catch (Exception) { }
+    });
+
     private async Task TryBiometricAsync()
     {
         if (!await _biometric.AuthenticateAsync(_l["AppName"], _l["BiometricReason"]))

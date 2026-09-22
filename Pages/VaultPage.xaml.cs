@@ -298,6 +298,9 @@ public static class Gate
 {
     private static bool _showing;
 
+    /// <summary>La puerta que esta a la vista ahora mismo, si la hay.</summary>
+    public static UnlockPage? Current { get; private set; }
+
     public static async Task<bool> EnsureUnlockedAsync(Page page)
     {
         var store = ServiceHelper.GetRequiredService<VaultStore>();
@@ -309,6 +312,7 @@ public static class Gate
         try
         {
             var unlock = new UnlockPage();
+            Current = unlock;
             var tcs = new TaskCompletionSource();
             unlock.Disappearing += (_, _) => tcs.TrySetResult();
             await page.Navigation.PushModalAsync(unlock, animated: false);
@@ -316,6 +320,7 @@ public static class Gate
         }
         finally
         {
+            Current = null;
             _showing = false;
         }
         return store.IsUnlocked;

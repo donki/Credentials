@@ -119,5 +119,17 @@
  },
  "browserPmDisabled": {
   "message": "The browser will no longer save passwords"
+ },
+ "browserOptions": {
+  "message": "Browser"
+ },
+ "browserPmEnabled": {
+  "message": "The browser saves and fills passwords"
+ },
+ "browserPmHint": {
+  "message": "When off, only sOC Credentials offers to save and fills. You can turn it back on any time."
+ },
+ "browserPmEnabledToast": {
+  "message": "The browser will save passwords again"
  }
 }

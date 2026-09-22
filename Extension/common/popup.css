@@ -36,6 +36,7 @@ button:disabled { opacity: .6; cursor: default; }
 details { margin: 4px 14px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
 summary { cursor: pointer; padding: 8px 12px; font-weight: 600; }
 .gen { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.hint { color: var(--muted); font-size: 12px; }
 .row { display: flex; align-items: center; gap: 8px; }
 .row.right { justify-content: flex-end; }
 .row.opts { flex-wrap: wrap; gap: 6px 14px; color: var(--muted); }

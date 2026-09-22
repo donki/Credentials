@@ -6,6 +6,8 @@ public partial class App : Application
     private Platforms.Windows.TrayIcon? _tray;
     private Platforms.Windows.ExtensionServer? _extensions;
     private Platforms.Windows.DesktopAutofill? _desktopAutofill;
+    /// <summary>La ventana ha salido solo para pedir la contraseña (arranque con Windows, vuelta a la sesion): al abrir la boveda vuelve a la bandeja.</summary>
+    private bool _hideAfterUnlock;
 
     /// <summary>El icono de bandeja de la ventana principal (para que Ajustes cambie su comportamiento).</summary>
     public static Platforms.Windows.TrayIcon? Tray { get; private set; }
@@ -44,6 +46,12 @@ public partial class App : Application
                 await Task.Delay(600);
                 if (window.Page is { } page)
                     await Platforms.Windows.ExtensionSetup.OfferAfterUnlockAsync(page, settings, loc);
+                // Si la ventana solo salio para pedir la contraseña, vuelve a la bandeja.
+                if (_hideAfterUnlock)
+                {
+                    _hideAfterUnlock = false;
+                    _tray?.HideToTray();
+                }
             });
         }
         catch (Exception) { /* sin extensiones no pasa nada: la aplicacion sigue */ }
@@ -86,9 +94,30 @@ public partial class App : Application
                     _desktopAutofill.Start();
                 }
                 catch (Exception) { _desktopAutofill = null; }
-                // «--tray» (arranque con Windows): escondida en la bandeja desde el principio.
-                if (Environment.GetCommandLineArgs().Contains("--tray"))
+                // La contraseña se pide una vez por sesion de escritorio: al arrancar con Windows
+                // («--tray») sale la pagina de desbloqueo y, abierta la boveda, la ventana se va a la
+                // bandeja; y al volver a la sesion tras Win+L (que la cerro) se vuelve a pedir. Con
+                // «--background» (la arranca el navegador por algo pasivo) se esconde sin pedir nada:
+                // se pedira cuando el usuario use la extension.
+                var args = Environment.GetCommandLineArgs();
+                if (args.Contains("--background") || (args.Contains("--tray") && store.IsUnlocked))
                     native.DispatcherQueue.TryEnqueue(() => _tray.HideToTray());
+                else if (args.Contains("--tray"))
+                    _hideAfterUnlock = true;
+                _tray.SessionUnlocked += () => native.DispatcherQueue.TryEnqueue(() =>
+                {
+                    try
+                    {
+                        if (store.IsUnlocked || !store.Exists)
+                            return;
+                        _hideAfterUnlock = _tray.IsHidden;
+                        _tray.Show();
+                        if (window.Page is { } page)
+                            _ = Pages.Gate.EnsureUnlockedAsync(page);
+                        Pages.Gate.Current?.RetryBiometric();
+                    }
+                    catch (Exception) { }
+                });
                 // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
                 if (!IsPackaged())
                     Platforms.Windows.TaskbarIdentity.Apply(hwnd, "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));

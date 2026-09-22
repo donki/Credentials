@@ -18,6 +18,7 @@ public sealed class TrayIcon
     private const int ScMinimize = 0xF020;
     private const int WmWtsSessionChange = 0x02B1;
     private const int WtsSessionLock = 0x7;
+    private const int WtsSessionUnlock = 0x8;
     private const int IdOpen = 1, IdExit = 2;
 
     private readonly IntPtr _hwnd;
@@ -34,6 +35,12 @@ public sealed class TrayIcon
 
     /// <summary>El usuario ha bloqueado la sesion de Windows (Win+L, o el bloqueo automatico del sistema).</summary>
     public event Action? SessionLocked;
+
+    /// <summary>El usuario ha vuelto a la sesion de Windows (tras Win+L o la pantalla de bloqueo).</summary>
+    public event Action? SessionUnlocked;
+
+    /// <summary>La ventana esta escondida en la bandeja (solo se ve el icono).</summary>
+    public bool IsHidden => _shown;
 
     /// <summary>Cuanto lleva el PC sin teclado ni raton (GetLastInputInfo), para el bloqueo por inactividad real.</summary>
     public static TimeSpan? SystemIdle()
@@ -85,6 +92,9 @@ public sealed class TrayIcon
                 return IntPtr.Zero;
             case WmWtsSessionChange when (int)wParam == WtsSessionLock:
                 SessionLocked?.Invoke();
+                break;
+            case WmWtsSessionChange when (int)wParam == WtsSessionUnlock:
+                SessionUnlocked?.Invoke();
                 break;
             case var m when m == SingleInstance.ShowMessage:
                 // Otra instancia ha arrancado y se ha ido: esta se enseña en su lugar.

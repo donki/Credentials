@@ -2,6 +2,25 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.22.00 — La contraseña se pide una vez por sesión de escritorio; el gestor del navegador se puede volver a encender
+
+`versionCode`: 2026092200 · Windows `2026.9.22.0` · extensión `2026.9.22.0`
+
+- **Ya no pide la contraseña cada vez que se abre el navegador.** Lo hacía porque la extensión
+  consulta la bóveda para cada pestaña (la insignia con el número de entradas) y, cerrada, la
+  aplicación saltaba a pedir la contraseña. Ahora esas consultas pasivas (insignia, lista pegada al
+  campo) solo reciben «bloqueada» (candado 🔒 en el icono); la contraseña se pide cuando el usuario
+  actúa: abre el popup, pulsa «Desbloquear» en la lista, el menú contextual o «Guardar».
+- **Una vez por sesión de escritorio (Windows)**: con «Arrancar con Windows», al iniciar sesión sale
+  la pantalla de desbloqueo (Windows Hello si está activado) y, abierta la bóveda, la ventana se va
+  a la bandeja. Al bloquear Windows (Win+L) la bóveda se cierra y se vuelve a pedir al volver a la
+  sesión (otra vez con Windows Hello). Cuando la arranca el navegador (`--background`) se queda
+  escondida sin pedir nada. El bloqueo por inactividad propio viene ahora apagado en Windows (la
+  sesión de Windows ya manda); se puede encender en Ajustes. En Android sigue a 15 minutos.
+- **Extensión › Navegador**: interruptor «El navegador guarda y rellena contraseñas» al pie del popup
+  para volver a encender el gestor del navegador tras apagarlo (o apagarlo más tarde). Encenderlo
+  suelta el ajuste y el navegador recupera el suyo.
+
 ## 2026.09.21.00 — Rellenar desde el propio campo, guardar lo escrito y la bóveda abierta mientras usas el PC
 
 `versionCode`: 2026092100 · Windows `2026.9.21.0` · extensión `2026.9.21.0`

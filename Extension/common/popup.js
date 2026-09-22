@@ -8,6 +8,7 @@ let tab = null;
 let host = "";
 let entries = [];
 let retryTimer = null;
+let unlockAsked = false;   // al abrir el popup con la bóveda cerrada se pide desbloquear una sola vez
 
 function hostOf(url) {
   try { const u = new URL(url); return (u.protocol === "http:" || u.protocol === "https:") ? u.hostname : ""; }
@@ -15,7 +16,7 @@ function hostOf(url) {
 }
 
 async function init() {
-  for (const [id, key] of [["genTitle", "generator"], ["lenLabel", "length"], ["upperLabel", "upper"], ["digitsLabel", "digits"], ["symbolsLabel", "symbols"], ["regen", "generate"], ["copyGen", "copyPass"], ["useGen", "useInPage"], ["openApp", "openApp"], ["saveTyped", "saveTyped"], ["pmText", "browserPmQuestion"], ["pmKeep", "browserPmKeep"], ["pmDisable", "browserPmDisable"]])
+  for (const [id, key] of [["genTitle", "generator"], ["lenLabel", "length"], ["upperLabel", "upper"], ["digitsLabel", "digits"], ["symbolsLabel", "symbols"], ["regen", "generate"], ["copyGen", "copyPass"], ["useGen", "useInPage"], ["openApp", "openApp"], ["saveTyped", "saveTyped"], ["pmText", "browserPmQuestion"], ["pmKeep", "browserPmKeep"], ["pmDisable", "browserPmDisable"], ["optsTitle", "browserOptions"], ["pmEnabledLabel", "browserPmEnabled"], ["pmHint", "browserPmHint"]])
     $(id).textContent = t(key);
   $("search").placeholder = t("search");
   const tabs = await api.tabs.query({ active: true, currentWindow: true });
@@ -38,6 +39,7 @@ async function init() {
   await load();
   await offerTyped();
   await offerDisableBrowserManager();
+  await showBrowserManagerSwitch();
   setInterval(tickTotp, 1000);
 }
 
@@ -82,6 +84,41 @@ async function offerDisableBrowserManager() {
       catch (e) { toast(String(e?.message ?? e)); }
       await api.storage.local.set({ pmAsked: true });
       $("pm").hidden = true;
+      await showBrowserManagerSwitch();
+    });
+  } catch { }
+}
+
+// El interruptor permanente (sección «Navegador»): para volver a encender el gestor del navegador
+// después de apagarlo, o apagarlo más tarde. Encender = soltar el ajuste (vuelve al del usuario).
+async function showBrowserManagerSwitch() {
+  const setting = api.privacy?.services?.passwordSavingEnabled;
+  if (!setting) return;
+  try {
+    const { value, levelOfControl } = await setting.get({});
+    if (levelOfControl !== "controllable_by_this_extension" && levelOfControl !== "controlled_by_this_extension") return;
+    const box = $("pmEnabled");
+    box.checked = !!value;
+    $("opts").hidden = false;
+    if (box.dataset.wired) return;
+    box.dataset.wired = "1";
+    box.addEventListener("change", async () => {
+      try {
+        if (box.checked) {
+          await setting.clear({});
+          const after = await setting.get({});
+          if (!after.value) await setting.set({ value: true });
+          toast(t("browserPmEnabledToast"));
+        } else {
+          await setting.set({ value: false });
+          toast(t("browserPmDisabled"));
+        }
+        await api.storage.local.set({ pmAsked: true });
+        $("pm").hidden = true;
+      } catch (e) {
+        toast(String(e?.message ?? e));
+        try { box.checked = !!(await setting.get({})).value; } catch { }
+      }
     });
   } catch { }
 }
@@ -110,6 +147,9 @@ function render(r, q) {
     status.textContent = t("locked") + " " + t("retrying");
     open.hidden = false;
     $("list").innerHTML = "";
+    // Abrir el popup es un acto del usuario: la aplicación sale a pedir la contraseña (la insignia
+    // y el desplegable no lo hacen; solo avisan con el candado).
+    if (!unlockAsked) { unlockAsked = true; try { api.runtime.sendMessage({ type: "show" })?.catch?.(() => { }); } catch { } }
     if (!retryTimer) retryTimer = setInterval(async () => { const rr = await api.runtime.sendMessage(q ? { type: "search", query: q } : { type: "list", host }); if (!rr?.locked) { clearInterval(retryTimer); retryTimer = null; render(rr, q); } }, 2000);
     return;
   }

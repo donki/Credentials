@@ -104,15 +104,19 @@ public sealed class ExtensionServer
                         break;
                     }
                     case "show":
-                        WindowHelper.BringToFront();
+                        // El usuario ha pedido la aplicacion (popup, menu, desplegable): si esta
+                        // bloqueada, aqui si se pide la contraseña.
+                        RequestUnlock();
                         reply["ok"] = true;
                         break;
                     case "list":
                     case "search":
                     {
+                        // Peticiones pasivas (la insignia al cargar cada pestaña, el desplegable al
+                        // enfocar un campo): con la boveda cerrada se contesta «locked» y punto, sin
+                        // sacar la ventana. La contraseña solo se pide cuando el usuario actua.
                         if (!_store.IsUnlocked)
                         {
-                            RequestUnlock();
                             reply["locked"] = true;
                             break;
                         }
@@ -179,11 +183,11 @@ public sealed class ExtensionServer
         return reply.ToJsonString(new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
     }
 
-    /// <summary>La extension necesita la boveda: se trae la ventana y se abre la pagina de desbloqueo.</summary>
-    private static void RequestUnlock()
+    /// <summary>El usuario necesita la boveda: se trae la ventana y, si esta cerrada, la pagina de desbloqueo.</summary>
+    private void RequestUnlock()
     {
         WindowHelper.BringToFront();
-        if (Application.Current?.Windows.FirstOrDefault()?.Page is { } page)
+        if (!_store.IsUnlocked && Application.Current?.Windows.FirstOrDefault()?.Page is { } page)
             _ = Pages.Gate.EnsureUnlockedAsync(page);
     }
 }

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text;
 using Microsoft.Win32;
@@ -96,8 +96,10 @@ internal static class Program
         var path = Registry.GetValue(@"HKEY_CURRENT_USER\" + AppKey, "AppPath", null) as string;
         if (string.IsNullOrEmpty(path) || !File.Exists(path))
             throw new TimeoutException("sOC Credentials no esta instalada (falta AppPath).");
-        // UseShellExecute: que la aplicacion no herede las tuberias del navegador.
-        Process.Start(new ProcessStartInfo(path, "--tray") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(path) });
+        // UseShellExecute: que la aplicacion no herede las tuberias del navegador. «--background»:
+        // escondida en la bandeja y sin pedir la contraseña hasta que el usuario la necesite (el
+        // navegador arranca la aplicacion por cosas pasivas, como la insignia de cada pestaña).
+        Process.Start(new ProcessStartInfo(path, "--background") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(path) });
     }
 
     private static void Close()

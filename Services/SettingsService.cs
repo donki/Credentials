@@ -30,9 +30,13 @@ public class SettingsService : ISettingsService
         set => Preferences.Set("account_email", value ?? string.Empty, Shared);
     }
 
+    // En Windows la boveda va con la sesion de escritorio: se cierra al bloquear la sesion (Win+L,
+    // o el bloqueo automatico del sistema) y la contraseña se pide una vez al volver; por eso el
+    // bloqueo por inactividad propio viene apagado (el usuario puede encenderlo en Ajustes).
+    // En Android se cierra a los 15 minutos (y al apagar la pantalla).
     public int AutoLockMinutes
     {
-        get => Preferences.Get("autolock_minutes", 15, Shared);
+        get => Preferences.Get("autolock_minutes", OperatingSystem.IsWindows() ? 0 : 15, Shared);
         set => Preferences.Set("autolock_minutes", value, Shared);
     }
 

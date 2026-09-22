@@ -119,5 +119,17 @@
  },
  "browserPmDisabled": {
   "message": "El navegador ya no guardará contraseñas"
+ },
+ "browserOptions": {
+  "message": "Navegador"
+ },
+ "browserPmEnabled": {
+  "message": "El navegador guarda y rellena contraseñas"
+ },
+ "browserPmHint": {
+  "message": "Apagado, solo sOC Credentials pregunta si guardar y rellena. Puedes volver a encenderlo cuando quieras."
+ },
+ "browserPmEnabledToast": {
+  "message": "El navegador vuelve a guardar contraseñas"
  }
 }
