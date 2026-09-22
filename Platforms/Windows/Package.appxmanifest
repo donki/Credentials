@@ -7,7 +7,7 @@
 
   <!-- Identidad de Partner Center (cuenta sOCratic). El nombre de identidad y el DisplayName se
        confirman al reservar el nombre; la version la pone tools\empaquetar-msix.ps1. -->
-  <Identity Name="sOCratic.sOCCredentials" Publisher="CN=2FC3763A-58D5-473A-840E-D47726B23FE3" Version="2026.9.2200.0" />
+  <Identity Name="sOCratic.sOCCredentials" Publisher="CN=2FC3763A-58D5-473A-840E-D47726B23FE3" Version="2026.9.2201.0" />
 
   <mp:PhoneIdentity xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" PhoneProductId="A41F6B2C-3D7E-4C58-9B1A-6E2F8D4C7A93" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

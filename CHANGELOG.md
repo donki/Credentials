@@ -2,6 +2,20 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.22.01 — Que el gestor de contraseñas del móvil sea sOC Credentials, también en el navegador
+
+`versionCode`: 2026092201 · Windows `2026.9.22.1` · extensión `2026.9.22.0`
+
+- **Ajustes › Autocompletar** explica ahora los tres sitios donde se decide quién rellena las
+  contraseñas en Android, y lleva a cada uno:
+  - **El servicio de autocompletar** (lo que ya había): manda en las aplicaciones.
+  - **El servicio preferido de contraseñas** (Android 14+, Credential Manager): es el que obedecen
+    Edge y Chrome. Mientras ahí esté Google, en el navegador sale Google aunque el autocompletar sea
+    sOC Credentials. Botón nuevo que abre esa pantalla del sistema.
+  - **El gestor propio de cada navegador**: botón nuevo que enseña los pasos («Ajustes › Contraseñas
+    → apagar guardar y rellenar») y abre los ajustes del navegador elegido (Edge, Chrome, Brave,
+    Firefox, los que estén instalados).
+
 ## 2026.09.22.00 — La contraseña se pide una vez por sesión de escritorio; el gestor del navegador se puede volver a encender
 
 `versionCode`: 2026092200 · Windows `2026.9.22.0` · extensión `2026.9.22.0`

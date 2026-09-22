@@ -199,6 +199,18 @@ public partial class SettingsPage : ContentPage
         AutofillButton.Style = LookupStyle(ours ? "OutlineButton" : "PrimaryButton");
         AutofillButton.ImageSource = ours ? "ic_key.png" : "ic_key_w.png";
         AutofillAskRow.IsVisible = !ours;
+        // Lo de arriba solo manda en las aplicaciones. En los navegadores mandan el «servicio preferido
+        // de contraseñas» del sistema (Android 14+) y el gestor propio del navegador: los dos se abren aqui.
+        var preferred = Platforms.Android.AutofillSetup.HasPreferredService;
+        PreferredHint.IsVisible = preferred;
+        PreferredButton.IsVisible = preferred;
+        PreferredHint.Text = _l["AutofillPreferredHint"];
+        PreferredButton.Text = _l["AutofillPreferredOpen"];
+        _browsers = Platforms.Android.AutofillSetup.InstalledBrowsers();
+        BrowsersHint.IsVisible = _browsers.Count > 0;
+        BrowsersButton.IsVisible = _browsers.Count > 0;
+        BrowsersHint.Text = _l["AutofillBrowsersHint"];
+        BrowsersButton.Text = _l["AutofillBrowsersOpen"];
 #elif WINDOWS
         AutofillCard.IsVisible = true;
         AutofillStatus.IsVisible = false;
@@ -208,6 +220,42 @@ public partial class SettingsPage : ContentPage
         AutofillCard.IsVisible = false;
 #endif
         _loading = loading;
+    }
+
+#if ANDROID
+    private IReadOnlyList<(string Package, string Name)> _browsers = [];
+#endif
+
+    /// <summary>Android 14+: la pantalla del sistema donde se elige el gestor de contraseñas preferido.</summary>
+    private void OnPreferredClicked(object? sender, EventArgs e)
+    {
+#if ANDROID
+        if (!Platforms.Android.AutofillSetup.OpenPreferredService())
+            _toast.Show(_l["AutofillPreferredNoScreen"]);
+#endif
+    }
+
+    /// <summary>Los ajustes del navegador: su gestor de contraseñas propio se apaga desde dentro.</summary>
+    private async void OnBrowserSettingsClicked(object? sender, EventArgs e)
+    {
+#if ANDROID
+        if (_browsers.Count == 0)
+            return;
+        var names = _browsers.Select(b => b.Name).ToArray();
+        var chosen = names.Length == 1
+            ? names[0]
+            : await SocShared.ModernDialog.ActionSheetAsync(this, _l["AutofillBrowsersOpen"], _l["Cancel"], names);
+        if (chosen is null || chosen == _l["Cancel"])
+            return;
+        var browser = _browsers.FirstOrDefault(b => b.Name == chosen);
+        if (browser.Package is null)
+            return;
+        await SocShared.ModernDialog.AlertAsync(this, chosen, string.Format(_l.CurrentCulture, _l["AutofillBrowserSteps"], chosen), _l["Ok"]);
+        if (!Platforms.Android.AutofillSetup.OpenBrowserSettings(browser.Package))
+            _toast.Show(_l["AutofillPreferredNoScreen"]);
+#else
+        await Task.CompletedTask;   // en Windows los botones no se enseñan
+#endif
     }
 
     private void OnAutofillClicked(object? sender, EventArgs e)

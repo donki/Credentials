@@ -82,6 +82,12 @@
                     <Label x:Name="AutofillTitle" Style="{StaticResource SectionTitle}" />
                     <Label x:Name="AutofillStatus" Style="{StaticResource HintText}" />
                     <Button x:Name="AutofillButton" ImageSource="ic_key_w.png" ContentLayout="Left,6" Style="{StaticResource PrimaryButton}" Clicked="OnAutofillClicked" />
+                    <!-- Android 14+: el «servicio preferido de contraseñas» manda sobre el de autocompletar
+                         en los navegadores; y cada navegador Chromium tiene ademas su propio gestor. -->
+                    <Label x:Name="PreferredHint" Style="{StaticResource HintText}" IsVisible="False" />
+                    <Button x:Name="PreferredButton" ImageSource="ic_key.png" ContentLayout="Left,6" Style="{StaticResource OutlineButton}" Clicked="OnPreferredClicked" IsVisible="False" />
+                    <Label x:Name="BrowsersHint" Style="{StaticResource HintText}" IsVisible="False" />
+                    <Button x:Name="BrowsersButton" ImageSource="ic_open.png" ContentLayout="Left,6" Style="{StaticResource OutlineButton}" Clicked="OnBrowserSettingsClicked" IsVisible="False" />
                     <Grid x:Name="AutofillAskRow" ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Grid.Column="0">
                             <Label x:Name="AutofillAskLabel" Style="{StaticResource BodyText}" />

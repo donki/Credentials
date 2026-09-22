@@ -45,11 +45,13 @@ Get-ChildItem releases -Filter 'sOCCredentials-*.zip' | Remove-Item -Force
 Copy-Item "bin\windows\sOCCredentials-$win.zip" releases\ -Force
 # Extension: zips de las tiendas y la carpeta desempaquetada de Chromium (Josep la carga desde OneDrive).
 .\tools\empaquetar-extension.ps1 | Out-Null
+# La extension lleva su propia version (la del manifiesto), que no sube con cada version de la app.
+$extVer = (Get-Content 'Extension\chromium\manifest.json' -Raw | ConvertFrom-Json).version
 $e = Join-Path $d 'extension'; New-Item -ItemType Directory -Force $e | Out-Null
 Get-ChildItem bin\extension -Filter *.zip | Copy-Item -Destination $e -Force
-$u = Join-Path $e "sOCCredentials-extension-chromium-$win"
+$u = Join-Path $e "sOCCredentials-extension-chromium-$extVer"
 if (Test-Path $u) { Remove-Item $u -Recurse -Force }
-Expand-Archive "bin\extension\sOCCredentials-extension-chromium-$win.zip" $u
+Expand-Archive "bin\extension\sOCCredentials-extension-chromium-$extVer.zip" $u
 
 # git + release
 git add -A; git commit -q -m $Mensaje; git push -q -u origin HEAD 2>&1 | Select-Object -Last 1
