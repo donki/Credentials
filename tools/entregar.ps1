@@ -9,6 +9,14 @@ $code = $Ver -replace '\.', ''
 $win = ($Ver.Split('.') | ForEach-Object { [int]$_ }) -join '.'
 $msixVer = "$([int]$Ver.Split('.')[0]).$([int]$Ver.Split('.')[1]).$([int]$Ver.Split('.')[2])$($Ver.Split('.')[3]).0"
 
+# Extension: la version del manifiesto va SIEMPRE con la de la aplicacion (si no, en OneDrive
+# quedaba una extension con numero viejo y no se sabia si era la de esta entrega).
+foreach ($manifiesto in 'Extension\chromium\manifest.json', 'Extension\firefox\manifest.json') {
+    $m = Get-Content $manifiesto -Raw
+    $m = [regex]::Replace($m, '"version": "[^"]+"', "`"version`": `"$win`"", 1)
+    [IO.File]::WriteAllText((Join-Path 'D:\sOCProjects\Mobile\Credentials' $manifiesto), $m)
+}
+
 $p = 'Credentials.csproj'; $x = Get-Content $p -Raw
 $x = [regex]::Replace($x, '<ApplicationDisplayVersion>[^<]*</ApplicationDisplayVersion>', "<ApplicationDisplayVersion>$Ver</ApplicationDisplayVersion>")
 $x = [regex]::Replace($x, '<ApplicationVersion>[^<]*</ApplicationVersion>', "<ApplicationVersion>$code</ApplicationVersion>")
@@ -43,13 +51,6 @@ Get-ChildItem $d -Include *.msix,*.zip,*.exe -Recurse | Remove-Item -Force
 Get-ChildItem bin\windows | Copy-Item -Destination $d -Force
 Get-ChildItem releases -Filter 'sOCCredentials-*.zip' | Remove-Item -Force
 Copy-Item "bin\windows\sOCCredentials-$win.zip" releases\ -Force
-# Extension: la version del manifiesto va SIEMPRE con la de la aplicacion (si no, en OneDrive
-# quedaba una extension con numero viejo y no se sabia si era la de esta entrega).
-foreach ($manifiesto in 'Extension\chromium\manifest.json', 'Extension\firefox\manifest.json') {
-    $m = Get-Content $manifiesto -Raw
-    $m = [regex]::Replace($m, '"version": "[^"]+"', "`"version`": `"$win`"", 1)
-    [IO.File]::WriteAllText((Join-Path 'D:\sOCProjects\Mobile\Credentials' $manifiesto), $m)
-}
 .\tools\empaquetar-extension.ps1 | Out-Null
 # En OneDrive: los zips de las tiendas y las dos carpetas desempaquetadas (Chromium se carga por
 # carpeta; Firefox, por su manifest.json). Se borra lo de versiones anteriores para no confundir.

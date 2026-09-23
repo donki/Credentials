@@ -2,9 +2,9 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
-## 2026.09.23.02 — La extensión va con la misma versión que la aplicación
+## 2026.09.23.03 — La extensión va con la misma versión que la aplicación
 
-`versionCode`: 2026092302 · Windows `2026.9.23.2` · extensión `2026.9.23.2`
+`versionCode`: 2026092303 · Windows `2026.9.23.3` · extensión `2026.9.23.3`
 
 - **La extensión lleva ahora el mismo número que la aplicación.** Iba por su cuenta (se quedó en
   2026.9.22.0) y en OneDrive no había forma de saber si la que había era la de la última entrega.
@@ -12,6 +12,9 @@ Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11
   Firefox) y **las dos carpetas desempaquetadas**: la de Chromium se carga por carpeta y la de
   Firefox por su `manifest.json`. Antes solo se desempaquetaba la de Chromium y sobrevivían las
   versiones viejas.
+- La que la aplicación deja en `%LOCALAPPDATA%\sOCCredentials\extension` lleva también ese
+  número: se pone antes de compilar, así que el manifiesto que va dentro del paquete y el de los
+  zips son el mismo (en la 2026.09.23.02 todavía no coincidían).
 
 ## 2026.09.23.01 — Arreglo: la extensión de Firefox no podía abrir la aplicación ni conectarse
 
