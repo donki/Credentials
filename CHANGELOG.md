@@ -2,6 +2,17 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.23.00 — Arreglo: en Windows la aplicación podía no abrirse
+
+`versionCode`: 2026092300 · Windows `2026.9.23.0` · extensión `2026.9.22.0`
+
+- **Abrir sOC Credentials y que no pasara nada.** Al arrancar, si ya había otra instancia (por
+  ejemplo la que levanta el navegador para la extensión, escondida en el área de notificación), esta
+  le pedía que se enseñara y se cerraba **sin comprobar que alguien contestara**. Si esa otra estaba
+  colgada o era un proceso sin ventana que aún retenía el testigo, no salía ninguna ventana y parecía
+  que la aplicación no se ejecutaba. Ahora se espera la confirmación: si no llega en dos segundos,
+  arranca esta instancia igual (mejor dos ventanas que ninguna).
+
 ## 2026.09.22.01 — Que el gestor de contraseñas del móvil sea sOC Credentials, también en el navegador
 
 `versionCode`: 2026092201 · Windows `2026.9.22.1` · extensión `2026.9.22.0`

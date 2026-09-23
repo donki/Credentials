@@ -97,8 +97,10 @@ public sealed class TrayIcon
                 SessionUnlocked?.Invoke();
                 break;
             case var m when m == SingleInstance.ShowMessage:
-                // Otra instancia ha arrancado y se ha ido: esta se enseña en su lugar.
+                // Otra instancia ha arrancado: esta se enseña en su lugar y se lo confirma (si no
+                // contestara, la otra arrancaria igual para que el usuario no se quede sin ventana).
                 Restore();
+                SingleInstance.NotifyShown();
                 return IntPtr.Zero;
         }
         return CallWindowProc(_oldProc, hWnd, msg, wParam, lParam);
