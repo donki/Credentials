@@ -43,15 +43,23 @@ Get-ChildItem $d -Include *.msix,*.zip,*.exe -Recurse | Remove-Item -Force
 Get-ChildItem bin\windows | Copy-Item -Destination $d -Force
 Get-ChildItem releases -Filter 'sOCCredentials-*.zip' | Remove-Item -Force
 Copy-Item "bin\windows\sOCCredentials-$win.zip" releases\ -Force
-# Extension: zips de las tiendas y la carpeta desempaquetada de Chromium (Josep la carga desde OneDrive).
+# Extension: la version del manifiesto va SIEMPRE con la de la aplicacion (si no, en OneDrive
+# quedaba una extension con numero viejo y no se sabia si era la de esta entrega).
+foreach ($manifiesto in 'Extension\chromium\manifest.json', 'Extension\firefox\manifest.json') {
+    $m = Get-Content $manifiesto -Raw
+    $m = [regex]::Replace($m, '"version": "[^"]+"', "`"version`": `"$win`"", 1)
+    [IO.File]::WriteAllText((Join-Path 'D:\sOCProjects\Mobile\Credentials' $manifiesto), $m)
+}
 .\tools\empaquetar-extension.ps1 | Out-Null
-# La extension lleva su propia version (la del manifiesto), que no sube con cada version de la app.
-$extVer = (Get-Content 'Extension\chromium\manifest.json' -Raw | ConvertFrom-Json).version
-$e = Join-Path $d 'extension'; New-Item -ItemType Directory -Force $e | Out-Null
+# En OneDrive: los zips de las tiendas y las dos carpetas desempaquetadas (Chromium se carga por
+# carpeta; Firefox, por su manifest.json). Se borra lo de versiones anteriores para no confundir.
+$e = Join-Path $d 'extension'
+if (Test-Path $e) { Remove-Item $e -Recurse -Force }
+New-Item -ItemType Directory -Force $e | Out-Null
 Get-ChildItem bin\extension -Filter *.zip | Copy-Item -Destination $e -Force
-$u = Join-Path $e "sOCCredentials-extension-chromium-$extVer"
-if (Test-Path $u) { Remove-Item $u -Recurse -Force }
-Expand-Archive "bin\extension\sOCCredentials-extension-chromium-$extVer.zip" $u
+foreach ($nav in 'chromium', 'firefox') {
+    Expand-Archive "bin\extension\sOCCredentials-extension-$nav-$win.zip" (Join-Path $e "sOCCredentials-extension-$nav-$win")
+}
 
 # git + release
 git add -A; git commit -q -m $Mensaje; git push -q -u origin HEAD 2>&1 | Select-Object -Last 1
