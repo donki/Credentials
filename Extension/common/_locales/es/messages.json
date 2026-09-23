@@ -33,7 +33,7 @@
   "message": "Abrir sOC Credentials"
  },
  "noHost": {
-  "message": "No encuentro sOC Credentials en este PC. Ábrela una vez y, en Ajustes › Extensiones del navegador, pulsa «Instalar»."
+  "message": "No he podido hablar con sOC Credentials. Ábrela una vez (ella sola registra el puente con el navegador) y vuelve a probar; si acabas de instalar una versión nueva, con abrirla basta."
  },
  "generator": {
   "message": "Generar contraseña"

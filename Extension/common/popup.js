@@ -136,7 +136,9 @@ function render(r, q) {
   entries = [];
   if (!r || r.error) {
     status.hidden = false;
-    const noApp = r?.error === "nohost" || r?.error === "noapp";
+    // «disconnected» es lo que dice Firefox cuando no consigue arrancar el puente (no distingue
+    // entre que falte y que no arranque): se trata igual que «no está».
+    const noApp = r?.error === "nohost" || r?.error === "noapp" || r?.error === "disconnected";
     status.textContent = noApp ? t("noHost") : (r?.detail ?? r?.error ?? "?");
     open.hidden = noApp;
     $("list").innerHTML = "";

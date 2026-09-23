@@ -20,15 +20,21 @@ internal static class Program
     private static StreamReader? _reader;
     private static StreamWriter? _writer;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
+        // Un registro minimo: cuando algo falla, el navegador solo dice «desconectado» y no hay forma
+        // de saber si el host no arranco, si no encontro la aplicacion o si se corto la tuberia.
+        Log("arranca; argumentos: " + string.Join(" ", args));
         var stdin = Console.OpenStandardInput();
         var stdout = Console.OpenStandardOutput();
         while (true)
         {
             var request = ReadFrame(stdin);
             if (request is null)
-                return 0;   // el navegador cerro el puerto
+            {
+                Log("el navegador cerro el puerto");
+                return 0;
+            }
             string response;
             try
             {
@@ -37,6 +43,7 @@ internal static class Program
             catch (Exception ex)
             {
                 Close();
+                Log("error: " + ex.Message);
                 response = Error(request, ex is TimeoutException ? "noapp" : "app", ex.Message);
             }
             WriteFrame(stdout, response);
@@ -78,6 +85,7 @@ internal static class Program
         catch (TimeoutException)
         {
             // No esta abierta: se arranca escondida en la bandeja y se espera a que levante la tuberia.
+            Log("la aplicacion no responde en la tuberia: se arranca");
             StartApp();
             var deadline = DateTime.UtcNow.AddSeconds(25);
             while (true)
@@ -100,6 +108,21 @@ internal static class Program
         // escondida en la bandeja y sin pedir la contraseña hasta que el usuario la necesite (el
         // navegador arranca la aplicacion por cosas pasivas, como la insignia de cada pestaña).
         Process.Start(new ProcessStartInfo(path, "--background") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(path) });
+    }
+
+    /// <summary>Una linea con la hora en %LOCALAPPDATA%\sOCCredentials\logs\host.log (se recorta al crecer).</summary>
+    private static void Log(string line)
+    {
+        try
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sOCCredentials", "logs");
+            Directory.CreateDirectory(dir);
+            var file = Path.Combine(dir, "host.log");
+            if (new FileInfo(file) is { Exists: true, Length: > 500_000 })
+                File.WriteAllText(file, string.Empty);
+            File.AppendAllText(file, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{Environment.ProcessId}] {line}{Environment.NewLine}");
+        }
+        catch (Exception) { }
     }
 
     private static void Close()

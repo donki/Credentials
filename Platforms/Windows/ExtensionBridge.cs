@@ -335,7 +335,7 @@ public static class ExtensionInstaller
         {
             ["name"] = HostName,
             ["description"] = "sOC Credentials",
-            ["path"] = HostExe,
+            ["path"] = StableHostExe(),
             ["type"] = "stdio",
         };
         if (b.IsFirefox)
@@ -345,6 +345,35 @@ public static class ExtensionInstaller
         File.WriteAllText(manifestPath, manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
         using var key = Registry.CurrentUser.CreateSubKey(b.HostRegistryKey + "\\" + HostName, writable: true);
         key?.SetValue(null, manifestPath);
+    }
+
+    /// <summary>
+    /// El host que se apunta en el manifiesto vive en <c>%LOCALAPPDATA%\sOCCredentials\host</c>, no en
+    /// la carpeta de la version.
+    /// </summary>
+    /// <remarks>
+    /// El lanzador desempaqueta cada version en <c>app\&lt;version&gt;</c> y borra la anterior: un
+    /// manifiesto que apuntara ahi se quedaba señalando un exe que ya no existe en cuanto se entregaba
+    /// otra version, y el navegador decia «desconectado» (Firefox no distingue «no esta» de «no
+    /// arranca»). Aqui se copia el exe a un sitio fijo y se apunta a ese. Si esta en uso (el navegador
+    /// lo tiene abierto) se deja el que hay: es el mismo programa.
+    /// </remarks>
+    private static string StableHostExe()
+    {
+        var stable = System.IO.Path.Combine(HostDir, "CredentialsHost.exe");
+        try
+        {
+            Directory.CreateDirectory(HostDir);
+            var origen = new FileInfo(HostExe);
+            var destino = new FileInfo(stable);
+            if (origen.Exists && (!destino.Exists || destino.Length != origen.Length || destino.LastWriteTimeUtc < origen.LastWriteTimeUtc))
+                File.Copy(HostExe, stable, overwrite: true);
+        }
+        catch (Exception)
+        {
+            // En uso o sin permiso: si ya hay una copia sirve, y si no, se apunta al de la version.
+        }
+        return File.Exists(stable) ? stable : HostExe;
     }
 
     /// <summary>Donde arrancar la aplicacion si el host la encuentra cerrada: el lanzador si lo hay, si no el exe.</summary>

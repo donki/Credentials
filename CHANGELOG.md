@@ -2,6 +2,21 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.23.04 — Arreglo: Firefox decía «desconectado» tras cada versión nueva
+
+`versionCode`: 2026092304 · Windows `2026.9.23.4` · extensión `2026.9.23.4`
+
+- **El puente apuntaba a la carpeta de la versión.** El lanzador desempaqueta cada versión en
+  `app\<versión>` y **borra la anterior**, así que el manifiesto que el navegador lee se quedaba
+  señalando un `CredentialsHost.exe` que ya no existía: Firefox no distingue «no está» de «no
+  arranca» y decía **«desconectado»**. Ahora el puente se copia a un sitio fijo
+  (`%LOCALAPPDATA%\sOCCredentials\host\CredentialsHost.exe`) y es ahí donde apunta el manifiesto,
+  así que sobrevive a las actualizaciones.
+- **El puente deja un registro** en `%LOCALAPPDATA%\sOCCredentials\logs\host.log` (arranque,
+  errores y cuándo tiene que levantar la aplicación): si algo vuelve a fallar, se ve qué pasó.
+- En el popup, «desconectado» ya no sale en crudo: dice que abras sOC Credentials una vez, que es lo
+  que hace falta (ella sola registra el puente).
+
 ## 2026.09.23.03 — La extensión va con la misma versión que la aplicación
 
 `versionCode`: 2026092303 · Windows `2026.9.23.3` · extensión `2026.9.23.3`

@@ -33,7 +33,7 @@
   "message": "Open sOC Credentials"
  },
  "noHost": {
-  "message": "sOC Credentials was not found on this PC. Open it once and press “Install” in Settings › Browser extensions."
+  "message": "Could not talk to sOC Credentials. Open it once (it registers the browser bridge by itself) and try again; if you just installed a new version, opening it is enough."
  },
  "generator": {
   "message": "Generate password"
