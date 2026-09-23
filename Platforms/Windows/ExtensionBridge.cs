@@ -289,17 +289,23 @@ public static class ExtensionInstaller
     }
 
     /// <summary>
-    /// Al arrancar: si algun navegador ya esta registrado, se refrescan la extension y el manifiesto
-    /// del host, porque la carpeta de la aplicacion cambia con cada version.
+    /// Al arrancar: se deja la extension desempaquetada y el host registrado para **todos** los
+    /// navegadores que haya en el PC, esten o no ya registrados.
     /// </summary>
-    public static void RefreshIfRegistered()
+    /// <remarks>
+    /// Antes solo se refrescaba lo ya registrado, y registrar era cosa del boton «Instalar». Quien
+    /// cargaba la extension a mano (sobre todo en Firefox, que solo admite la carga temporal) se
+    /// encontraba con que no podia abrir la aplicacion ni conectarse: no habia manifiesto del host ni
+    /// clave en el registro. Esto solo escribe un json en %LOCALAPPDATA% y un valor en HKCU por
+    /// navegador, y hay que rehacerlo en cada version porque la carpeta de la aplicacion cambia.
+    /// </remarks>
+    public static void RegisterForInstalledBrowsers()
     {
         try
         {
             RegisterAppPath();
-            foreach (var b in Known)
-                if (IsRegistered(b))
-                    Install(b);
+            foreach (var b in Detected())
+                Install(b);
         }
         catch (Exception) { }
     }

@@ -2,6 +2,19 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.23.01 — Arreglo: la extensión de Firefox no podía abrir la aplicación ni conectarse
+
+`versionCode`: 2026092301 · Windows `2026.9.23.1` · extensión `2026.9.22.0`
+
+- **El puente con el navegador se registra solo.** Hasta ahora, el manifiesto del host de mensajería
+  nativa y su clave del registro solo se escribían al pulsar «Instalar» en la aplicación; quien
+  cargaba la extensión a mano —lo normal en **Firefox**, que solo admite la carga temporal— se
+  encontraba con que no podía abrir sOC Credentials ni conectarse con ella. Ahora, al arrancar, la
+  aplicación deja la extensión desempaquetada y el host registrado para **todos los navegadores que
+  haya en el PC** (Edge, Chrome, Brave, Firefox), y lo rehace en cada versión porque la carpeta
+  cambia. Comprobado con el protocolo de Firefox: saludo, consulta y arranque de la aplicación
+  estando cerrada.
+
 ## 2026.09.23.00 — Arreglo: en Windows la aplicación podía no abrirse
 
 `versionCode`: 2026092300 · Windows `2026.9.23.0` · extensión `2026.9.22.0`

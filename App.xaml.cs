@@ -32,7 +32,7 @@ public partial class App : Application
             var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
             var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
             var toast = Helpers.ServiceHelper.GetRequiredService<Services.IToastService>();
-            Platforms.Windows.ExtensionInstaller.RefreshIfRegistered();
+            Platforms.Windows.ExtensionInstaller.RegisterForInstalledBrowsers();
             _extensions = new Platforms.Windows.ExtensionServer(store, settings);
             _extensions.BrowserConnected += browser =>
             {
