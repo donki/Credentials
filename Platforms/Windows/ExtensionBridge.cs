@@ -219,7 +219,7 @@ public static class WindowHelper
 }
 
 /// <summary>Un navegador con soporte: donde esta y donde registra sus hosts de mensajeria nativa.</summary>
-public sealed record Browser(string Key, string Name, string Exe, string HostRegistryKey, bool IsFirefox, string ExtensionsUrl)
+public sealed record Browser(string Key, string Name, string Exe, string HostRegistryKey, bool IsFirefox, string ExtensionsUrl, string? StoreUrl = null)
 {
     public string? Path { get; init; }
     public bool Installed => Path is not null;
@@ -233,7 +233,9 @@ public sealed record Browser(string Key, string Name, string Exe, string HostReg
 public static class ExtensionInstaller
 {
     public const string HostName = "com.socratic.credentials";
-    private const string ChromiumId = "hbimfdiggibkbjnmkagdcnddpghhckho";   // sale de la clave «key» del manifiesto
+    private const string ChromiumId = "hbimfdiggibkbjnmkagdcnddpghhckho";   // sale de la clave «key» del manifiesto (carga a mano)
+    private const string EdgeStoreId = "pcilggpjodagihemfbimfbnnmlbfhfbk";  // la publicada en Edge Add-ons (2026-09-24)
+    public const string EdgeStoreUrl = "https://microsoftedge.microsoft.com/addons/detail/soc-credentials/pcilggpjodagihemfbimfbnnmlbfhfbk";
     private const string FirefoxId = "credentials@socratic.app";
     private const string AppKey = @"Software\sOCratic\Credentials";
 
@@ -247,7 +249,7 @@ public static class ExtensionInstaller
 
     public static readonly Browser[] Known =
     [
-        new("edge", "Microsoft Edge", "msedge.exe", @"Software\Microsoft\Edge\NativeMessagingHosts", false, "edge://extensions/"),
+        new("edge", "Microsoft Edge", "msedge.exe", @"Software\Microsoft\Edge\NativeMessagingHosts", false, "edge://extensions/", EdgeStoreUrl),
         new("chrome", "Google Chrome", "chrome.exe", @"Software\Google\Chrome\NativeMessagingHosts", false, "chrome://extensions/"),
         new("firefox", "Mozilla Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, "about:debugging#/runtime/this-firefox"),
     ];
@@ -341,7 +343,8 @@ public static class ExtensionInstaller
         if (b.IsFirefox)
             manifest["allowed_extensions"] = new JsonArray(FirefoxId);
         else
-            manifest["allowed_origins"] = new JsonArray($"chrome-extension://{ChromiumId}/");
+            // Las dos: la de la tienda y la cargada a mano (la de desarrollo, con id fijo por la «key»).
+            manifest["allowed_origins"] = new JsonArray($"chrome-extension://{EdgeStoreId}/", $"chrome-extension://{ChromiumId}/");
         File.WriteAllText(manifestPath, manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
         using var key = Registry.CurrentUser.CreateSubKey(b.HostRegistryKey + "\\" + HostName, writable: true);
         key?.SetValue(null, manifestPath);
@@ -391,7 +394,9 @@ public static class ExtensionInstaller
     {
         if (b.Path is null)
             return;
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(b.Path, b.ExtensionsUrl) { UseShellExecute = true }); }
+        // Publicada en su tienda: se abre la ficha para instalarla con «Obtener»; si no, la página de
+        // extensiones para cargarla a mano.
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(b.Path, b.StoreUrl ?? b.ExtensionsUrl) { UseShellExecute = true }); }
         catch (Exception) { }
     }
 }
@@ -433,6 +438,13 @@ public static class ExtensionSetup
         catch (Exception ex)
         {
             await SocShared.ModernDialog.AlertAsync(page, l["Error"], ex.Message, l["Ok"]);
+            return;
+        }
+        if (b.StoreUrl is not null)
+        {
+            // Publicada en la tienda del navegador: nada de modo de desarrollador, se instala desde su ficha.
+            if (await SocShared.ModernDialog.AlertAsync(page, string.Format(l.CurrentCulture, l["ExtInstallIn"], b.Name), string.Format(l.CurrentCulture, l["ExtStepsStore"], b.Name), l["ExtOpenStore"], l["Cancel"]))
+                ExtensionInstaller.OpenExtensionsPage(b);
             return;
         }
         var dir = ExtensionInstaller.ExtensionDir(b.IsFirefox);

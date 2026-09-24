@@ -182,7 +182,7 @@ public class TutorialPage : ContentPage
         {
             var browser = b;
             steps.Add(new("ic_web.png", F("TutExtTitle", b.Name),
-                F(b.IsFirefox ? "TutExtBodyFirefox" : "TutExtBodyChromium", b.Name),
+                F(b.StoreUrl is not null ? "TutExtBodyStore" : b.IsFirefox ? "TutExtBodyFirefox" : "TutExtBodyChromium", b.Name),
                 () => _settings.ExtensionSeen(browser.Key) is not null,
                 F("TutExtAction", b.Name),
                 () => Platforms.Windows.ExtensionSetup.InstallAsync(this, browser, _l)));

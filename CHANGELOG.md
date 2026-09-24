@@ -2,6 +2,19 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.24.04 — La extensión de Edge, desde su tienda
+
+`versionCode`: 2026092404 · Windows `2026.9.24.4` · extensión `2026.9.24.4`
+
+- **La extensión ya está publicada en Edge Add-ons**
+  (https://microsoftedge.microsoft.com/addons/detail/soc-credentials/pcilggpjodagihemfbimfbnnmlbfhfbk).
+  Si en Edge no está instalada, la aplicación la propone desde la tienda —al desbloquear, en Ajustes
+  y en la guía de configuración—: se abre su ficha y basta con «Obtener». Nada de modo de
+  desarrollador ni de cargar carpetas.
+- El puente con la aplicación autoriza su identificador (`pcilggpjodagihemfbimfbnnmlbfhfbk`) además
+  del de la extensión cargada a mano, que sigue funcionando.
+- En el README, el enlace de la tienda en «Dónde conseguirla».
+
 ## 2026.09.24.03 — La extensión, sin emoji; fichas e imágenes de las tiendas de extensiones
 
 `versionCode`: 2026092403 · Windows `2026.9.24.3` · extensión `2026.9.24.3`

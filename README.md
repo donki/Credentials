@@ -11,6 +11,7 @@ de Proyectos de Software de sOCratic.
 - **Google Play:** https://play.google.com/store/apps/details?id=com.socratic.credentials (cuando
   esté publicada).
 - **Microsoft Store:** «sOC Credentials» (en cuanto Partner Center dé el enlace).
+- **Extensión para Edge** (Edge Add-ons): https://microsoftedge.microsoft.com/addons/detail/soc-credentials/pcilggpjodagihemfbimfbnnmlbfhfbk
 - **Releases de GitHub** (APK / EXE / MSIX de cada versión): https://github.com/donki/Credentials/releases
 
 ## Qué hace
