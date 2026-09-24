@@ -1,7 +1,7 @@
 # Ficha de Firefox Add-ons (AMO) — sOC Credentials
 
 Para el formulario «Describir complemento» de https://addons.mozilla.org/developers/. Paquete:
-`C:\ID\OneDrive\Credentials\extension\sOCCredentials-extension-firefox-2026.9.24.1.zip`
+`C:\ID\OneDrive\Credentials\extension\sOCCredentials-extension-firefox-2026.9.24.2.zip`
 (declara `data_collection_permissions: none`).
 
 ## Nombre
