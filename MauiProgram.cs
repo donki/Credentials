@@ -32,7 +32,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IOAuthBrowser, Platforms.Android.OAuthBrowser>();
 #elif WINDOWS
         builder.Services.AddSingleton<IToastService, Platforms.Windows.ToastService>();
-        builder.Services.AddSingleton<IBiometric, Platforms.Windows.Biometric>();
+        builder.Services.AddSingleton<IBiometric, NoBiometric>();   // sin Windows Hello: decision de Josep del 2026-09-24
         builder.Services.AddSingleton<IOAuthBrowser, Platforms.Windows.OAuthBrowser>();
 #endif
 

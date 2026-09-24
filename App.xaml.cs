@@ -76,6 +76,26 @@ public partial class App : Application
     protected override Window CreateWindow(IActivationState? activationState)
     {
         var window = new Window(new AppShell()) { Title = "sOC Credentials" };
+#if WINDOWS
+        // Sin Windows Hello desde 2026.09.24.01: si estaba activado, fuera el ajuste y la clave que
+        // guardaba para el (la boveda se abre solo con la contraseña maestra).
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
+            if (settings.Biometrics)
+            {
+                settings.Biometrics = false;
+                if (!settings.TrustDevice)
+                    _ = store.RememberKeyAsync(false);
+            }
+        }
+#endif
+        // «Confiar en este dispositivo»: la boveda se abre sola al arrancar (la extension y el
+        // autocompletar ya la encuentran abierta).
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            _ = store.TryTrustedUnlockAsync();
+        }
         // La primera vez que se abre la boveda sale sola la guia de configuracion (despues, desde el
         // menu). Va antes que las preguntas de cada plataforma, que la ven y se callan.
         {
@@ -111,7 +131,7 @@ public partial class App : Application
                 // (teclado y raton), y al bloquear la sesion de Windows (Win+L) se cierra al momento.
                 Services.VaultStore.SystemIdle = Platforms.Windows.TrayIcon.SystemIdle;
                 var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
-                _tray.SessionLocked += () => native.DispatcherQueue.TryEnqueue(() => { try { store.Lock(); } catch (Exception) { } });
+                _tray.SessionLocked += () => native.DispatcherQueue.TryEnqueue(() => { try { if (!settings.TrustDevice) store.Lock(); } catch (Exception) { } });
                 // Autocompletar en las aplicaciones del escritorio (lista pegada al campo de contraseña).
                 try
                 {

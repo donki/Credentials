@@ -6,7 +6,7 @@ namespace Credentials.Pages;
 
 /// <summary>
 /// La puerta: crear la boveda la primera vez (contraseña maestra dos veces) o desbloquearla
-/// (contraseña, o Windows Hello / huella si se activo). Se abre como modal encima de todo y se
+/// (contraseña, o huella en Android si se activo). Se abre como modal encima de todo y se
 /// cierra al entrar; si la boveda se bloquea, vuelve a salir.
 /// </summary>
 public partial class UnlockPage : ContentPage
@@ -109,6 +109,7 @@ public partial class UnlockPage : ContentPage
     {
         var password = PasswordEntry.Text ?? string.Empty;
         ErrorLabel.IsVisible = false;
+        if (password.Length == 0) { ShowError(_l["MasterPasswordEmpty"]); PasswordEntry.Focus(); return; }
         if (_creating)
         {
             if (password.Length < 8) { ShowError(_l["MasterPasswordShort"]); return; }
@@ -122,7 +123,7 @@ public partial class UnlockPage : ContentPage
             else
                 await _store.UnlockAsync(password);
             // Con biometria activada, la clave se renueva en la boveda del sistema (por si cambio).
-            if (_settings.Biometrics)
+            if (_settings.Biometrics || _settings.TrustDevice)
                 await _store.RememberKeyAsync(true);
             await CloseAsync();
         }

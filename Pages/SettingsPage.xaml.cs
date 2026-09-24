@@ -65,6 +65,8 @@ public partial class SettingsPage : ContentPage
         SyncButton.Text = _l["SyncNow"];
         SignOutButton.Text = _l["SignOut"];
         SecurityTitle.Text = _l["SecurityTitle"];
+        TrustLabel.Text = _l["TrustDevice"];
+        TrustHint.Text = _l["TrustDeviceHint"];
         BiometricsLabel.Text = _l["Biometrics"];
         BiometricsHint.Text = _l["BiometricsHint"];
         AutoLockLabel.Text = _l["AutoLock"];
@@ -83,6 +85,7 @@ public partial class SettingsPage : ContentPage
         AutoLockPicker.SelectedIndex = Math.Max(0, Array.IndexOf(LockMinutes, _settings.AutoLockMinutes));
         ClipboardPicker.ItemsSource = ClipSeconds.Select(s => s == 0 ? _l["ClipboardNever"] : string.Format(_l.CurrentCulture, _l["ClipboardSeconds"], s)).ToList();
         ClipboardPicker.SelectedIndex = Math.Max(0, Array.IndexOf(ClipSeconds, _settings.ClipboardSeconds));
+        TrustSwitch.IsToggled = _settings.TrustDevice;
         BiometricsSwitch.IsToggled = _settings.Biometrics;
         RefreshStorage();
         _loading = false;
@@ -94,6 +97,9 @@ public partial class SettingsPage : ContentPage
         if (!await Gate.EnsureUnlockedAsync(this))
             return;
         RefreshAutofill();
+#if WINDOWS
+        BiometricsRow.IsVisible = false;   // en Windows no hay desbloqueo biometrico
+#endif
         BiometricsSwitch.IsEnabled = await _biometric.IsAvailableAsync();
         if (!BiometricsSwitch.IsEnabled)
             BiometricsHint.Text = _l["BiometricsUnavailable"];
@@ -400,6 +406,22 @@ public partial class SettingsPage : ContentPage
 
     // ------------------------------------------------------------------ seguridad
 
+    /// <summary>«Confiar en este dispositivo»: se guarda la clave en el sistema y la boveda deja de pedir la contraseña.</summary>
+    private async void OnTrustToggled(object? sender, ToggledEventArgs e)
+    {
+        if (_loading)
+            return;
+        if (e.Value && !await ModernDialog.AlertAsync(this, _l["TrustDevice"], _l["TrustDeviceConfirm"], _l["TrustDeviceYes"], _l["Cancel"]))
+        {
+            _loading = true;
+            TrustSwitch.IsToggled = false;
+            _loading = false;
+            return;
+        }
+        _settings.TrustDevice = e.Value;
+        await _store.RememberKeyAsync(e.Value || _settings.Biometrics);
+    }
+
     private async void OnBiometricsToggled(object? sender, ToggledEventArgs e)
     {
         if (_loading)
@@ -415,7 +437,7 @@ public partial class SettingsPage : ContentPage
             }
         }
         _settings.Biometrics = e.Value;
-        await _store.RememberKeyAsync(e.Value);
+        await _store.RememberKeyAsync(e.Value || _settings.TrustDevice);
     }
 
     private void OnAutoLockChanged(object? sender, EventArgs e)
@@ -528,6 +550,7 @@ public partial class SettingsPage : ContentPage
         var word = await ModernDialog.PromptAsync(this, _l["DeleteVault"], _l["DeleteVaultConfirm"], _l["Delete"], _l["Cancel"]);
         if (word is null || !(word.Trim().Equals("BORRAR", StringComparison.OrdinalIgnoreCase) || word.Trim().Equals("DELETE", StringComparison.OrdinalIgnoreCase)))
             return;
+        _settings.TrustDevice = false;
         _store.Lock();
         await _store.RememberKeyAsync(false);
         _store.SignOut();

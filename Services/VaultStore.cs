@@ -145,11 +145,36 @@ public sealed class VaultStore
         }
     }
 
+    /// <summary>
+    /// Con «Confiar en este dispositivo», abre la boveda con la clave guardada en el sistema, sin
+    /// preguntar nada. False si no esta activado, no hay clave o no vale.
+    /// </summary>
+    public Task<bool> TryTrustedUnlockAsync()
+    {
+        if (IsUnlocked)
+            return Task.FromResult(true);
+        // Sin mirar HasStoredKey: si no hay clave, UnlockWithStoredKeyAsync ya devuelve false.
+        if (!_settings.TrustDevice || !Exists)
+            return Task.FromResult(false);
+        // Al arrancar lo piden a la vez la aplicacion y la puerta: un solo intento para los dos.
+        return _trustedUnlock ??= Run();
+
+        async Task<bool> Run()
+        {
+            try { return await UnlockWithStoredKeyAsync(); }
+            finally { _trustedUnlock = null; }
+        }
+    }
+
+    private Task<bool>? _trustedUnlock;
+
     public bool HasStoredKey
     {
         get
         {
-            try { return SecureStorage.Default.GetAsync(KeySlot).GetAwaiter().GetResult() is { Length: > 0 }; }
+            // Fuera del hilo de la interfaz: esperarlo ahi mismo la dejaba bloqueada para siempre
+            // (la lectura necesita ese hilo para terminar).
+            try { return Task.Run(() => SecureStorage.Default.GetAsync(KeySlot)).GetAwaiter().GetResult() is { Length: > 0 }; }
             catch (Exception) { return false; }
         }
     }
@@ -203,7 +228,7 @@ public sealed class VaultStore
     public bool LockIfIdle()
     {
         var minutes = _settings.AutoLockMinutes;
-        if (!IsUnlocked || minutes <= 0 || IdleTime < TimeSpan.FromMinutes(minutes))
+        if (_settings.TrustDevice || !IsUnlocked || minutes <= 0 || IdleTime < TimeSpan.FromMinutes(minutes))
             return false;
         Lock();
         return true;

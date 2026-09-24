@@ -2,6 +2,28 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.24.01 — Confiar en el dispositivo, sin Windows Hello, y el doble factor que no se guardaba
+
+`versionCode`: 2026092401 · Windows `2026.9.24.1` · extensión `2026.9.24.1`
+
+- **Arreglo: el código de doble factor pegado no se guardaba.** El secreto («ABCD EFGH …», como lo
+  dan los sitios) solo se aplicaba al pulsar Intro en su casilla; si se pegaba y se pulsaba
+  «Guardar», se descartaba sin avisar y la entrada quedaba sin códigos. Ahora se aplica también al
+  salir de la casilla y al guardar, y si no es un secreto válido se avisa en vez de perderlo. Acepta
+  también guiones entre los grupos.
+- **«Confiar en este dispositivo»** en Ajustes › Seguridad (Android y Windows): la bóveda se abre
+  sola, sin pedir la contraseña maestra, con la clave guardada en el sistema (cuenta de Windows /
+  Keystore de Android). Mientras está activado no se cierra por inactividad, ni al bloquear Windows,
+  ni al apagar la pantalla, y la extensión y el autocompletar la encuentran abierta. Pide
+  confirmación al activarlo.
+- **Fuera Windows Hello.** En Windows la bóveda se abre con la contraseña maestra (o con «Confiar en
+  este dispositivo»); si estaba activado, se quita al arrancar. En Android la huella sigue igual.
+- **En Windows, la pantalla de la contraseña sale pequeña y abajo a la derecha** del escritorio;
+  al abrir la bóveda, la ventana vuelve a su tamaño y a su sitio.
+- Con la contraseña vacía, «Escribe tu contraseña maestra» en vez de un error técnico en inglés.
+- Arreglo: comprobar si había clave guardada podía dejar la aplicación colgada con la ventana en
+  negro (se esperaba en el hilo de la interfaz algo que necesitaba ese mismo hilo).
+
 ## 2026.09.24.00 — Guía de configuración y aviso de bóveda cerrada en la extensión
 
 `versionCode`: 2026092400 · Windows `2026.9.24.0` · extensión `2026.9.24.0`

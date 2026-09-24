@@ -22,9 +22,8 @@ de Proyectos de Software de sOCratic.
   `drive.appdata`) o **OneDrive** (`special/approot`, ámbito `Files.ReadWrite.AppFolder`). La copia
   de trabajo es siempre el fichero local; la nube se baja al abrir y se sube tras cada cambio, y se
   **mezcla por entrada** (gana la más nueva; las bajas se propagan como borrado lógico 90 días).
-- **Desbloqueo** con contraseña maestra o con **Windows Hello / huella**: la clave derivada queda
-  en la bóveda del sistema (`SecureStorage`: DPAPI en Windows, Keystore en Android) y solo se lee
-  tras la verificación del sistema. Bloqueo por inactividad y vaciado del portapapeles.
+- **Desbloqueo** con contraseña maestra o, en Android, con **huella o cara**: la clave derivada queda
+  en el Keystore de Android (`SecureStorage`) y solo se lee tras la verificación del sistema. Bloqueo por inactividad y vaciado del portapapeles.
 - **Entradas**: sitio web, aplicación, código de segundo factor y nota segura; usuario, contraseña
   (con fortaleza e historial), URL, carpeta, etiquetas, favorita, notas y campos extra ocultables.
 - **TOTP/HOTP** (RFC 6238/4226, SHA-1/256/512, 6–10 dígitos, periodo): pegando el `otpauth://`,

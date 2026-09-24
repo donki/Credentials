@@ -15,8 +15,11 @@ public interface ISettingsService
     /// <summary>Minutos sin usar la aplicacion tras los que se bloquea sola; 0 = nunca.</summary>
     int AutoLockMinutes { get; set; }
 
-    /// <summary>Desbloquear con Windows Hello / huella (la clave queda en la boveda del sistema).</summary>
+    /// <summary>Desbloquear con huella o cara en Android (la clave queda en la boveda del sistema).</summary>
     bool Biometrics { get; set; }
+
+    /// <summary>«Confiar en este dispositivo»: la boveda se abre sola con la clave guardada en el sistema, sin pedir la contraseña.</summary>
+    bool TrustDevice { get; set; }
 
     /// <summary>Segundos que lo copiado (contraseñas, codigos) se queda en el portapapeles; 0 = no se vacia.</summary>
     int ClipboardSeconds { get; set; }

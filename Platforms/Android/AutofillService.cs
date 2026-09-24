@@ -39,7 +39,7 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
     public const string ExtraUserField = "userField";
     public const string ExtraPassField = "passField";
 
-    public override void OnFillRequest(FillRequest request, CancellationSignal cancellationSignal, FillCallback callback)
+    public override async void OnFillRequest(FillRequest request, CancellationSignal cancellationSignal, FillCallback callback)
     {
         try
         {
@@ -52,7 +52,8 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
             }
 
             var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
-            if (!store.IsUnlocked)
+            // Con «Confiar en este dispositivo» se abre sola, sin ofrecer «desbloquear».
+            if (!store.IsUnlocked && !await store.TryTrustedUnlockAsync())
             {
                 callback.OnSuccess(LockedResponse(fields));
                 return;
@@ -308,7 +309,7 @@ public class AutofillAuthActivity : MauiAppCompatActivity
                 // Primero la biometria, si esta activada; si no, la pagina de contraseña.
                 var settings = Helpers.ServiceHelper.GetRequiredService<ISettingsService>();
                 var bio = Helpers.ServiceHelper.GetRequiredService<IBiometric>();
-                if (settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
+                if (!await store.TryTrustedUnlockAsync() && settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
                     await store.UnlockWithStoredKeyAsync();
             }
             if (!store.IsUnlocked)
@@ -384,7 +385,7 @@ public class AutofillSaveActivity : MauiAppCompatActivity
             {
                 var settings = Helpers.ServiceHelper.GetRequiredService<ISettingsService>();
                 var bio = Helpers.ServiceHelper.GetRequiredService<IBiometric>();
-                if (settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
+                if (!await store.TryTrustedUnlockAsync() && settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
                     await store.UnlockWithStoredKeyAsync();
             }
             if (!store.IsUnlocked)

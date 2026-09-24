@@ -100,7 +100,7 @@ public sealed class ExtensionServer
                         _settings.SetExtensionSeen(browser);
                         if (first) BrowserConnected?.Invoke(browser);
                         reply["ok"] = true;
-                        reply["locked"] = !_store.IsUnlocked;
+                        reply["locked"] = !_store.IsUnlocked && !await _store.TryTrustedUnlockAsync();
                         break;
                     }
                     case "show":
@@ -115,7 +115,7 @@ public sealed class ExtensionServer
                         // Peticiones pasivas (la insignia al cargar cada pestaña, el desplegable al
                         // enfocar un campo): con la boveda cerrada se contesta «locked» y punto, sin
                         // sacar la ventana. La contraseña solo se pide cuando el usuario actua.
-                        if (!_store.IsUnlocked)
+                        if (!_store.IsUnlocked && !await _store.TryTrustedUnlockAsync())
                         {
                             reply["locked"] = true;
                             break;

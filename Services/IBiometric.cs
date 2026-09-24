@@ -1,7 +1,7 @@
-namespace Credentials.Services;
+﻿namespace Credentials.Services;
 
 /// <summary>
-/// Windows Hello en Windows, huella o cara en Android: solo dice «es el usuario». La clave de la
+/// Huella o cara en Android (en Windows no hay: <see cref="NoBiometric"/>): solo dice «es el usuario». La clave de la
 /// boveda la guarda SecureStorage; esto es la puerta para leerla sin escribir la contraseña.
 /// </summary>
 public interface IBiometric

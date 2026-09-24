@@ -40,6 +40,12 @@ public class SettingsService : ISettingsService
         set => Preferences.Set("autolock_minutes", value, Shared);
     }
 
+    public bool TrustDevice
+    {
+        get => Preferences.Get("trust_device", false, Shared);
+        set => Preferences.Set("trust_device", value, Shared);
+    }
+
     public bool Biometrics
     {
         get => Preferences.Get("biometrics", false, Shared);

@@ -1,4 +1,4 @@
-using Credentials.Helpers;
+﻿using Credentials.Helpers;
 using Credentials.Models;
 using Credentials.Services;
 using SocShared;
@@ -228,20 +228,31 @@ public partial class EntryPage : ContentPage
         }
     }
 
-    private void OnTotpEntered(object? sender, EventArgs e)
+    private void OnTotpEntered(object? sender, EventArgs e) => ApplyTypedTotp();
+
+    /// <summary>Al salir de la casilla tambien se aplica: pegar el secreto y no pulsar Intro era lo normal.</summary>
+    private void OnTotpUnfocused(object? sender, FocusEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(TotpEntry.Text))
+            ApplyTypedTotp();
+    }
+
+    /// <summary>Lo escrito en la casilla del secreto pasa a la entrada. False si no es un secreto valido.</summary>
+    private bool ApplyTypedTotp()
     {
         var t = Totp.Parse(TotpEntry.Text ?? string.Empty);
         if (t is null)
         {
             TotpError.Text = _l["TotpInvalid"];
             TotpError.IsVisible = true;
-            return;
+            return false;
         }
         TotpError.IsVisible = false;
         _entry.Totp = t.ToUri();
         TotpEntry.Text = string.Empty;
         _dirty = true;
         UpdateTotp();
+        return true;
     }
 
     private void OnRemoveTotpClicked(object? sender, EventArgs e)
@@ -303,6 +314,12 @@ public partial class EntryPage : ContentPage
         if (title.Length == 0)
         {
             await ModernDialog.AlertAsync(this, _l["Error"], _l["TitleRequired"], _l["Ok"]);
+            return;
+        }
+        // Un secreto de doble factor pegado sin pulsar Intro se aplica ahora; antes se perdia sin avisar.
+        if (!string.IsNullOrWhiteSpace(TotpEntry.Text) && !ApplyTypedTotp())
+        {
+            TotpEntry.Focus();
             return;
         }
         var newPassword = PasswordEntry.Text ?? string.Empty;

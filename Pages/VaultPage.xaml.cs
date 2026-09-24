@@ -304,7 +304,7 @@ public static class Gate
     public static async Task<bool> EnsureUnlockedAsync(Page page)
     {
         var store = ServiceHelper.GetRequiredService<VaultStore>();
-        if (store.IsUnlocked)
+        if (store.IsUnlocked || await store.TryTrustedUnlockAsync())
             return true;
         if (_showing)
             return false;
@@ -315,8 +315,14 @@ public static class Gate
             Current = unlock;
             var tcs = new TaskCompletionSource();
             unlock.Disappearing += (_, _) => tcs.TrySetResult();
+#if WINDOWS
+            var restore = Compact(page.Window);
+#endif
             await page.Navigation.PushModalAsync(unlock, animated: false);
             await tcs.Task;
+#if WINDOWS
+            restore?.Invoke();
+#endif
         }
         finally
         {
@@ -325,4 +331,43 @@ public static class Gate
         }
         return store.IsUnlocked;
     }
+
+#if WINDOWS
+    /// <summary>
+    /// En Windows, mientras se pide la contraseña, la ventana se queda pequeña y abajo a la derecha
+    /// del escritorio (como un aviso del sistema). Devuelve lo que la deja como estaba.
+    /// </summary>
+    private static Action? Compact(Window? window)
+    {
+        try
+        {
+            if (window?.Handler?.PlatformView is not Microsoft.UI.Xaml.Window native)
+                return null;
+            var app = native.AppWindow;
+            var presenter = app.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
+            var wasMaximized = presenter?.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized;
+            if (wasMaximized)
+                presenter!.Restore();
+            var saved = new global::Windows.Graphics.RectInt32(app.Position.X, app.Position.Y, app.Size.Width, app.Size.Height);
+            var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(app.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
+            var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
+            int w = (int)(400 * scale), h = (int)(460 * scale), margin = (int)(12 * scale);
+            app.MoveAndResize(new global::Windows.Graphics.RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
+            return () =>
+            {
+                try
+                {
+                    app.MoveAndResize(saved);
+                    if (wasMaximized)
+                        presenter!.Maximize();
+                }
+                catch (Exception) { }
+            };
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+#endif
 }

@@ -29,7 +29,8 @@ public sealed class Totp
         // Tambien vale el secreto a pelo (lo que algunos sitios dan «para introducir a mano»).
         if (!uri.StartsWith("otpauth://", StringComparison.OrdinalIgnoreCase))
         {
-            var raw = uri.Replace(" ", string.Empty).ToUpperInvariant();
+            // Los sitios lo enseñan en grupos («ABCD EFGH …», a veces con guiones): fuera separadores.
+            var raw = new string(uri.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpperInvariant();
             return raw.All(c => "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=".Contains(c)) && raw.Length >= 8 ? new Totp { Secret = raw } : null;
         }
         if (!Uri.TryCreate(uri, UriKind.Absolute, out var u))

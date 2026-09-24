@@ -42,6 +42,13 @@
                     <Label x:Name="SecurityTitle" Style="{StaticResource SectionTitle}" />
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="TrustLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="TrustHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="TrustSwitch" OnColor="{StaticResource Primary}" Toggled="OnTrustToggled" VerticalOptions="Center" />
+                    </Grid>
+                    <Grid x:Name="BiometricsRow" ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
                             <Label x:Name="BiometricsLabel" Style="{StaticResource BodyText}" />
                             <Label x:Name="BiometricsHint" Style="{StaticResource HintText}" FontSize="11" />
                         </VerticalStackLayout>
