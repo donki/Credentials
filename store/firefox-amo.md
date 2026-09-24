@@ -64,7 +64,8 @@ https://github.com/donki/Credentials
 
 ## Política de privacidad
 
-Marca «Este complemento tiene una política de privacidad» y pega:
+Marca «Este complemento tiene una política de privacidad» y pega (es la misma que
+`PRIVACY.md` del repo: https://github.com/donki/Credentials/blob/master/PRIVACY.md):
 
 ```
 sOC Credentials no recoge ningún dato. La extensión no guarda nada ni envía nada a internet: solo habla, dentro de tu propio ordenador, con la aplicación sOC Credentials por mensajería nativa. La bóveda se guarda cifrada en tu equipo o, si tú lo eliges, en la carpeta privada de la aplicación de tu propio Google Drive u OneDrive. No hay servidor propio, ni telemetría, ni terceros.
