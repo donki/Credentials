@@ -3,7 +3,7 @@
   "message": "sOC Credentials"
  },
  "description": {
-  "message": "Fills usernames, passwords and two-factor codes from your sOC Credentials vault, with no server: it talks to the app on your PC."
+  "message": "Fills in usernames, passwords and two-factor codes from your sOC Credentials vault, with no server: it talks to the app on your PC."
  },
  "fill": {
   "message": "Fill"
