@@ -21,15 +21,16 @@ HOW IT IS PROTECTED
 • The key is derived from your master password with Argon2id and everything is encrypted with
   AES-256-GCM on your own machine. What goes to the cloud is already encrypted; nobody — not even
   us — can read it or recover the password.
-• Unlock with Windows Hello: the key is protected by Windows (DPAPI) and only released once the
-  system verifies you.
+• If you want, “Trust this user on this device”: the vault opens on its own, but only for your
+  Windows user on this PC; the key is protected by the system (DPAPI).
 • Automatic lock after inactivity and clipboard cleared after the seconds you choose.
 
 WHAT IT STORES
 • Websites and apps: user name, password (with strength meter and history), address, folder, tags,
   favourites, notes and extra fields that can be hidden.
 • Two-factor codes (TOTP/HOTP), like an authenticator app: paste the link or the key, or scan the
-  QR with the camera; the code is displayed with its countdown and copied with one click.
+  QR with the camera; the code is displayed with its countdown and copied with one click. It also
+  keeps the secret key (to move the code to another app) and your backup codes, marking the used ones.
 • Secure notes.
 
 ON ALL YOUR DEVICES
@@ -54,7 +55,7 @@ Leave **blank** on the first submission.
 ```
 Vault encrypted with a master password (Argon2id + AES-256-GCM)
 On your PC or in the private folder of your Google Drive or OneDrive
-Windows Hello unlock, lock after inactivity
+Lock after inactivity, or no password if you trust the PC
 Passwords, apps, secure notes and 2FA codes (TOTP)
 Two-factor QR with the camera; code with countdown
 Password generator and strength meter

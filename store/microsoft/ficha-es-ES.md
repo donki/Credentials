@@ -27,15 +27,16 @@ CÓMO SE PROTEGE
 • La clave sale de tu contraseña maestra con Argon2id y todo se cifra con AES-256-GCM en tu propio
   equipo. Lo que sube a la nube ya va cifrado; nadie —nosotros tampoco— puede leerlo ni recuperar
   la contraseña.
-• Desbloqueo con Windows Hello: la clave queda protegida por Windows (DPAPI) y solo se libera cuando
-  el sistema te verifica.
+• Si quieres, «Confiar en este usuario y dispositivo»: la bóveda se abre sola, pero solo con tu
+  usuario de Windows en este PC; la clave queda protegida por el sistema (DPAPI).
 • Bloqueo automático por inactividad y vaciado del portapapeles a los segundos que elijas.
 
 QUÉ GUARDA
 • Sitios web y aplicaciones: usuario, contraseña (con medidor de fortaleza e historial), dirección,
   carpeta, etiquetas, favoritas, notas y campos extra ocultables.
 • Códigos de segundo factor (TOTP/HOTP), como una app de autenticación: pega el enlace o la clave, o
-  escanea el QR con la cámara; el código se ve con su cuenta atrás y se copia con un clic.
+  escanea el QR con la cámara; el código se ve con su cuenta atrás y se copia con un clic. Guarda
+  también la semilla (para llevar el código a otra app) y los códigos de respaldo, marcando los usados.
 • Notas seguras.
 
 EN TODOS TUS DISPOSITIVOS
@@ -60,7 +61,7 @@ Se deja **en blanco** en el primer envío.
 ```
 Bóveda cifrada con contraseña maestra (Argon2id + AES-256-GCM)
 En tu PC o en la carpeta privada de tu Google Drive u OneDrive
-Desbloqueo con Windows Hello, bloqueo por inactividad
+Bloqueo por inactividad, o sin contraseña si confías en el PC
 Contraseñas, aplicaciones, notas seguras y códigos 2FA (TOTP)
 QR de segundo factor con la cámara; código con cuenta atrás
 Generador de contraseñas y medidor de fortaleza
