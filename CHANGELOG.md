@@ -2,6 +2,29 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.24.00 — Guía de configuración y aviso de bóveda cerrada en la extensión
+
+`versionCode`: 2026092400 · Windows `2026.9.24.0` · extensión `2026.9.24.0`
+
+- **Guía de configuración paso a paso**, una para Windows y otra para Android, en el menú
+  («Guía de configuración») y **sola la primera vez que se abre la bóveda**. Cada paso explica qué
+  hay que hacer, tiene un botón que lo hace o abre la pantalla donde se hace, y se marca solo como
+  hecho (se vuelve a mirar cada dos segundos):
+  - **Windows:** arrancar con Windows y quedarse junto al reloj, autocompletar en las aplicaciones de
+    escritorio, **la extensión en cada navegador instalado** (Edge, Chrome, Firefox: se da por hecha
+    cuando conecta), apagar el gestor del navegador y, opcional, la nube.
+  - **Android:** servicio de autocompletar, servicio preferido de contraseñas (Android 14+), el
+    gestor propio de **cada navegador instalado**, la huella y, opcional, la nube.
+  Los botones de avanzar van fijos abajo: con la letra del sistema en grande el texto del paso se
+  desplaza, pero «Siguiente» siempre se ve.
+- **Extensión: sin botón de abrir.** Con la bóveda cerrada, el popup y la lista que sale en los
+  campos de la web ya no ofrecen «Abrir sOC Credentials»: dicen, en blanco sobre rojo, **«Hay que
+  abrir la bóveda en sOC Credentials»**. El popup sigue avisando a la aplicación al abrirse y se
+  actualiza solo cuando se desbloquea.
+- Debug: con `SOC_SANDBOX`, la instancia de pruebas ya no choca con la real (no se queda la
+  instancia única, ni registra el puente de los navegadores, ni engancha el autocompletar de
+  escritorio).
+
 ## 2026.09.23.04 — Arreglo: Firefox decía «desconectado» tras cada versión nueva
 
 `versionCode`: 2026092304 · Windows `2026.9.23.4` · extensión `2026.9.23.4`

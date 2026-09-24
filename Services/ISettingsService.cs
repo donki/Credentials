@@ -37,6 +37,9 @@ public interface ISettingsService
     bool DesktopAutofill { get; set; }
 
     /// <summary>Windows: cuando conecto por ultima vez la extension de ese navegador (chrome/edge/firefox); null si nunca.</summary>
+    /// <summary>La guia de configuracion ya ha salido sola tras el primer desbloqueo (despues se abre desde el menu).</summary>
+    bool TutorialDone { get; set; }
+
     DateTimeOffset? ExtensionSeen(string browser);
     void SetExtensionSeen(string browser);
 }

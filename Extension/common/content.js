@@ -218,10 +218,18 @@
         .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .u{opacity:.75;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .i.s .t{color:#B5B0FF}.i.s:hover .t{color:#fff}
+        .k{background:#BA1A1A;color:#fff;font-weight:600;border-radius:7px;padding:8px 10px;line-height:1.3}
       </style>
       <div class="b"><div class="h"><img src="${api.runtime.getURL("icons/icon32.png")}" alt="">sOC Credentials</div></div>`;
     const box = root.querySelector(".b");
     for (const it of items) {
+      // Bóveda cerrada: aviso sin boton, en blanco sobre rojo; no abre nada.
+      if (it.kind === "locked") {
+        const k = document.createElement("div"); k.className = "k"; k.textContent = tr("vaultClosed");
+        k.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); });
+        box.appendChild(k);
+        continue;
+      }
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "i" + (it.kind === "save" ? " s" : "");
@@ -229,7 +237,6 @@
       const u = document.createElement("div"); u.className = "u";
       if (it.kind === "entry") { t.textContent = it.entry.title; u.textContent = it.entry.username || it.entry.url || ""; }
       else if (it.kind === "save") { t.textContent = "💾 " + tr("saveTyped"); u.textContent = it.username || location.hostname; }
-      else { t.textContent = "🔒 " + tr("unlockApp"); u.textContent = tr("lockedShort"); }
       btn.appendChild(t); if (u.textContent) btn.appendChild(u);
       // mousedown y no click: así el campo no pierde el foco antes de rellenar.
       btn.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); pick(it); });
@@ -262,11 +269,6 @@
       fill({ username: it.entry.username, password: it.entry.password, totp: it.entry.totp });
       return;
     }
-    if (it.kind === "locked") {
-      closeDropdown();
-      try { await api.runtime.sendMessage({ type: "show" }); } catch { }
-      return;
-    }
     if (it.kind === "save") {
       closeDropdown();
       try {
@@ -285,7 +287,7 @@
   }
 
   function tr(k) {
-    const fallback = { saveTyped: "Guardar lo escrito en sOC Credentials", unlockApp: "Desbloquear sOC Credentials", lockedShort: "La bóveda está bloqueada" };
+    const fallback = { saveTyped: "Guardar lo escrito en sOC Credentials", vaultClosed: "Hay que abrir la bóveda en sOC Credentials" };
     return api.i18n.getMessage(k) || fallback[k] || k;
   }
 

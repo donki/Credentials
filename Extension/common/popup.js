@@ -16,7 +16,7 @@ function hostOf(url) {
 }
 
 async function init() {
-  for (const [id, key] of [["genTitle", "generator"], ["lenLabel", "length"], ["upperLabel", "upper"], ["digitsLabel", "digits"], ["symbolsLabel", "symbols"], ["regen", "generate"], ["copyGen", "copyPass"], ["useGen", "useInPage"], ["openApp", "openApp"], ["saveTyped", "saveTyped"], ["pmText", "browserPmQuestion"], ["pmKeep", "browserPmKeep"], ["pmDisable", "browserPmDisable"], ["optsTitle", "browserOptions"], ["pmEnabledLabel", "browserPmEnabled"], ["pmHint", "browserPmHint"]])
+  for (const [id, key] of [["genTitle", "generator"], ["lenLabel", "length"], ["upperLabel", "upper"], ["digitsLabel", "digits"], ["symbolsLabel", "symbols"], ["regen", "generate"], ["copyGen", "copyPass"], ["useGen", "useInPage"], ["saveTyped", "saveTyped"], ["pmText", "browserPmQuestion"], ["pmKeep", "browserPmKeep"], ["pmDisable", "browserPmDisable"], ["optsTitle", "browserOptions"], ["pmEnabledLabel", "browserPmEnabled"], ["pmHint", "browserPmHint"]])
     $(id).textContent = t(key);
   $("search").placeholder = t("search");
   const tabs = await api.tabs.query({ active: true, currentWindow: true });
@@ -24,7 +24,6 @@ async function init() {
   host = hostOf(tab?.url ?? "");
   $("site").textContent = host || "";
   $("search").addEventListener("input", onSearch);
-  $("openApp").addEventListener("click", () => api.runtime.sendMessage({ type: "show" }));
   $("len").addEventListener("input", () => { $("lenVal").textContent = $("len").value; regen(); });
   for (const id of ["optUpper", "optDigits", "optSymbols"]) $(id).addEventListener("change", regen);
   $("regen").addEventListener("click", regen);
@@ -131,8 +130,7 @@ async function load() {
 
 function render(r, q) {
   const status = $("status");
-  const open = $("openApp");
-  status.hidden = true; open.hidden = true;
+  status.hidden = true; status.classList.remove("alert");
   entries = [];
   if (!r || r.error) {
     status.hidden = false;
@@ -140,14 +138,14 @@ function render(r, q) {
     // entre que falte y que no arranque): se trata igual que «no está».
     const noApp = r?.error === "nohost" || r?.error === "noapp" || r?.error === "disconnected";
     status.textContent = noApp ? t("noHost") : (r?.detail ?? r?.error ?? "?");
-    open.hidden = noApp;
     $("list").innerHTML = "";
     return;
   }
   if (r.locked) {
     status.hidden = false;
-    status.textContent = t("locked") + " " + t("retrying");
-    open.hidden = false;
+    // Sin boton de abrir: solo el aviso, en blanco sobre rojo (decision de Josep del 2026-09-24).
+    status.classList.add("alert");
+    status.textContent = t("vaultClosed");
     $("list").innerHTML = "";
     // Abrir el popup es un acto del usuario: la aplicación sale a pedir la contraseña (la insignia
     // y el desplegable no lo hacen; solo avisan con el candado).

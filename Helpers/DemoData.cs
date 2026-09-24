@@ -1,4 +1,4 @@
-#if DEBUG
+﻿#if DEBUG
 using Credentials.Models;
 using Credentials.Services;
 
@@ -43,6 +43,8 @@ public static class DemoData
                 await Task.Delay(500);
                 if (page == "settings")
                     await Shell.Current.GoToAsync("//SettingsPage");
+                else if (page == "tutorial")
+                    await Shell.Current.GoToAsync("//TutorialPage");
                 else if (page == "about")
                     await Shell.Current.GoToAsync("//AboutPage");
                 else if (page.StartsWith("entry:") && store.Data!.Entries.FirstOrDefault(x => x.Title == page[6..]) is { } entry)

@@ -82,6 +82,12 @@ public class SettingsService : ISettingsService
         set => Preferences.Set("desktop_autofill", value, Shared);
     }
 
+    public bool TutorialDone
+    {
+        get => Preferences.Get("tutorial_done", false, Shared);
+        set => Preferences.Set("tutorial_done", value, Shared);
+    }
+
     public DateTimeOffset? ExtensionSeen(string browser)
     {
         var s = Preferences.Get("extension_seen_" + browser, string.Empty, Shared);

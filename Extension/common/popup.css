@@ -31,7 +31,8 @@ button { font: inherit; border-radius: 8px; padding: 6px 10px; cursor: pointer; 
 button.icon { padding: 5px 7px; font-size: 14px; line-height: 1; }
 button.primary { background: var(--primary); color: #fff; }
 button:disabled { opacity: .6; cursor: default; }
-#openApp, #saveTyped { display: block; margin: 0 14px 8px; width: calc(100% - 28px); }
+#saveTyped { display: block; margin: 0 14px 8px; width: calc(100% - 28px); }
+.status.alert { background: #BA1A1A; border-color: #BA1A1A; color: #FFFFFF; font-weight: 600; }
 .pm { display: flex; flex-direction: column; gap: 8px; color: var(--text); }
 details { margin: 4px 14px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
 summary { cursor: pointer; padding: 8px 12px; font-weight: 600; }

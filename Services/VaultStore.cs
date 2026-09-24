@@ -48,6 +48,17 @@ public sealed class VaultStore
 
     public static string FilePath => Path.Combine(DataDirectory, "vault.soccred");
 
+    /// <summary>
+    /// Debug con SOC_SANDBOX: instancia de pruebas que convive con la real sin tocar nada suyo (ni
+    /// la instancia unica, ni el puente de los navegadores, ni el autocompletar de escritorio).
+    /// </summary>
+    public static bool Sandbox =>
+#if DEBUG
+        Environment.GetEnvironmentVariable("SOC_SANDBOX") is { Length: > 0 };
+#else
+        false;
+#endif
+
     /// <summary>La carpeta de datos; en Debug, SOC_SANDBOX la cambia para probar sin tocar la boveda real.</summary>
     public static string DataDirectory
     {

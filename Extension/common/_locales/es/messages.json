@@ -29,9 +29,6 @@
  "locked": {
   "message": "La bóveda está bloqueada. Desbloquéala en sOC Credentials."
  },
- "openApp": {
-  "message": "Abrir sOC Credentials"
- },
  "noHost": {
   "message": "No he podido hablar con sOC Credentials. Ábrela una vez (ella sola registra el puente con el navegador) y vuelve a probar; si acabas de instalar una versión nueva, con abrirla basta."
  },
@@ -96,17 +93,8 @@
  "entries": {
   "message": "entradas"
  },
- "retrying": {
-  "message": "Esperando a que se desbloquee…"
- },
  "saveTyped": {
   "message": "Guardar lo escrito en sOC Credentials"
- },
- "unlockApp": {
-  "message": "Desbloquear sOC Credentials"
- },
- "lockedShort": {
-  "message": "La bóveda está bloqueada"
  },
  "browserPmQuestion": {
   "message": "El navegador también guarda y rellena contraseñas, y los dos gestores se estorban. ¿Desactivar el del navegador y dejar solo sOC Credentials?"
@@ -131,5 +119,8 @@
  },
  "browserPmEnabledToast": {
   "message": "El navegador vuelve a guardar contraseñas"
+ },
+ "vaultClosed": {
+  "message": "Hay que abrir la bóveda en sOC Credentials"
  }
 }

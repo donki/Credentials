@@ -44,6 +44,12 @@ public partial class App : Application
             {
                 // Un respiro para que la pagina de desbloqueo se haya cerrado antes de preguntar.
                 await Task.Delay(600);
+                // Si sale la guia de configuracion, ni preguntas sueltas ni volver a la bandeja.
+                if (TutorialOpening)
+                {
+                    _hideAfterUnlock = false;
+                    return;
+                }
                 if (window.Page is { } page)
                     await Platforms.Windows.ExtensionSetup.OfferAfterUnlockAsync(page, settings, loc);
                 // Si la ventana solo salio para pedir la contraseña, vuelve a la bandeja.
@@ -64,9 +70,28 @@ public partial class App : Application
     }
 #endif
 
+    /// <summary>La guia de configuracion se esta abriendo sola en esta sesion: las preguntas de despues de desbloquear no salen.</summary>
+    internal static bool TutorialOpening { get; private set; }
+
     protected override Window CreateWindow(IActivationState? activationState)
     {
         var window = new Window(new AppShell()) { Title = "sOC Credentials" };
+        // La primera vez que se abre la boveda sale sola la guia de configuracion (despues, desde el
+        // menu). Va antes que las preguntas de cada plataforma, que la ven y se callan.
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
+            store.Unlocked += () => MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                if (settings.TutorialDone)
+                    return;
+                settings.TutorialDone = true;
+                TutorialOpening = true;
+                await Task.Delay(600);
+                try { await Shell.Current.GoToAsync("//TutorialPage"); }
+                catch (Exception) { }
+            });
+        }
 #if WINDOWS
         // Tamaño de arranque razonable en el escritorio: la lista es alta y estrecha, como en el movil.
         window.Width = 900;
@@ -90,6 +115,8 @@ public partial class App : Application
                 // Autocompletar en las aplicaciones del escritorio (lista pegada al campo de contraseña).
                 try
                 {
+                    if (Services.VaultStore.Sandbox)
+                        throw new InvalidOperationException("sandbox");
                     _desktopAutofill = new Platforms.Windows.DesktopAutofill(store, settings, loc);
                     _desktopAutofill.Start();
                 }
@@ -121,7 +148,8 @@ public partial class App : Application
                 // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
                 if (!IsPackaged())
                     Platforms.Windows.TaskbarIdentity.Apply(hwnd, "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
-                StartExtensions(window);
+                if (!Services.VaultStore.Sandbox)
+                    StartExtensions(window);
             }
         };
 #endif
@@ -136,6 +164,9 @@ public partial class App : Application
                 await Task.Delay(600);
                 try
                 {
+                    // Si sale la guia de configuracion, nada de preguntas sueltas.
+                    if (TutorialOpening)
+                        return;
                     if (window.Page is { } page)
                         await Platforms.Android.AutofillSetup.OfferAfterUnlockAsync(page, settings, loc);
                 }

@@ -29,9 +29,6 @@
  "locked": {
   "message": "The vault is locked. Unlock it in sOC Credentials."
  },
- "openApp": {
-  "message": "Open sOC Credentials"
- },
  "noHost": {
   "message": "Could not talk to sOC Credentials. Open it once (it registers the browser bridge by itself) and try again; if you just installed a new version, opening it is enough."
  },
@@ -96,17 +93,8 @@
  "entries": {
   "message": "entries"
  },
- "retrying": {
-  "message": "Waiting for the vault to be unlocked…"
- },
  "saveTyped": {
   "message": "Save what is typed in sOC Credentials"
- },
- "unlockApp": {
-  "message": "Unlock sOC Credentials"
- },
- "lockedShort": {
-  "message": "The vault is locked"
  },
  "browserPmQuestion": {
   "message": "The browser also saves and fills in passwords, and the two managers get in each other's way. Turn off the browser's one and keep only sOC Credentials?"
@@ -131,5 +119,8 @@
  },
  "browserPmEnabledToast": {
   "message": "The browser will save passwords again"
+ },
+ "vaultClosed": {
+  "message": "You need to open the vault in sOC Credentials"
  }
 }

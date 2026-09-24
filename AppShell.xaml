@@ -49,6 +49,13 @@
                     <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnSettingsTapped" /></Grid.GestureRecognizers>
                 </Grid>
 
+                <!-- Guia de configuracion -->
+                <Grid ColumnDefinitions="26,*" Padding="20,0" HeightRequest="52" ColumnSpacing="16">
+                    <Image Grid.Column="0" Source="ic_help.png" WidthRequest="24" HeightRequest="24" VerticalOptions="Center" />
+                    <Label Grid.Column="1" x:Name="TutorialLabel" VerticalOptions="Center" FontSize="16"
+                           TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                    <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnTutorialTapped" /></Grid.GestureRecognizers>
+                </Grid>
                 <!-- Acerca de -->
                 <Grid ColumnDefinitions="26,*" Padding="20,0" HeightRequest="52" ColumnSpacing="16">
                     <Image Grid.Column="0" Source="ic_info.png" WidthRequest="24" HeightRequest="24" VerticalOptions="Center" />
@@ -79,6 +86,9 @@
     </FlyoutItem>
     <FlyoutItem Title="Ajustes" Icon="ic_settings.png">
         <ShellContent ContentTemplate="{DataTemplate pages:SettingsPage}" Route="SettingsPage" />
+    </FlyoutItem>
+    <FlyoutItem Title="Guía de configuración" Icon="ic_help.png">
+        <ShellContent ContentTemplate="{DataTemplate pages:TutorialPage}" Route="TutorialPage" />
     </FlyoutItem>
     <FlyoutItem Title="Acerca de" Icon="ic_info.png">
         <ShellContent ContentTemplate="{DataTemplate pages:AboutPage}" Route="AboutPage" />
