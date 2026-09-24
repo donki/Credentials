@@ -166,26 +166,37 @@ function render(r, q) {
     const name = document.createElement("div"); name.className = "name"; name.textContent = e.title; li.appendChild(name);
     const user = document.createElement("div"); user.className = "user"; user.textContent = e.username || (e.url || ""); li.appendChild(user);
     const actions = document.createElement("div"); actions.className = "actions";
-    actions.appendChild(btn("⤵", t("fill"), async () => { if (tab) { await api.runtime.sendMessage({ type: "fill", tabId: tab.id, username: e.username, password: e.password, totp: e.totp }); window.close(); } }, true));
-    if (e.username) actions.appendChild(btn("👤", t("copyUser"), () => copy(e.username)));
-    if (e.password) actions.appendChild(btn("🔑", t("copyPass"), () => copy(e.password)));
+    actions.appendChild(btn("fill", t("fill"), async () => { if (tab) { await api.runtime.sendMessage({ type: "fill", tabId: tab.id, username: e.username, password: e.password, totp: e.totp }); window.close(); } }, true));
+    if (e.username) actions.appendChild(btn("user", t("copyUser"), () => copy(e.username)));
+    if (e.password) actions.appendChild(btn("key", t("copyPass"), () => copy(e.password)));
     li.appendChild(actions);
     if (e.totp) {
       const totp = document.createElement("div"); totp.className = "totp";
       const code = document.createElement("span"); code.className = "code"; code.textContent = pretty(e.totp);
       const left = document.createElement("span"); left.className = "left"; left.textContent = e.totpLeft != null ? e.totpLeft + " s" : "";
       totp.appendChild(code); totp.appendChild(left);
-      totp.appendChild(btn("📋", t("copyTotp"), () => copy(e.totp)));
+      totp.appendChild(btn("copy", t("copyTotp"), () => copy(e.totp)));
       li.appendChild(totp);
     }
     list.appendChild(li);
   }
 }
 
-function btn(text, title, onClick, primary = false) {
+// Iconos planos de linea (constitucion General 6.2: nunca emoji), del mismo estilo que los de la
+// aplicacion: 24x24, trazo 1.8, color del texto del boton.
+const ICONS = {
+  fill: '<path d="M12 3v11M7 9l5 5 5-5M5 20h14"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14.5 8.5l2 2"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+};
+
+function btn(icon, title, onClick, primary = false) {
   const b = document.createElement("button");
   b.className = "icon" + (primary ? " primary" : "");
-  b.textContent = text; b.title = title;
+  b.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[icon]}</svg>`;
+  b.title = title;
+  b.setAttribute("aria-label", title);
   b.addEventListener("click", onClick);
   return b;
 }

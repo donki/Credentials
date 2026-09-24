@@ -57,9 +57,14 @@ bóveda cifrada
 
 ## Imágenes
 
-| Pieza | Tamaño | Estado |
+Todas en `imagenes/es-ES/` (las de la ficha inglesa, iguales pero en inglés, en `imagenes/en-US/`).
+Hechas con el código real de la extensión y datos inventados, sobre un sitio de ejemplo.
+
+| Pieza | Tamaño | Fichero |
 |---|---|---|
-| Logotipo de la tienda | 300×300 | `store/microsoft/logos/icono-300x300.png` (el mismo de la aplicación) |
-| Mosaico promocional pequeño | 440×280 | **Falta** (opcional) |
-| Mosaico promocional grande | 1400×560 | **Falta** (opcional) |
-| Capturas | 1280×800 o 640×400, hasta 10 | **Faltan** (opcionales, pero ayudan): el desplegable sobre un formulario de inicio de sesión, el popup con las entradas y el código TOTP, y el aviso de bóveda cerrada. |
+| Logotipo de la tienda | 300×300 | `../microsoft/logos/icono-300x300.png` (el mismo de la aplicación) |
+| Mosaico promocional pequeño | 440×280 | `mosaico-pequeno-440x280.png` |
+| Mosaico promocional grande | 1400×560 | `mosaico-grande-1400x560.png` |
+| Captura 1: el desplegable sobre el inicio de sesión | 1280×800 | `01-rellenar-1280x800.png` |
+| Captura 2: el popup con las entradas y el código TOTP | 1280×800 | `02-popup-1280x800.png` |
+| Captura 3: el aviso de bóveda cerrada | 1280×800 | `03-boveda-cerrada-1280x800.png` |

@@ -236,7 +236,7 @@
       const t = document.createElement("div"); t.className = "t";
       const u = document.createElement("div"); u.className = "u";
       if (it.kind === "entry") { t.textContent = it.entry.title; u.textContent = it.entry.username || it.entry.url || ""; }
-      else if (it.kind === "save") { t.textContent = "💾 " + tr("saveTyped"); u.textContent = it.username || location.hostname; }
+      else if (it.kind === "save") { t.textContent = tr("saveTyped"); u.textContent = it.username || location.hostname; }
       btn.appendChild(t); if (u.textContent) btn.appendChild(u);
       // mousedown y no click: así el campo no pierde el foco antes de rellenar.
       btn.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); pick(it); });

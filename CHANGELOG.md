@@ -2,6 +2,22 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.24.03 — La extensión, sin emoji; fichas e imágenes de las tiendas de extensiones
+
+`versionCode`: 2026092403 · Windows `2026.9.24.3` · extensión `2026.9.24.3`
+
+- **Extensión sin emoji** (constitución General 6.2): los botones del popup (rellenar, copiar
+  usuario, copiar contraseña, copiar código) llevan iconos planos de línea, del mismo estilo que los
+  de la aplicación; «Guardar lo escrito» ya no lleva 💾, y la insignia de bóveda cerrada es un «!»
+  en rojo en vez del candado.
+- **Fichas de las tiendas de extensiones** en castellano e inglés: Edge Add-ons
+  (`store/edge/`, con la pestaña de privacidad), Chrome Web Store (`store/chrome/`, que remite a
+  Edge) y Firefox Add-ons (`store/firefox/`). **Capturas 1280×800 y mosaicos 440×280 y 1400×560**
+  por idioma en `store/edge/imagenes/`, hechas con el código real de la extensión y datos inventados.
+- Política de privacidad en `PRIVACY.md` (castellano e inglés), para las URL de las tiendas.
+- Las fichas de la Microsoft Store ya no anuncian Windows Hello y cuentan la semilla, los códigos de
+  respaldo y «Confiar en este usuario y dispositivo».
+
 ## 2026.09.24.02 — Semilla y códigos de respaldo del segundo factor; banderas en el idioma
 
 `versionCode`: 2026092402 · Windows `2026.9.24.2` · extensión `2026.9.24.2`

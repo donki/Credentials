@@ -57,5 +57,13 @@ encrypted vault
 
 ## Images
 
-Las mismas que la ficha en español (ver [ficha-es-ES.md](ficha-es-ES.md)); las capturas, si se
-hacen, mejor con la extensión en inglés.
+All in `imagenes/en-US/`, made with the real extension code and made-up data on an example site.
+
+| Asset | Size | File |
+|---|---|---|
+| Store logo | 300×300 | `../microsoft/logos/icono-300x300.png` (same as the app) |
+| Small promotional tile | 440×280 | `mosaico-pequeno-440x280.png` |
+| Large promotional tile | 1400×560 | `mosaico-grande-1400x560.png` |
+| Screenshot 1: the dropdown on a sign-in form | 1280×800 | `01-rellenar-1280x800.png` |
+| Screenshot 2: the popup with entries and the TOTP code | 1280×800 | `02-popup-1280x800.png` |
+| Screenshot 3: the closed-vault notice | 1280×800 | `03-boveda-cerrada-1280x800.png` |

@@ -82,7 +82,7 @@ async function updateBadge(tabId, url) {
   if (!host) { setBadge(tabId, ""); return; }
   try {
     const r = await ask({ type: "list", host }, 4000);
-    if (r.locked) setBadge(tabId, "🔒", "#6b7280");
+    if (r.locked) setBadge(tabId, "!", "#BA1A1A");   // bóveda cerrada: aviso en rojo, como el del popup (sin emoji)
     else setBadge(tabId, r.entries?.length ? String(r.entries.length) : "");
   } catch { setBadge(tabId, ""); }
 }

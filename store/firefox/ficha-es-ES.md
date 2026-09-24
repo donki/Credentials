@@ -1,8 +1,10 @@
-# Ficha de Firefox Add-ons (AMO) — sOC Credentials
+# Ficha de Firefox Add-ons (AMO) — Español (España)
 
 Para el formulario «Describir complemento» de https://addons.mozilla.org/developers/. Paquete:
-`C:\ID\OneDrive\Credentials\extension\sOCCredentials-extension-firefox-2026.9.24.2.zip`
-(declara `data_collection_permissions: none`).
+`C:\ID\OneDrive\Credentials\extension\sOCCredentials-extension-firefox-<versión>.zip`
+(declara `data_collection_permissions: none`). La ficha en inglés, para añadir el idioma en AMO,
+está en [ficha-en-US.md](ficha-en-US.md); categorías, licencia y notas para revisores son comunes y
+solo están aquí.
 
 ## Nombre
 
@@ -15,6 +17,10 @@ sOC Credentials
 ```
 Rellena usuarios, contraseñas y códigos de segundo factor desde tu bóveda de sOC Credentials, sin servidor, con la app de tu PC.
 ```
+
+## Capturas
+
+Las mismas de Edge: `../edge/imagenes/es-ES/01…03-*.png` (1280×800).
 
 ## Descripción (la larga; admite algo de Markdown)
 

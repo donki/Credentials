@@ -28,7 +28,8 @@ li .actions { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 4px; }
 li .totp { grid-column: 1 / span 2; display: flex; align-items: center; gap: 8px; font-family: Consolas, monospace; font-size: 15px; letter-spacing: 1px; }
 li .totp .left { font: 11px 'Segoe UI', system-ui, sans-serif; color: var(--muted); }
 button { font: inherit; border-radius: 8px; padding: 6px 10px; cursor: pointer; border: 1px solid var(--primary); background: transparent; color: var(--primary); }
-button.icon { padding: 5px 7px; font-size: 14px; line-height: 1; }
+button.icon { padding: 5px 7px; font-size: 14px; line-height: 0; }
+button.icon svg { display: block; }
 button.primary { background: var(--primary); color: #fff; }
 button:disabled { opacity: .6; cursor: default; }
 #saveTyped { display: block; margin: 0 14px 8px; width: calc(100% - 28px); }
