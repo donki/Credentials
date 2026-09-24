@@ -1,4 +1,4 @@
-# Entrega de sOC Credentials: APK firmado (+ Xiaomi si esta), paquetes Windows, OneDrive, commit,
+﻿# Entrega de sOC Credentials: APK firmado (+ Xiaomi si esta), paquetes Windows, OneDrive, commit,
 # push y release. Sin Play todavia (la app no esta dada de alta). Uso: cred_entregar.ps1 2026.09.19.00 "mensaje"
 param([string]$Ver, [string]$Mensaje)
 $ErrorActionPreference = 'Stop'
@@ -47,8 +47,9 @@ Get-ChildItem bin\windows -ErrorAction SilentlyContinue | Remove-Item -Force
 .\tools\publicar-windows.ps1 -Msix 2>&1 | Select-String "Lanzador|MSIX:|error|fallado"
 $d = 'C:\ID\OneDrive\Credentials'
 New-Item -ItemType Directory -Force $d | Out-Null
-Get-ChildItem $d -Include *.msix,*.zip,*.exe -Recurse | Remove-Item -Force
+Get-ChildItem $d -Include *.msix,*.zip,*.exe,*.apk -Recurse | Remove-Item -Force
 Get-ChildItem bin\windows | Copy-Item -Destination $d -Force
+Copy-Item "releases\Credentials-$Ver.apk" $d -Force
 Get-ChildItem releases -Filter 'sOCCredentials-*.zip' | Remove-Item -Force
 Copy-Item "bin\windows\sOCCredentials-$win.zip" releases\ -Force
 .\tools\empaquetar-extension.ps1 | Out-Null
@@ -57,7 +58,7 @@ Copy-Item "bin\windows\sOCCredentials-$win.zip" releases\ -Force
 $e = Join-Path $d 'extension'
 if (Test-Path $e) { Remove-Item $e -Recurse -Force }
 New-Item -ItemType Directory -Force $e | Out-Null
-Get-ChildItem bin\extension -Filter *.zip | Copy-Item -Destination $e -Force
+Get-ChildItem bin\extension -Filter "*-$win.zip" | Copy-Item -Destination $e -Force
 foreach ($nav in 'chromium', 'firefox') {
     Expand-Archive "bin\extension\sOCCredentials-extension-$nav-$win.zip" (Join-Path $e "sOCCredentials-extension-$nav-$win")
 }
