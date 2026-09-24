@@ -68,14 +68,24 @@
                 <Border x:Name="TotpCard" Style="{StaticResource Card}">
                     <VerticalStackLayout Padding="16,12" Spacing="6">
                         <Label x:Name="TotpTitle" Style="{StaticResource SectionTitle}" />
-                        <Grid x:Name="TotpLive" ColumnDefinitions="*,Auto,Auto" IsVisible="False">
+                        <Grid x:Name="TotpLive" ColumnDefinitions="*,Auto,Auto,Auto" IsVisible="False">
                             <VerticalStackLayout Grid.Column="0" Spacing="2">
                                 <Label x:Name="TotpCode" TextColor="{StaticResource Primary}" FontAttributes="Bold" FontSize="28" FontFamily="Consolas" />
                                 <ProgressBar x:Name="TotpProgress" HeightRequest="4" ProgressColor="{StaticResource Primary}" />
                                 <Label x:Name="TotpIssuer" Style="{StaticResource HintText}" />
                             </VerticalStackLayout>
-                            <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopyCodeClicked" />
-                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_trash.png" Clicked="OnRemoveTotpClicked" />
+                            <ImageButton Grid.Column="1" x:Name="SeedButton" Style="{StaticResource RowIconButton}" Source="ic_eye.png" Clicked="OnSeedClicked" />
+                            <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopyCodeClicked" />
+                            <ImageButton Grid.Column="3" Style="{StaticResource RowIconButton}" Source="ic_trash.png" Clicked="OnRemoveTotpClicked" />
+                        </Grid>
+                        <!-- La semilla (clave secreta): oculta hasta que se pide con el ojo. -->
+                        <Grid x:Name="SeedRow" ColumnDefinitions="*,Auto" IsVisible="False">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label x:Name="SeedTitle" Style="{StaticResource HintText}" FontSize="12" />
+                                <Label x:Name="SeedLabel" FontFamily="Consolas" FontSize="15" LineBreakMode="CharacterWrap"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                            </VerticalStackLayout>
+                            <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopySeedClicked" VerticalOptions="Center" />
                         </Grid>
                         <Label x:Name="TotpHint" Style="{StaticResource HintText}" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
@@ -83,6 +93,19 @@
                             <Button Grid.Column="1" x:Name="ScanButton" Style="{StaticResource IconButton}" ImageSource="ic_scan.png" Clicked="OnScanClicked" />
                         </Grid>
                         <Label x:Name="TotpError" TextColor="{StaticResource Danger}" FontSize="13" IsVisible="False" />
+
+                        <!-- Codigos de respaldo: ocultos hasta pulsar el ojo; cada uno se copia, se marca usado o se borra. -->
+                        <BoxView HeightRequest="1" Margin="0,8,0,4" Color="{AppThemeBinding Light={StaticResource SeparatorLight}, Dark={StaticResource SeparatorDark}}" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label x:Name="RecoveryTitle" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                                <Label x:Name="RecoveryHint" Style="{StaticResource HintText}" FontSize="12" />
+                            </VerticalStackLayout>
+                            <ImageButton Grid.Column="1" x:Name="RecoveryEye" Style="{StaticResource RowIconButton}" Source="ic_eye.png" Clicked="OnRecoveryEyeClicked" VerticalOptions="Center" />
+                        </Grid>
+                        <VerticalStackLayout x:Name="RecoveryBox" Spacing="2" IsVisible="False" />
+                        <Editor x:Name="RecoveryEditor" Style="{StaticResource FieldEditor}" MinimumHeightRequest="80" AutoSize="TextChanges" />
+                        <Button x:Name="RecoveryAddButton" Style="{StaticResource OutlineButton}" ImageSource="ic_add.png" ContentLayout="Left,6" Clicked="OnAddRecoveryClicked" />
                     </VerticalStackLayout>
                 </Border>
 

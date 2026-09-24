@@ -90,7 +90,7 @@ public partial class App : Application
             }
         }
 #endif
-        // «Confiar en este dispositivo»: la boveda se abre sola al arrancar (la extension y el
+        // «Confiar en este usuario y dispositivo»: la boveda se abre sola al arrancar (la extension y el
         // autocompletar ya la encuentran abierta).
         {
             var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();

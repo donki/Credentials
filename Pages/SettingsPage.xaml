@@ -11,8 +11,8 @@
                 <VerticalStackLayout Padding="16,12" Spacing="10">
                     <Label x:Name="LanguageTitle" Style="{StaticResource SectionTitle}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <Button Grid.Column="0" x:Name="SpanishButton" Text="🇪🇸 Español" FontSize="14" Padding="10,10" Clicked="OnSpanishClicked" />
-                        <Button Grid.Column="1" x:Name="EnglishButton" Text="🇺🇸 English" FontSize="14" Padding="10,10" Clicked="OnEnglishClicked" />
+                        <Button Grid.Column="0" x:Name="SpanishButton" Text="Español" ImageSource="ic_flag_es.png" ContentLayout="Left,8" FontSize="14" Padding="10,10" Clicked="OnSpanishClicked" />
+                        <Button Grid.Column="1" x:Name="EnglishButton" Text="English" ImageSource="ic_flag_us.png" ContentLayout="Left,8" FontSize="14" Padding="10,10" Clicked="OnEnglishClicked" />
                     </Grid>
                     <Label x:Name="LanguageHint" Style="{StaticResource HintText}" HorizontalOptions="Center" />
                 </VerticalStackLayout>

@@ -57,6 +57,12 @@ public partial class EntryPage : ContentPage
         TotpTitle.Text = _l["TotpSection"];
         TotpHint.Text = _l["TotpNone"];
         TotpEntry.Placeholder = _l["TotpSecret"];
+        SeedTitle.Text = _l["TotpSeed"];
+        RecoveryTitle.Text = _l["RecoveryTitle"];
+        RecoveryEditor.Placeholder = _l["RecoveryPlaceholder"];
+        RecoveryAddButton.Text = _l["RecoveryAdd"];
+        ToolTipProperties.SetText(SeedButton, _l["TotpShowSeed"]);
+        ToolTipProperties.SetText(RecoveryEye, _l["RecoveryShow"]);
         FolderTitle.Text = _l["Folder"];
         TagsTitle.Text = _l["Tags"];
         TagsEntry.Placeholder = _l["TagsHint"];
@@ -88,6 +94,7 @@ public partial class EntryPage : ContentPage
         FavoriteButton.Source = _entry.Favorite ? "ic_star_on.png" : "ic_star.png";
         UpdateStrength();
         UpdateTotp();
+        RenderRecovery();
         FieldsBox.Clear();
         _fieldRows.Clear();
         foreach (var f in _entry.Fields)
@@ -226,9 +233,115 @@ public partial class EntryPage : ContentPage
             TotpIssuer.Text = string.Join(" · ", new[] { t.Issuer, t.Account }.Where(s => s.Length > 0)) + $"  ({t.Algorithm}, {t.Digits}, {t.Period}s)";
             OnTick(null, EventArgs.Empty);
         }
+        UpdateSeed();
     }
 
     private void OnTotpEntered(object? sender, EventArgs e) => ApplyTypedTotp();
+
+    // ------------------------------------------------------------------ semilla
+
+    private bool _seedVisible;
+
+    /// <summary>El ojo del segundo factor: enseña (o esconde) la clave secreta, para llevarla a otra app.</summary>
+    private void OnSeedClicked(object? sender, EventArgs e)
+    {
+        _seedVisible = !_seedVisible;
+        UpdateSeed();
+    }
+
+    private void UpdateSeed()
+    {
+        var t = _entry.HasTotp ? Totp.Parse(_entry.Totp) : null;
+        SeedRow.IsVisible = _seedVisible && t is not null;
+        SeedButton.Source = _seedVisible ? "ic_eye_off.png" : "ic_eye.png";
+        // En grupos de cuatro, como la dan los sitios: se lee y se teclea mejor.
+        SeedLabel.Text = t is null ? string.Empty : string.Join(" ", t.Secret.TrimEnd('=').Chunk(4).Select(c => new string(c)));
+    }
+
+    private async void OnCopySeedClicked(object? sender, EventArgs e)
+    {
+        if (Totp.Parse(_entry.Totp) is { } t)
+            await ClipboardHelper.CopyAsync(t.Secret, _settings, _toast, _l["CopiedSeed"], _l["ClipboardCleared"], sensitive: true);
+    }
+
+    // ------------------------------------------------------------------ codigos de respaldo
+
+    private bool _recoveryVisible;
+
+    private void OnRecoveryEyeClicked(object? sender, EventArgs e)
+    {
+        _recoveryVisible = !_recoveryVisible;
+        RenderRecovery();
+    }
+
+    /// <summary>Lo pegado en la casilla pasa a la lista: uno por linea (o separados por comas), sin repetidos.</summary>
+    private bool AddTypedRecovery()
+    {
+        var text = RecoveryEditor.Text ?? string.Empty;
+        var codes = text.Split(['\n', '\r', ',', ';', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(c => c.Length > 0)
+            .ToList();
+        if (codes.Count == 0)
+            return false;
+        foreach (var code in codes)
+            if (!_entry.RecoveryCodes.Any(r => r.Code.Equals(code, StringComparison.OrdinalIgnoreCase)))
+                _entry.RecoveryCodes.Add(new RecoveryCode { Code = code });
+        RecoveryEditor.Text = string.Empty;
+        _dirty = true;
+        _recoveryVisible = true;
+        RenderRecovery();
+        return true;
+    }
+
+    private void OnAddRecoveryClicked(object? sender, EventArgs e) => AddTypedRecovery();
+
+    private void RenderRecovery()
+    {
+        var total = _entry.RecoveryCodes.Count;
+        var unused = _entry.RecoveryCodes.Count(r => !r.Used);
+        RecoveryHint.Text = total == 0
+            ? _l["RecoveryNone"]
+            : string.Format(_l.CurrentCulture, _l["RecoveryCount"], total, unused);
+        RecoveryEye.IsVisible = total > 0;
+        RecoveryEye.Source = _recoveryVisible ? "ic_eye_off.png" : "ic_eye.png";
+        RecoveryBox.IsVisible = _recoveryVisible && total > 0;
+        RecoveryBox.Clear();
+        if (!RecoveryBox.IsVisible)
+            return;
+        var resources = Application.Current!.Resources;
+        foreach (var r in _entry.RecoveryCodes)
+        {
+            var item = r;
+            var row = new Grid
+            {
+                ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Auto), new ColumnDefinition(GridLength.Auto)],
+                ColumnSpacing = 4,
+            };
+            var code = new Label
+            {
+                Text = item.Code,
+                FontFamily = "Consolas",
+                FontSize = 15,
+                VerticalOptions = LayoutOptions.Center,
+                TextDecorations = item.Used ? TextDecorations.Strikethrough : TextDecorations.None,
+                Opacity = item.Used ? 0.5 : 1,
+            };
+            code.SetAppThemeColor(Label.TextColorProperty, (Color)resources["TextPrimaryLight"], (Color)resources["TextPrimaryDark"]);
+            row.Add(code, 0);
+            // Casilla «usado»: el codigo sigue en la lista, tachado, para saber cuales quedan.
+            var used = new CheckBox { IsChecked = item.Used, Color = (Color)resources["Primary"], VerticalOptions = LayoutOptions.Center };
+            ToolTipProperties.SetText(used, _l["RecoveryUsed"]);
+            used.CheckedChanged += (_, a) => { item.Used = a.Value; _dirty = true; RenderRecovery(); };
+            row.Add(used, 1);
+            var copy = new ImageButton { Style = (Style)resources["RowIconButton"], Source = "ic_copy.png" };
+            copy.Clicked += async (_, _) => await ClipboardHelper.CopyAsync(item.Code, _settings, _toast, _l["CopiedRecovery"], _l["ClipboardCleared"], sensitive: true);
+            row.Add(copy, 2);
+            var remove = new ImageButton { Style = (Style)resources["RowIconButton"], Source = "ic_trash.png" };
+            remove.Clicked += (_, _) => { _entry.RecoveryCodes.Remove(item); _dirty = true; RenderRecovery(); };
+            row.Add(remove, 3);
+            RecoveryBox.Add(row);
+        }
+    }
 
     /// <summary>Al salir de la casilla tambien se aplica: pegar el secreto y no pulsar Intro era lo normal.</summary>
     private void OnTotpUnfocused(object? sender, FocusEventArgs e)
@@ -322,6 +435,8 @@ public partial class EntryPage : ContentPage
             TotpEntry.Focus();
             return;
         }
+        if (!string.IsNullOrWhiteSpace(RecoveryEditor.Text))
+            AddTypedRecovery();
         var newPassword = PasswordEntry.Text ?? string.Empty;
         if (!_isNew && _original.Password.Length > 0 && newPassword != _original.Password)
             _entry.History.Insert(0, new PasswordHistoryItem(_original.Password, _original.ModifiedAt));

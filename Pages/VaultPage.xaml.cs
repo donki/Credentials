@@ -184,7 +184,7 @@ public partial class VaultPage : ContentPage
         foreach (var kind in all.Select(e => e.Kind).Distinct().OrderBy(k => k))
             Chip("kind:" + kind, _l["Kind" + kind]);
         foreach (var folder in all.Select(e => e.Folder).Concat(_store.Data.Folders).Where(f => f.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(f => f))
-            Chip("folder:" + folder, "📁 " + folder);
+            Chip("folder:" + folder, "/" + folder);   // como ruta: las etiquetas van con «#»
         foreach (var tag in all.SelectMany(e => e.Tags).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t))
             Chip("tag:" + tag, "#" + tag);
     }

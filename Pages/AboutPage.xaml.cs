@@ -38,19 +38,19 @@ public partial class AboutPage : ContentPage
         DescriptionLabel.Text = _l["AppDescription"];
         CompanyLabel.Text = _l["Company"];
 
-        ContactTitle.Text = $"📧 {_l["AboutContact"]}";
+        ContactTitle.Text = _l["AboutContact"];
         ContactButton.Text = ContactEmail;
         ContactHint.Text = _l["AboutContactHint"];
 
 
 
-        PrivacyTitle.Text = $"🔒 {_l["AboutPrivacy"]}";
+        PrivacyTitle.Text = _l["AboutPrivacy"];
         PrivacyText.Text = _l["AboutPrivacyText"];
 
-        LicenseTitle.Text = $"📄 {_l["AboutLicense"]}";
+        LicenseTitle.Text = _l["AboutLicense"];
         LicenseText.Text = _l["AboutLicenseText"];
 
-        LegalTitle.Text = $"⚖️ {_l["AboutLegal"]}";
+        LegalTitle.Text = _l["AboutLegal"];
         LegalText1.Text = _l["AboutLegal1"];
         LegalText2.Text = _l["AboutLegal2"];
         WarningText.Text = _l["AboutWarning"];

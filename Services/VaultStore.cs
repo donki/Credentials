@@ -146,7 +146,7 @@ public sealed class VaultStore
     }
 
     /// <summary>
-    /// Con «Confiar en este dispositivo», abre la boveda con la clave guardada en el sistema, sin
+    /// Con «Confiar en este usuario y dispositivo», abre la boveda con la clave guardada en el sistema, sin
     /// preguntar nada. False si no esta activado, no hay clave o no vale.
     /// </summary>
     public Task<bool> TryTrustedUnlockAsync()
@@ -263,6 +263,7 @@ public sealed class VaultStore
         tomb.Totp = string.Empty;
         tomb.Notes = string.Empty;
         tomb.Fields.Clear();
+        tomb.RecoveryCodes.Clear();
         tomb.History.Clear();
         tomb.ModifiedAt = DateTimeOffset.UtcNow;
         await SaveAsync();

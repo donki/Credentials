@@ -38,7 +38,7 @@ public partial class SettingsPage : ContentPage
     {
         _loading = true;
         Title = _l["SettingsTitle"];
-        LanguageTitle.Text = $"🌐 {_l["SettingsLanguage"]}";
+        LanguageTitle.Text = _l["SettingsLanguage"];
         LanguageHint.Text = _l["AboutLanguageHint"];
         var isSpanish = _l.CurrentLanguage == "es";
         SpanishButton.Style = LookupStyle(isSpanish ? "PrimaryButton" : "OutlineButton");
@@ -406,7 +406,7 @@ public partial class SettingsPage : ContentPage
 
     // ------------------------------------------------------------------ seguridad
 
-    /// <summary>«Confiar en este dispositivo»: se guarda la clave en el sistema y la boveda deja de pedir la contraseña.</summary>
+    /// <summary>«Confiar en este usuario y dispositivo»: se guarda la clave en el sistema y la boveda deja de pedir la contraseña.</summary>
     private async void OnTrustToggled(object? sender, ToggledEventArgs e)
     {
         if (_loading)

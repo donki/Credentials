@@ -23,6 +23,16 @@ public sealed class CustomField
     public bool Hidden { get; set; }
 }
 
+/// <summary>
+/// Un codigo de respaldo del segundo factor (los que da el sitio al activarlo, para entrar si se
+/// pierde la app de autenticacion). Cada uno vale una vez: <see cref="Used"/> lo marca gastado.
+/// </summary>
+public sealed class RecoveryCode
+{
+    public string Code { get; set; } = string.Empty;
+    public bool Used { get; set; }
+}
+
 /// <summary>Una contraseña anterior: por si se cambio y el sitio no la acepto.</summary>
 public sealed record PasswordHistoryItem(string Password, DateTimeOffset ChangedAt);
 
@@ -50,6 +60,9 @@ public sealed class Credential
     public string Totp { get; set; } = string.Empty;
 
     public List<CustomField> Fields { get; set; } = [];
+
+    /// <summary>Codigos de respaldo del segundo factor, para recuperar la cuenta sin la app de autenticacion.</summary>
+    public List<RecoveryCode> RecoveryCodes { get; set; } = [];
     public List<PasswordHistoryItem> History { get; set; } = [];
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -79,6 +92,7 @@ public sealed class Credential
         copy.Tags = [.. Tags];
         copy.Fields = Fields.Select(f => new CustomField { Name = f.Name, Value = f.Value, Hidden = f.Hidden }).ToList();
         copy.History = [.. History];
+        copy.RecoveryCodes = RecoveryCodes.Select(r => new RecoveryCode { Code = r.Code, Used = r.Used }).ToList();
         return copy;
     }
 }

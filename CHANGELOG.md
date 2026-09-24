@@ -2,6 +2,27 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.24.02 — Semilla y códigos de respaldo del segundo factor; banderas en el idioma
+
+`versionCode`: 2026092402 · Windows `2026.9.24.2` · extensión `2026.9.24.2`
+
+- **Ver la semilla del segundo factor.** Un ojo junto al código enseña la clave secreta (en grupos
+  de cuatro, como la dan los sitios) con su botón de copiar, para dar de alta el mismo código en otra
+  aplicación o recuperarlo.
+- **Códigos de respaldo** en cada entrada con segundo factor: se pegan todos de una vez (uno por
+  línea, o separados por comas; sin repetidos) y quedan ocultos hasta pulsar el ojo. Cada uno se
+  copia, se borra o se **marca como usado** (queda tachado), y arriba se ve cuántos quedan sin usar.
+  Van cifrados en la bóveda como todo lo demás y se sincronizan con la entrada.
+- **Idioma con banderas** (icono plano de España y de EE. UU.) en vez de los emoji, que en Windows
+  salían como «ES» y «US». Fuera también los emoji de color que quedaban en Ajustes, Acerca de, las
+  carpetas de la bóveda (ahora «/Carpeta») y el autocompletar de Android.
+- «Confiar en este dispositivo» pasa a llamarse **«Confiar en este usuario y dispositivo»**, que es lo
+  que hace: la clave queda protegida por tu cuenta del sistema, así que otro usuario del mismo PC o
+  móvil, u otro dispositivo, sigue necesitando la contraseña.
+- Extensión: el zip de las tiendas va sin `key` y con la descripción en 132 caracteres como máximo
+  (Edge Add-ons rechazaba las dos cosas), y la de Firefox declara que no recoge datos
+  (`data_collection_permissions`), que AMO exige. Ficha para AMO en `store/firefox-amo.md`.
+
 ## 2026.09.24.01 — Confiar en el dispositivo, sin Windows Hello, y el doble factor que no se guardaba
 
 `versionCode`: 2026092401 · Windows `2026.9.24.1` · extensión `2026.9.24.1`

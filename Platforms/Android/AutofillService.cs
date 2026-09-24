@@ -52,7 +52,7 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
             }
 
             var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
-            // Con «Confiar en este dispositivo» se abre sola, sin ofrecer «desbloquear».
+            // Con «Confiar en este usuario y dispositivo» se abre sola, sin ofrecer «desbloquear».
             if (!store.IsUnlocked && !await store.TryTrustedUnlockAsync())
             {
                 callback.OnSuccess(LockedResponse(fields));
@@ -203,7 +203,7 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
     private FillResponse LockedResponse(Fields fields)
     {
         var views = new RemoteViews(PackageName, global::Android.Resource.Layout.SimpleListItem1);
-        views.SetTextViewText(global::Android.Resource.Id.Text1, "🔒 sOC Credentials");
+        views.SetTextViewText(global::Android.Resource.Id.Text1, "sOC Credentials");
         var intent = new Intent(this, typeof(AutofillAuthActivity));
         intent.PutExtra(ExtraUserField, fields.UserId?.ToString() ?? string.Empty);
         intent.PutExtra(ExtraPassField, fields.PassId?.ToString() ?? string.Empty);
