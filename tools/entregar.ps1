@@ -59,8 +59,13 @@ $e = Join-Path $d 'extension'
 if (Test-Path $e) { Remove-Item $e -Recurse -Force }
 New-Item -ItemType Directory -Force $e | Out-Null
 Get-ChildItem bin\extension -Filter "*-$win.zip" | Copy-Item -Destination $e -Force
+# Las carpetas para cargar a mano salen del codigo, no del zip: el de Chromium va sin «key» (para
+# las tiendas) y a mano hace falta, porque da el id fijo que el puente con la aplicacion reconoce.
 foreach ($nav in 'chromium', 'firefox') {
-    Expand-Archive "bin\extension\sOCCredentials-extension-$nav-$win.zip" (Join-Path $e "sOCCredentials-extension-$nav-$win")
+    $carpeta = Join-Path $e "sOCCredentials-extension-$nav-$win"
+    New-Item -ItemType Directory -Force $carpeta | Out-Null
+    Copy-Item Extension\common\* $carpeta -Recurse -Force
+    Copy-Item "Extension\$nav\manifest.json" $carpeta -Force
 }
 
 # git + release

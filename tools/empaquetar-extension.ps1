@@ -6,6 +6,10 @@
     sOCCredentials-extension-chromium-<version>.zip (Chrome y Edge, mismo paquete) y
     sOCCredentials-extension-firefox-<version>.zip (AMO lo firma y devuelve un .xpi). La version es
     la del manifiesto. Los zips llevan los ficheros en la raiz, como piden las tres tiendas.
+
+    El zip de Chromium va SIN el campo «key»: Edge Add-ons y Chrome Web Store lo rechazan («El
+    manifiesto no deberia contener el campo key»); el id lo pone la tienda. La «key» solo sirve para
+    cargarla a mano con un id fijo, y esa carpeta la monta entregar.ps1 desde el codigo, con la key.
 .EXAMPLE
     .\tools\empaquetar-extension.ps1
 #>
@@ -23,6 +27,15 @@ foreach ($nav in "chromium", "firefox") {
     New-Item -ItemType Directory -Force $trabajo | Out-Null
     Copy-Item (Join-Path $ext "common\*") $trabajo -Recurse -Force
     Copy-Item (Join-Path $ext "$nav\manifest.json") $trabajo -Force
+    if ($nav -eq "chromium") {
+        # Las tiendas no admiten «key»: se quita solo del manifiesto que va en el zip.
+        $manifiesto = Join-Path $trabajo "manifest.json"
+        $texto = Get-Content $manifiesto -Raw
+        $texto = [regex]::Replace($texto, '(?m)^\s*"key"\s*:\s*"[^"]*",??
+', '')
+        [IO.File]::WriteAllText($manifiesto, $texto)
+        if ((Get-Content $manifiesto -Raw | ConvertFrom-Json).PSObject.Properties.Name -contains "key") { throw "el manifiesto de la tienda sigue llevando key" }
+    }
     $zip = Join-Path $salida "sOCCredentials-extension-$nav-$version.zip"
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path (Join-Path $trabajo "*") -DestinationPath $zip -CompressionLevel Optimal
