@@ -2,6 +2,16 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.25.03 — La sincronización con OneDrive vuelve a funcionar
+
+`versionCode`: 2026092503 · Windows `2026.9.25.3` · extensión `2026.9.25.3`
+
+- **Arreglo: «No se ha podido sincronizar: OneDrive: 400 Invalid request».** La bóveda se bajaba de
+  OneDrive por su ruta dentro de la carpeta de la aplicación (`approot:/vault.soccred:/content`), y
+  OneDrive no lo admite: contestaba 400. Ahora se baja por su identificador. Lo destapó el registro de
+  la 2026.09.25.02. Con esto la sincronización automática (al abrir, al volver y cada 5 minutos) ya
+  llega de verdad de un dispositivo a otro.
+
 ## 2026.09.25.02 — Registro de los fallos de la nube
 
 `versionCode`: 2026092502 · Windows `2026.9.25.2` · extensión `2026.9.25.2`

@@ -247,7 +247,10 @@ public sealed class OneDrive(HttpClient http, Func<CancellationToken, Task<strin
         await EnsureAsync(metaResponse, cancellationToken).ConfigureAwait(false);
         using var doc = JsonDocument.Parse(await metaResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
         var modified = doc.RootElement.GetProperty("lastModifiedDateTime").GetDateTimeOffset();
-        using var request = await RequestAsync(HttpMethod.Get, Item + ":/content", cancellationToken).ConfigureAwait(false);
+        // El contenido se baja por su id: por ruta (approot:/vault.soccred:/content) OneDrive contesta
+        // 400 invalidRequest en la carpeta especial de la aplicacion, y no se sincronizaba nada.
+        var id = doc.RootElement.GetProperty("id").GetString();
+        using var request = await RequestAsync(HttpMethod.Get, $"https://graph.microsoft.com/v1.0/me/drive/items/{id}/content", cancellationToken).ConfigureAwait(false);
         using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await EnsureAsync(response, cancellationToken).ConfigureAwait(false);
         return (await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), modified);
