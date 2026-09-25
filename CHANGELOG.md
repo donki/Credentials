@@ -2,6 +2,20 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.25.00 — Sincroniza sola con la nube; QR del segundo factor
+
+`versionCode`: 2026092500 · Windows `2026.9.25.0` · extensión `2026.9.25.0`
+
+- **Arreglo: lo guardado en un dispositivo no llegaba al otro.** La aplicación subía cada cambio a
+  la nube, pero **solo bajaba lo de la nube al pulsar «Sincronizar» en Ajustes**. Por eso los
+  códigos de doble factor añadidos en Windows no aparecían en Android (y con «Confiar en este usuario
+  y dispositivo», que deja la bóveda abierta, ni siquiera al volver a abrirla). Ahora sincroniza sola:
+  al abrir la bóveda, al volver a la aplicación y cada cinco minutos mientras está abierta, sin
+  molestar si no hay conexión.
+- **QR del segundo factor.** Junto a la semilla sale su **código QR** (el enlace `otpauth://`
+  completo: emisor, cuenta, algoritmo, dígitos y periodo), para darlo de alta en otra aplicación de
+  autenticación escaneándolo.
+
 ## 2026.09.24.04 — La extensión de Edge, desde su tienda
 
 `versionCode`: 2026092404 · Windows `2026.9.24.4` · extensión `2026.9.24.4`

@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
              x:Class="Credentials.Pages.EntryPage">
 
     <Grid RowDefinitions="*,Auto">
@@ -87,6 +88,15 @@
                             </VerticalStackLayout>
                             <ImageButton Grid.Column="1" Style="{StaticResource RowIconButton}" Source="ic_copy.png" Clicked="OnCopySeedClicked" VerticalOptions="Center" />
                         </Grid>
+                        <!-- El mismo código en QR (otpauth://), para escanearlo con otra app de autenticación. -->
+                        <VerticalStackLayout x:Name="SeedQrBox" IsVisible="False" Spacing="4" HorizontalOptions="Center">
+                            <Border BackgroundColor="White" Padding="10" StrokeThickness="0" HorizontalOptions="Center" WidthRequest="220" HeightRequest="220"
+                                    StrokeShape="RoundRectangle 10">
+                                <zxing:BarcodeGeneratorView x:Name="SeedQr" Format="QrCode" WidthRequest="200" HeightRequest="200"
+                                                            ForegroundColor="Black" BackgroundColor="White" Margin="0" />
+                            </Border>
+                            <Label x:Name="SeedQrHint" Style="{StaticResource HintText}" FontSize="12" HorizontalTextAlignment="Center" MaximumWidthRequest="280" />
+                        </VerticalStackLayout>
                         <Label x:Name="TotpHint" Style="{StaticResource HintText}" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                             <Entry Grid.Column="0" x:Name="TotpEntry" Style="{StaticResource Field}" Completed="OnTotpEntered" Unfocused="OnTotpUnfocused" />

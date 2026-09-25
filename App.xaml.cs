@@ -90,6 +90,21 @@ public partial class App : Application
             }
         }
 #endif
+        // Sincronizacion automatica con la nube: al abrir la boveda, al volver a la aplicacion y cada
+        // cinco minutos mientras esta abierta (antes solo con el boton de Ajustes).
+        {
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            store.Unlocked += () => _ = store.SyncQuietlyAsync(TimeSpan.Zero);
+            window.Resumed += (_, _) => _ = store.SyncQuietlyAsync(TimeSpan.FromSeconds(30));
+            window.Activated += (_, _) => _ = store.SyncQuietlyAsync(TimeSpan.FromSeconds(30));
+            window.Created += (_, _) =>
+            {
+                var timer = Dispatcher.CreateTimer();
+                timer.Interval = TimeSpan.FromMinutes(5);
+                timer.Tick += (_, _) => _ = store.SyncQuietlyAsync(TimeSpan.FromMinutes(4));
+                timer.Start();
+            };
+        }
         // «Confiar en este usuario y dispositivo»: la boveda se abre sola al arrancar (la extension y el
         // autocompletar ya la encuentran abierta).
         {

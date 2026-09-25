@@ -58,6 +58,7 @@ public partial class EntryPage : ContentPage
         TotpHint.Text = _l["TotpNone"];
         TotpEntry.Placeholder = _l["TotpSecret"];
         SeedTitle.Text = _l["TotpSeed"];
+        SeedQrHint.Text = _l["TotpQrHint"];
         RecoveryTitle.Text = _l["RecoveryTitle"];
         RecoveryEditor.Placeholder = _l["RecoveryPlaceholder"];
         RecoveryAddButton.Text = _l["RecoveryAdd"];
@@ -253,6 +254,10 @@ public partial class EntryPage : ContentPage
     {
         var t = _entry.HasTotp ? Totp.Parse(_entry.Totp) : null;
         SeedRow.IsVisible = _seedVisible && t is not null;
+        SeedQrBox.IsVisible = SeedRow.IsVisible;
+        // El QR lleva el enlace otpauth entero (emisor, cuenta, algoritmo, dígitos y periodo), como el
+        // que enseñan los sitios: cualquier app de autenticación lo da de alta igual.
+        SeedQr.Value = SeedRow.IsVisible ? t!.ToUri() : null;
         SeedButton.Source = _seedVisible ? "ic_eye_off.png" : "ic_eye.png";
         // En grupos de cuatro, como la dan los sitios: se lee y se teclea mejor.
         SeedLabel.Text = t is null ? string.Empty : string.Join(" ", t.Secret.TrimEnd('=').Chunk(4).Select(c => new string(c)));

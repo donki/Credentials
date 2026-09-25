@@ -408,6 +408,44 @@ public sealed class VaultStore
         return changed;
     }
 
+    private readonly SemaphoreSlim _syncGate = new(1, 1);
+    private DateTimeOffset _lastAutoSync = DateTimeOffset.MinValue;
+
+    /// <summary>
+    /// Sincroniza sin molestar: al abrir la boveda, al volver a la aplicacion y cada pocos minutos.
+    /// Antes solo se bajaba lo de la nube al pulsar «Sincronizar» en Ajustes, asi que lo guardado en
+    /// otro dispositivo (un codigo de doble factor añadido en el PC) no llegaba nunca al movil. No hace
+    /// nada con la boveda cerrada o sin nube, no repite si se sincronizo hace menos de
+    /// <paramref name="minInterval"/>, y un fallo solo se avisa por <see cref="Status"/>.
+    /// </summary>
+    public async Task SyncQuietlyAsync(TimeSpan minInterval)
+    {
+        if (!IsUnlocked || _settings.Storage == StorageMode.Local)
+            return;
+        if (DateTimeOffset.UtcNow - _lastAutoSync < minInterval)
+            return;
+        if (!await _syncGate.WaitAsync(0))
+            return;   // ya hay una en marcha
+        try
+        {
+            _lastAutoSync = DateTimeOffset.UtcNow;
+            await SyncAsync();
+        }
+        catch (VaultPasswordNeededException)
+        {
+            // La nube va con otra sal: hace falta la contraseña, y eso solo se pide desde Ajustes.
+            Status?.Invoke("cloud:error:password");
+        }
+        catch (Exception ex)
+        {
+            Status?.Invoke("cloud:error:" + ex.Message);
+        }
+        finally
+        {
+            _syncGate.Release();
+        }
+    }
+
     /// <summary>Segunda parte de <see cref="SyncAsync"/> cuando la nube esta cifrada con otra sal: con la contraseña se rehace la clave.</summary>
     public async Task<int> MergeRemoteWithPasswordAsync(string remoteContent, string masterPassword)
     {
