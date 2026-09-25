@@ -313,6 +313,7 @@ public sealed class VaultStore
         }
         catch (Exception ex)
         {
+            AppLog.Error("subir", ex);
             Status?.Invoke("cloud:error:" + ex.Message);
         }
     }
@@ -438,6 +439,7 @@ public sealed class VaultStore
         }
         catch (Exception ex)
         {
+            AppLog.Error("sincronizar sola", ex);
             Status?.Invoke("cloud:error:" + ex.Message);
         }
         finally

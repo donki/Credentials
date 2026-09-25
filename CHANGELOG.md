@@ -2,6 +2,17 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.25.02 — Registro de los fallos de la nube
+
+`versionCode`: 2026092502 · Windows `2026.9.25.2` · extensión `2026.9.25.2`
+
+- **Los fallos al sincronizar quedan registrados** con la petición que falló y la respuesta
+  completa del servidor (sin contraseñas ni tokens): en Windows en
+  `%LOCALAPPDATA%\sOCCredentials\logspp.log`, en Android en logcat (etiqueta `sOCCredentials`) y en
+  la carpeta de la aplicación. Para averiguar el «400 invalid request» de OneDrive.
+- El error de Microsoft al renovar la sesión se enseña con su motivo y su código (AADSTS…), no con
+  el JSON entero.
+
 ## 2026.09.25.01 — Al abrirla, manda siempre la versión nueva
 
 `versionCode`: 2026092501 · Windows `2026.9.25.1` · extensión `2026.9.25.1`

@@ -124,7 +124,22 @@ public sealed class OAuthClient(HttpClient http, IOAuthBrowser browser, OAuthPro
         using var response = await http.PostAsync(provider.TokenUrl, content, cancellationToken).ConfigureAwait(false);
         var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"{provider.Name}: {(int)response.StatusCode} {body}");
+        {
+            // El cuerpo de error del proveedor no lleva tokens (error, error_description, codigos AADSTS).
+            AppLog.Write($"[token] {provider.Name} {(int)response.StatusCode} -> {body}");
+            // Al usuario, lo esencial: el tipo de error y la primera frase del motivo (con su codigo AADSTS).
+            var reason = body;
+            try
+            {
+                using var err = JsonDocument.Parse(body);
+                var code = err.RootElement.TryGetProperty("error", out var ec) ? ec.GetString() : null;
+                var desc = err.RootElement.TryGetProperty("error_description", out var ed) ? ed.GetString() : null;
+                var firstLine = desc?.ReplaceLineEndings(" ").Split(". ")[0];
+                reason = $"{code} {firstLine}".Trim();
+            }
+            catch (JsonException) { }
+            throw new InvalidOperationException($"{provider.Name}: {(int)response.StatusCode} {reason}");
+        }
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
         return new OAuthTokens
@@ -211,7 +226,7 @@ public sealed class GoogleDrive(HttpClient http, Func<CancellationToken, Task<st
     private static async Task EnsureAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (!response.IsSuccessStatusCode)
-            throw new CloudException("Google Drive", response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            throw new CloudException("Google Drive", response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), $"{response.RequestMessage?.Method} {response.RequestMessage?.RequestUri}");
     }
 }
 
@@ -256,7 +271,7 @@ public sealed class OneDrive(HttpClient http, Func<CancellationToken, Task<strin
     private static async Task EnsureAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (!response.IsSuccessStatusCode)
-            throw new CloudException("OneDrive", response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            throw new CloudException("OneDrive", response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), $"{response.RequestMessage?.Method} {response.RequestMessage?.RequestUri}");
     }
 }
 
@@ -269,10 +284,14 @@ public sealed class CloudException : Exception
     /// <summary>401/403: casi siempre el permiso de la carpeta no se concedio (Google lo enseña como una casilla).</summary>
     public bool IsScopeProblem => Status is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden;
 
-    public CloudException(string service, System.Net.HttpStatusCode status, string body) : base(Describe(service, status, body))
+    /// <summary>Para el registro: la peticion que fallo (sin el token) y la respuesta entera del servidor.</summary>
+    public string Detail { get; }
+
+    public CloudException(string service, System.Net.HttpStatusCode status, string body, string request = "") : base(Describe(service, status, body))
     {
         Service = service;
         Status = status;
+        Detail = $"{service} {(int)status} {request} -> {(body.Length > 2000 ? body[..2000] : body)}";
     }
 
     private static string Describe(string service, System.Net.HttpStatusCode status, string body)

@@ -393,6 +393,7 @@ public partial class SettingsPage : ContentPage
         }
         catch (Exception ex)
         {
+            AppLog.Error("sincronizar", ex);
             SyncStatus.Text = string.Format(_l.CurrentCulture, _l["SyncFailed"], ex.Message);
             SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
         }
