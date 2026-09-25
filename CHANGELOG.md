@@ -2,6 +2,18 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.25.01 — Al abrirla, manda siempre la versión nueva
+
+`versionCode`: 2026092501 · Windows `2026.9.25.1` · extensión `2026.9.25.1`
+
+- **Arreglo (Windows): tras actualizar, seguía abierta la versión anterior.** Mientras se sustituía la
+  aplicación, el navegador la relanzaba en segundo plano con la versión vieja, y al abrir la nueva
+  esta le pasaba el turno a la vieja. Ahora, al arrancar, **cierra cualquier versión anterior que
+  esté abierta y sigue ella** (constitución General 8.3).
+- Si dos se abren a la vez (la abre el usuario y el navegador en el mismo segundo), la segunda espera
+  a que la primera tenga ventana (hasta 10 s) y le pasa el turno: ya no quedan dos.
+- La entrega vuelve a dejar la aplicación abierta y comprueba que la que corre es la nueva.
+
 ## 2026.09.25.00 — Sincroniza sola con la nube; QR del segundo factor
 
 `versionCode`: 2026092500 · Windows `2026.9.25.0` · extensión `2026.9.25.0`

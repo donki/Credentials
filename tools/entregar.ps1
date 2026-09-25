@@ -73,4 +73,10 @@ git add -A; git commit -q -m $Mensaje; git push -q -u origin HEAD 2>&1 | Select-
 $zip = Get-ChildItem bin\windows -Filter *.zip | Select-Object -First 1
 $msix = Get-ChildItem bin\windows -Filter *.msix | Select-Object -First 1
 python ..\Shared\release-github.py "v$Ver" "releases\Credentials-$Ver.apk" bin\windows\sOCCredentials.exe $zip.FullName $msix.FullName 2>&1 | Select-Object -Last 1
+# Constitucion General 8.3: la entrega deja la aplicacion abierta, y con la version nueva. Al arrancar,
+# la nueva cierra sola cualquier version anterior (la que el navegador haya relanzado mientras tanto).
+Start-Process (Join-Path $d 'sOCCredentials.exe')
+Start-Sleep -Seconds 12
+$abiertas = Get-Process Credentials -ErrorAction SilentlyContinue | ForEach-Object { try { $_.MainModule.FileVersionInfo.FileVersion } catch { '?' } }
+if (@($abiertas) -contains $win -and @($abiertas | Where-Object { $_ -ne $win }).Count -eq 0) { "Abierta la $win" } else { "OJO: abiertas: $($abiertas -join ', ') (se esperaba solo la $win)" }
 Get-ChildItem $d | Select-Object Name, Length
