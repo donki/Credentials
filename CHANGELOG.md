@@ -2,6 +2,16 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.27.00 — La extensión de Firefox, desde su tienda
+
+`versionCode`: 2026092700 · Windows `2026.9.27.0` · extensión `2026.9.27.0`
+
+- **Firefox**: la extensión ya está publicada en Firefox Add-ons
+  (https://addons.mozilla.org/firefox/addon/soc-credentials/). Al instalarla desde la aplicación se
+  abre su ficha, como en Edge, en lugar de cargarla como complemento temporal en `about:debugging`
+  (que se perdía al cerrar Firefox). El identificador es el mismo (`credentials@socratic.app`), así
+  que el puente con la aplicación la reconoce sin cambios.
+
 ## 2026.09.25.03 — La sincronización con OneDrive vuelve a funcionar
 
 `versionCode`: 2026092503 · Windows `2026.9.25.3` · extensión `2026.9.25.3`

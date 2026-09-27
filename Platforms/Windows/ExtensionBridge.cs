@@ -236,7 +236,8 @@ public static class ExtensionInstaller
     private const string ChromiumId = "hbimfdiggibkbjnmkagdcnddpghhckho";   // sale de la clave «key» del manifiesto (carga a mano)
     private const string EdgeStoreId = "pcilggpjodagihemfbimfbnnmlbfhfbk";  // la publicada en Edge Add-ons (2026-09-24)
     public const string EdgeStoreUrl = "https://microsoftedge.microsoft.com/addons/detail/soc-credentials/pcilggpjodagihemfbimfbnnmlbfhfbk";
-    private const string FirefoxId = "credentials@socratic.app";
+    private const string FirefoxId = "credentials@socratic.app";                // el mismo en AMO: el puente ya la autoriza
+    public const string FirefoxStoreUrl = "https://addons.mozilla.org/firefox/addon/soc-credentials/";  // publicada en AMO (2026-09-27)
     private const string AppKey = @"Software\sOCratic\Credentials";
 
     public static string Root => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sOCCredentials");
@@ -251,7 +252,7 @@ public static class ExtensionInstaller
     [
         new("edge", "Microsoft Edge", "msedge.exe", @"Software\Microsoft\Edge\NativeMessagingHosts", false, "edge://extensions/", EdgeStoreUrl),
         new("chrome", "Google Chrome", "chrome.exe", @"Software\Google\Chrome\NativeMessagingHosts", false, "chrome://extensions/"),
-        new("firefox", "Mozilla Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, "about:debugging#/runtime/this-firefox"),
+        new("firefox", "Mozilla Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, "about:debugging#/runtime/this-firefox", FirefoxStoreUrl),
     ];
 
     /// <summary>Los navegadores que hay en este PC (por sus «App Paths»).</summary>

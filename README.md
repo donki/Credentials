@@ -12,6 +12,7 @@ de Proyectos de Software de sOCratic.
   esté publicada).
 - **Microsoft Store:** «sOC Credentials» (en cuanto Partner Center dé el enlace).
 - **Extensión para Edge** (Edge Add-ons): https://microsoftedge.microsoft.com/addons/detail/soc-credentials/pcilggpjodagihemfbimfbnnmlbfhfbk
+- **Extensión para Firefox** (Firefox Add-ons): https://addons.mozilla.org/firefox/addon/soc-credentials/
 - **Releases de GitHub** (APK / EXE / MSIX de cada versión): https://github.com/donki/Credentials/releases
 
 ## Qué hace
@@ -53,8 +54,8 @@ de Proyectos de Software de sOCratic.
   ventana y pide desbloquear. La aplicación la instala desde **Ajustes › Extensiones del navegador**
   (o lo ofrece tras desbloquear): registra el host en `HKCU`, deja la extensión desempaquetada en
   `%LOCALAPPDATA%\sOCCredentials\extension` y abre el navegador en su página de extensiones para
-  cargarla («Cargar desempaquetada»); en cuanto conecta, sale como instalada. Firefox solo admite
-  extensiones firmadas por Mozilla: hasta publicarla, se carga temporal desde `about:debugging`.
+  cargarla («Cargar desempaquetada»); en cuanto conecta, sale como instalada. En Edge y Firefox, que ya la tienen publicada,
+  abre directamente su ficha de la tienda para instalarla.
   El MSIX de la Store no puede registrar el host (virtualización del registro): las extensiones
   necesitan la versión exe. En la página, al entrar en el usuario o la contraseña sale una **lista
   pegada al campo** con las entradas del sitio (una pulsación rellena) y, si hay algo escrito que
