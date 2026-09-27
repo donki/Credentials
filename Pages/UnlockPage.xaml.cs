@@ -169,6 +169,20 @@ public partial class UnlockPage : ContentPage
             await Navigation.PopModalAsync(animated: true);
     }
 
-    /// <summary>Sin salir por atras: bloqueada es bloqueada.</summary>
-    protected override bool OnBackButtonPressed() => true;
+    /// <summary>
+    /// Atras en la puerta (Mobile 7): bloqueada es bloqueada, asi que no se pasa a lo de debajo. En la
+    /// aplicacion, atras la oculta (como en inicio); al rellenar otra app (actividad de autocompletar),
+    /// cancela y se vuelve a esa app sin rellenar.
+    /// </summary>
+    protected override bool OnBackButtonPressed()
+    {
+#if ANDROID
+        var activity = Platform.CurrentActivity;
+        if (activity is MainActivity)
+            activity.MoveTaskToBack(true);
+        else if (activity is not null)
+            Dispatcher.Dispatch(async () => await CloseAsync());
+#endif
+        return true;
+    }
 }

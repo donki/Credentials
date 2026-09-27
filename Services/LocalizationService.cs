@@ -137,6 +137,8 @@ public class LocalizationService : ILocalizationService
         ["Cancel"] = "Cancel",
 
         ["Ok"] = "OK",
+        ["CrashTitle"] = "Something went wrong",
+        ["CrashText"] = "An unexpected error occurred. The app is still open and the error has been logged (without passwords or vault data).",
         ["Close"] = "Close",
         ["Back"] = "← Back",
         ["Error"] = "Error",
@@ -441,6 +443,8 @@ public class LocalizationService : ILocalizationService
         ["Cancel"] = "Cancelar",
 
         ["Ok"] = "Aceptar",
+        ["CrashTitle"] = "Algo ha fallado",
+        ["CrashText"] = "Ha ocurrido un error inesperado. La aplicación sigue abierta y el error ha quedado registrado (sin contraseñas ni datos de la bóveda).",
         ["Close"] = "Cerrar",
         ["Back"] = "← Volver",
         ["Error"] = "Error",

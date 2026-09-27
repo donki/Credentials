@@ -2,6 +2,26 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.28.00 — Errores que no cierran la aplicación y el botón de atrás en todas las pantallas
+
+`versionCode`: 2026092800 · Windows `2026.9.28.0` · extensión `2026.9.28.0`
+
+- **Gestor global de errores** (constitución General 6.12), en Android y en Windows, con la pieza
+  común `CrashGuard`: un error inesperado ya no cierra la aplicación; sale un aviso en su idioma
+  («Algo ha fallado… la aplicación sigue abierta») y el error queda en `crash.log`, en la carpeta de
+  datos de la aplicación. Por ser un gestor de contraseñas, ni el aviso ni el registro llevan el
+  mensaje del error: solo el tipo y la pila de llamadas, nunca contraseñas ni datos de la bóveda.
+- **Botón de atrás** (Mobile 7): con el menú lateral abierto, lo cierra; en Ajustes, Guía y Acerca
+  de vuelve a la bóveda (en la guía, antes un paso atrás); en la bóveda quita primero la búsqueda o
+  el filtro y, sin nada de eso, oculta la aplicación; en la pantalla de desbloqueo la oculta (y, al
+  rellenar otra app, cancela y vuelve a ella). Además se desactiva el «atrás predictivo» de
+  Android 16, que no dejaba llegar el botón a la aplicación.
+
+**English.** Unexpected errors no longer close the app: a notice in your language, and a log with
+the error type and call stack only (never passwords or vault data). The back button now works on
+every screen: closes the side menu, goes back to the vault, clears the search or filter, and hides
+the app from the vault or the unlock screen.
+
 ## 2026.09.27.00 — La extensión de Firefox, desde su tienda
 
 `versionCode`: 2026092700 · Windows `2026.9.27.0` · extensión `2026.9.27.0`

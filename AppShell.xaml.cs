@@ -38,6 +38,31 @@ public partial class AppShell : Shell
         }
     }
 
+    /// <summary>
+    /// Atras (Mobile 7, como FileManager): con el menu lateral abierto, lo cierra; con una pagina
+    /// apilada (una entrada), decide ella y el Shell la desapila; en Ajustes, Guia o Acerca de vuelve a
+    /// la boveda; en la boveda decide la propia pagina (limpia la busqueda o el filtro y, si no hay,
+    /// oculta la aplicacion). La puerta de desbloqueo es modal y trata el suyo (UnlockPage).
+    /// </summary>
+    protected override bool OnBackButtonPressed()
+    {
+        if (FlyoutIsPresented)
+        {
+            FlyoutIsPresented = false;
+            return true;
+        }
+        if (Navigation.ModalStack.Count == 0 && Navigation.NavigationStack.Count <= 1
+            && CurrentItem is { } item && Items.Count > 0 && item != Items[0])
+        {
+            // La guia puede volver antes un paso atras.
+            if (CurrentPage is Pages.TutorialPage tutorial && tutorial.StepBack())
+                return true;
+            CurrentItem = Items[0];
+            return true;
+        }
+        return base.OnBackButtonPressed();
+    }
+
     private async void OnHomeTapped(object sender, TappedEventArgs e) => await NavigateAsync("//VaultPage");
 
     private async void OnSettingsTapped(object sender, TappedEventArgs e) => await NavigateAsync("//SettingsPage");

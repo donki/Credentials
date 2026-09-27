@@ -237,6 +237,15 @@ public class TutorialPage : ContentPage
 
     // ------------------------------------------------------------------ pantalla
 
+    /// <summary>Atras del sistema: un paso atras si no esta en el primero (si no, el Shell vuelve a la boveda).</summary>
+    public bool StepBack()
+    {
+        if (_index <= 0)
+            return false;
+        Go(_index - 1);
+        return true;
+    }
+
     private void Go(int index)
     {
         if (index < 0 || index >= _steps.Count)

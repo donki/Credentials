@@ -15,7 +15,10 @@
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+  <!-- enableOnBackInvokedCallback="false": con targetSdk 36, Android 16 activa el «atras predictivo»
+       y el boton de atras ya no llega ni al Shell ni a las paginas (Mobile 7). -->
   <application android:allowBackup="false"
+               android:enableOnBackInvokedCallback="false"
                android:icon="@mipmap/appicon"
                android:roundIcon="@mipmap/appicon_round"
                android:supportsRtl="true">

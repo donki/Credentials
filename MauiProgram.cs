@@ -9,6 +9,9 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        // Gestor global de excepciones (constitucion General 6.12): lo primero, antes de nada que pueda fallar.
+        CrashReporting.Install();
+
         var builder = MauiApp.CreateBuilder();
 
         // Sin fuentes propias: se usa la tipografia del sistema (constitucion A.9).

@@ -189,6 +189,30 @@ public partial class VaultPage : ContentPage
             Chip("tag:" + tag, "#" + tag);
     }
 
+    /// <summary>
+    /// Atras en la boveda (inicio, Mobile 7): primero quita la busqueda y el filtro que haya; sin nada
+    /// de eso, la aplicacion se oculta (no se cierra).
+    /// </summary>
+    protected override bool OnBackButtonPressed()
+    {
+        if (_search.Length > 0 || _filter != "all")
+        {
+            _filter = "all";
+            if (_search.Length > 0)
+                SearchEntry.Text = string.Empty;   // OnSearchChanged refresca
+            else
+                Refresh();
+            SearchEntry.Unfocus();
+            return true;
+        }
+#if ANDROID
+        Platform.CurrentActivity?.MoveTaskToBack(true);
+        return true;
+#else
+        return base.OnBackButtonPressed();
+#endif
+    }
+
     private void OnSearchChanged(object? sender, TextChangedEventArgs e)
     {
         _search = e.NewTextValue ?? string.Empty;
