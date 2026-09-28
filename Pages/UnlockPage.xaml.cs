@@ -91,6 +91,11 @@ public partial class UnlockPage : ContentPage
         // presentación de la app sobra. Al crear la bóveda sí se explica.
         IntroLabel.Text = _creating ? _l["CreateIntro"] : string.Empty;
         IntroLabel.IsVisible = _creating;
+#if WINDOWS
+        // En la ventanita de Windows, al desbloquear, sobran el candado y el título: la casilla y
+        // el botón ya dicen qué hacer (y el botón pone «Desbloquear»).
+        Logo.IsVisible = TitleLabel.IsVisible = _creating;
+#endif
         PasswordTitle.Text = _l["MasterPassword"];
         RepeatTitle.Text = _l["MasterPasswordRepeat"];
         RepeatTitle.IsVisible = RepeatEntry.IsVisible = _creating;

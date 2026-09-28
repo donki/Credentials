@@ -2,6 +2,16 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.28.04 — Ventana de desbloqueo solo con la casilla y el botón (Windows)
+
+`versionCode`: 2026092804 · Windows `2026.9.28.4` · extensión `2026.9.28.4`
+
+- Al desbloquear en Windows, la ventana ya no lleva el candado ni el título «Desbloquear»: solo la
+  casilla de la contraseña maestra y el botón, y su alto se ajusta a eso. Al crear la bóveda siguen.
+
+**English.** The Windows unlock window drops the padlock and the title: just the master password box
+and the button, with the window height fitted to them.
+
 ## 2026.09.28.03 — Al desbloquear, la ventana se minimiza (Windows)
 
 `versionCode`: 2026092803 · Windows `2026.9.28.3` · extensión `2026.9.28.3`
