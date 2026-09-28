@@ -382,6 +382,17 @@ public static class Gate
             {
                 try
                 {
+                    if (ServiceHelper.GetRequiredService<VaultStore>().IsUnlocked)
+                    {
+                        // Desbloqueada: la ventana se va directamente a la barra de tareas y el
+                        // tamaño de antes queda para cuando se restaure. Así no se ve crecer la
+                        // ventana pequeña con la pantalla de la contraseña todavía dentro.
+                        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(native);
+                        var display = Microsoft.UI.Windowing.DisplayArea.GetFromRect(saved, Microsoft.UI.Windowing.DisplayAreaFallback.Primary);
+                        Platforms.Windows.WindowPlacement.MinimizeWithRestoreBounds(hwnd, saved,
+                            display.WorkArea.X - display.OuterBounds.X, display.WorkArea.Y - display.OuterBounds.Y, wasMaximized);
+                        return;
+                    }
                     app.MoveAndResize(saved);
                     if (wasMaximized)
                         presenter!.Maximize();

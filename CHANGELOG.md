@@ -2,6 +2,18 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.28.03 — Al desbloquear, la ventana se minimiza (Windows)
+
+`versionCode`: 2026092803 · Windows `2026.9.28.3` · extensión `2026.9.28.3`
+
+- Al escribir la contraseña maestra, la ventana pequeña se va directamente a la barra de tareas;
+  al abrirla desde ahí sale la bóveda con el tamaño y el sitio de antes. Antes crecía y se movía
+  con la pantalla de la contraseña todavía dentro.
+
+**English.** After entering the master password on Windows the window goes straight to the taskbar,
+and it opens again at its previous size and position, instead of growing with the password screen
+still showing.
+
 ## 2026.09.28.02 — Ventana de desbloqueo más baja y casilla a todo lo ancho (Windows)
 
 `versionCode`: 2026092802 · Windows `2026.9.28.2` · extensión `2026.9.28.2`
