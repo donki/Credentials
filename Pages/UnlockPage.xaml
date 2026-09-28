@@ -5,11 +5,11 @@
              Shell.NavBarIsVisible="False">
 
     <ScrollView>
-        <VerticalStackLayout Padding="{OnPlatform Android='24,48,24,24', Default='20,12,20,16'}" Spacing="{OnPlatform Android=16, Default=12}" MaximumWidthRequest="520" HorizontalOptions="Center">
+        <VerticalStackLayout Padding="{OnPlatform Android='24,24,24,24', Default='20,12,20,16'}" Spacing="{OnPlatform Android=12, Default=12}" MaximumWidthRequest="520" HorizontalOptions="Center">
 
-            <Image Source="app_logo.png" WidthRequest="84" HeightRequest="84" HorizontalOptions="Center">
+            <Image Source="app_logo.png" WidthRequest="64" HeightRequest="64" HorizontalOptions="Center">
                 <Image.Clip>
-                    <RoundRectangleGeometry CornerRadius="20" Rect="0,0,84,84" />
+                    <RoundRectangleGeometry CornerRadius="16" Rect="0,0,64,64" />
                 </Image.Clip>
             </Image>
             <Label x:Name="TitleLabel" Style="{StaticResource CardTitle}" FontSize="24" HorizontalOptions="Center" />

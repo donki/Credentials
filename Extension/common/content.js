@@ -27,11 +27,24 @@
     return true;
   }
 
+  // Sin contraseña a la vista (acceso en dos pasos) un campo de texto cualquiera no basta: en una
+  // aplicación de gestión (Business Central, un ERP…) hay decenas y la lista salía en todos. Solo
+  // cuenta el que se declara usuario o correo, en un formulario corto.
+  const USER_HINT = /user|login|e-?mail|correo|usuari|account|cuenta|identifier|logon|signin|sign-in/;
+  function looksLikeLoneUser(input, inputs) {
+    if (!looksLikeUser(input)) return false;
+    const ac = (input.autocomplete || "").toLowerCase();
+    const s = `${input.name} ${input.id} ${input.placeholder} ${input.getAttribute("aria-label") ?? ""}`.toLowerCase();
+    if (!(ac.includes("username") || ac === "email" || input.type === "email" || USER_HINT.test(s))) return false;
+    const scope = input.form ? [...input.form.querySelectorAll("input")].filter(visible) : inputs;
+    return scope.filter(i => i.type !== "hidden" && i.type !== "checkbox" && i.type !== "submit" && i.type !== "button").length <= 3;
+  }
+
   /** Campos de un formulario de acceso: la contraseña y el usuario más cercano por delante. */
   function findFields(preferFocused = true) {
     const inputs = [...document.querySelectorAll("input")].filter(visible);
     const passwords = inputs.filter(i => i.type === "password");
-    if (passwords.length === 0) return { user: inputs.find(looksLikeUser) ?? null, pass: null, inputs };
+    if (passwords.length === 0) return { user: inputs.find(i => looksLikeLoneUser(i, inputs)) ?? null, pass: null, inputs };
     let pass = passwords[0];
     const active = document.activeElement;
     if (preferFocused && active instanceof HTMLInputElement) {
@@ -52,7 +65,7 @@
     }
     if (!user) {
       // Acceso en dos pasos (primero el usuario, luego la contraseña): el usuario puede estar solo.
-      user = inputs.find(looksLikeUser) ?? null;
+      user = inputs.find(i => looksLikeLoneUser(i, inputs)) ?? null;
     }
     return { user, pass, inputs };
   }
@@ -195,7 +208,8 @@
     if (!r.locked && typedPass && !entries.some(e => e.password === typedPass && (!typedUser || e.username.toLowerCase() === typedUser.toLowerCase())))
       items.push({ kind: "save", username: typedUser, password: typedPass });
     for (const e of entries) items.push({ kind: "entry", entry: e });
-    if (r.locked) items.push({ kind: "locked" });
+    // «Bóveda cerrada» solo donde de verdad se pide una contraseña; en un campo de usuario suelto no molesta.
+    if (r.locked && pass) items.push({ kind: "locked" });
     if (items.length === 0) { closeDropdown(); return; }
     renderDropdown(field, items);
   }

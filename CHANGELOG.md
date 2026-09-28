@@ -2,6 +2,21 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.28.01 — La lista ya no sale en cualquier casilla y el desbloqueo cabe sin desplazarse
+
+`versionCode`: 2026092801 · Windows `2026.9.28.1` · extensión `2026.9.28.1`
+
+- **Extensión**: en páginas sin contraseña (aplicaciones de gestión como Business Central) la lista
+  de sOC Credentials salía en la primera casilla de texto. Ahora, sin contraseña a la vista, solo
+  sale en una casilla que se declara usuario o correo y en un formulario corto (el primer paso de
+  un acceso en dos pasos). El aviso «Bóveda cerrada» solo sale donde se pide una contraseña.
+- **Pantalla de desbloqueo**: fuera la presentación («Tus contraseñas y códigos…»); la casilla de
+  la contraseña maestra y el botón se ven sin desplazar la pantalla.
+
+**English.** The browser list no longer pops up in any text box on pages without a password (such
+as Business Central). The unlock screen drops the intro text so the master password box and the
+button fit without scrolling.
+
 ## 2026.09.28.00 — Errores que no cierran la aplicación y el botón de atrás en todas las pantallas
 
 `versionCode`: 2026092800 · Windows `2026.9.28.0` · extensión `2026.9.28.0`

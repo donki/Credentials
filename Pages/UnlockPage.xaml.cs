@@ -43,7 +43,10 @@ public partial class UnlockPage : ContentPage
     private void ApplyTexts()
     {
         TitleLabel.Text = _creating ? _l["CreateTitle"] : _l["UnlockTitle"];
-        IntroLabel.Text = _creating ? _l["CreateIntro"] : _l["AppDescription"];
+        // Al desbloquear solo hace falta la casilla y el botón a la vista, sin desplazarse: la
+        // presentación de la app sobra. Al crear la bóveda sí se explica.
+        IntroLabel.Text = _creating ? _l["CreateIntro"] : string.Empty;
+        IntroLabel.IsVisible = _creating;
         PasswordTitle.Text = _l["MasterPassword"];
         RepeatTitle.Text = _l["MasterPasswordRepeat"];
         RepeatTitle.IsVisible = RepeatEntry.IsVisible = _creating;
