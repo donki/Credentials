@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using Credentials.Helpers;
 using Credentials.Services;
 
@@ -32,7 +32,51 @@ public partial class UnlockPage : ContentPage
         _store.Changed += OnStoreChanged;
         _store.Unlocked += OnStoreChanged;
         _l.LanguageChanged += (_, _) => ApplyTexts();
+#if WINDOWS
+        Stack.SizeChanged += (_, _) => FitWindowHeight();
+        SizeChanged += (_, _) => FitWindowHeight();
+#endif
     }
+
+#if WINDOWS
+    /// <summary>
+    /// En Windows la puerta va en una ventana pequeña (ver <c>VaultPage.Compact</c>): su alto se
+    /// ajusta a lo que hay dentro, sin huecos arriba ni abajo, y crece si aparece Windows Hello o un error.
+    /// </summary>
+    private double? _titleBar;
+    private double _fittedContent = -1;
+
+    private void FitWindowHeight()
+    {
+        try
+        {
+            if (Width <= 0 || Height <= 0 || Window?.Handler?.PlatformView is not Microsoft.UI.Xaml.Window native)
+                return;
+            var app = native.AppWindow;
+            var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
+            // El alto que pide el contenido, no el que ocupa: dentro del ScrollView se estira hasta la ventana.
+            var content = Stack.Measure(Width, double.PositiveInfinity).Height;
+            if (Math.Abs(content - _fittedContent) < 1)
+                return;   // ya ajustada a este contenido (el cambio de tamaño vuelve a llamar aquí)
+            var chrome = app.Size.Height - app.ClientSize.Height;   // bordes de Windows
+            // MAUI pinta su barra de título dentro del área cliente: lo que sobra entre el área
+            // cliente y la página es esa barra. Se mide una vez, con la ventana aún quieta: después
+            // la página va un paso por detrás de cada cambio de tamaño.
+            _titleBar ??= Math.Max(0, app.ClientSize.Height / scale - Height);
+            var wanted = (int)Math.Ceiling((content + _titleBar.Value) * scale) + chrome;
+            _fittedContent = content;
+            if (Math.Abs(app.Size.Height - wanted) < 2)
+                return;
+            // Anclada abajo: crece o encoge hacia arriba.
+            var bottom = app.Position.Y + app.Size.Height;
+            app.MoveAndResize(new global::Windows.Graphics.RectInt32(app.Position.X, bottom - wanted, app.Size.Width, wanted));
+        }
+        catch (Exception)
+        {
+            // Solo es la forma de la ventana: si falla, se queda como estaba.
+        }
+    }
+#endif
 
     private void OnStoreChanged()
     {

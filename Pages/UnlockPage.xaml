@@ -5,7 +5,8 @@
              Shell.NavBarIsVisible="False">
 
     <ScrollView>
-        <VerticalStackLayout Padding="{OnPlatform Android='24,24,24,24', Default='20,12,20,16'}" Spacing="{OnPlatform Android=12, Default=12}" MaximumWidthRequest="520" HorizontalOptions="Center">
+        <!-- Fill: la casilla y el botón ocupan el ancho (con Center se encogían al del contenido). -->
+        <VerticalStackLayout x:Name="Stack" Padding="{OnPlatform Android='24,24,24,24', Default='16,4,16,12'}" Spacing="{OnPlatform Android=12, Default=10}" MaximumWidthRequest="520" HorizontalOptions="Fill">
 
             <Image Source="app_logo.png" WidthRequest="64" HeightRequest="64" HorizontalOptions="Center">
                 <Image.Clip>

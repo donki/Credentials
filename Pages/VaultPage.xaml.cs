@@ -375,7 +375,8 @@ public static class Gate
             var saved = new global::Windows.Graphics.RectInt32(app.Position.X, app.Position.Y, app.Size.Width, app.Size.Height);
             var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(app.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
             var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
-            int w = (int)(400 * scale), h = (int)(460 * scale), margin = (int)(12 * scale);
+            // El alto es de partida: UnlockPage lo ajusta a su contenido en cuanto se mide.
+            int w = (int)(420 * scale), h = (int)(340 * scale), margin = (int)(12 * scale);
             app.MoveAndResize(new global::Windows.Graphics.RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
             return () =>
             {

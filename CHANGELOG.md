@@ -2,6 +2,17 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.28.02 — Ventana de desbloqueo más baja y casilla a todo lo ancho (Windows)
+
+`versionCode`: 2026092802 · Windows `2026.9.28.2` · extensión `2026.9.28.2`
+
+- La ventana pequeña que pide la contraseña maestra se ajusta al alto de lo que hay dentro, sin
+  huecos arriba ni abajo, y crece sola si aparece Windows Hello o un error.
+- La casilla de la contraseña y el botón ocupan todo el ancho (antes se encogían al centro).
+
+**English.** The small unlock window on Windows now fits its content (no empty space above or
+below, growing for Windows Hello or an error), and the password box and button use the full width.
+
 ## 2026.09.28.01 — La lista ya no sale en cualquier casilla y el desbloqueo cabe sin desplazarse
 
 `versionCode`: 2026092801 · Windows `2026.9.28.1` · extensión `2026.9.28.1`
