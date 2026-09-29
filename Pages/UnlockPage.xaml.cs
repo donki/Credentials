@@ -46,6 +46,13 @@ public partial class UnlockPage : ContentPage
     private double? _titleBar;
     private double _fittedContent = -1;
 
+    /// <summary>Volver a ajustar el alto (la ventana se ha recolocado desde fuera).</summary>
+    internal void RefitHeight()
+    {
+        _fittedContent = -1;
+        FitWindowHeight();
+    }
+
     private void FitWindowHeight()
     {
         try

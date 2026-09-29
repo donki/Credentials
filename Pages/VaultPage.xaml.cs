@@ -373,13 +373,11 @@ public static class Gate
             if (wasMaximized)
                 presenter!.Restore();
             var saved = new global::Windows.Graphics.RectInt32(app.Position.X, app.Position.Y, app.Size.Width, app.Size.Height);
-            var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(app.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
-            var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
-            // El alto es de partida: UnlockPage lo ajusta a su contenido en cuanto se mide.
-            int w = (int)(420 * scale), h = (int)(340 * scale), margin = (int)(12 * scale);
-            app.MoveAndResize(new global::Windows.Graphics.RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
+            PlaceSmall(native);
+            _compactWindow = native;
             return () =>
             {
+                _compactWindow = null;
                 try
                 {
                     if (ServiceHelper.GetRequiredService<VaultStore>().IsUnlocked)
@@ -404,6 +402,39 @@ public static class Gate
         {
             return null;
         }
+    }
+
+    /// <summary>La ventana que está en pequeño pidiendo la contraseña, si la hay.</summary>
+    private static Microsoft.UI.Xaml.Window? _compactWindow;
+
+    /// <summary>Pequeña y abajo a la derecha de la zona de trabajo; el alto lo ajusta luego UnlockPage.</summary>
+    private static void PlaceSmall(Microsoft.UI.Xaml.Window native)
+    {
+        var app = native.AppWindow;
+        var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(app.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
+        var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
+        int w = (int)(420 * scale), h = (int)(340 * scale), margin = (int)(12 * scale);
+        app.MoveAndResize(new global::Windows.Graphics.RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
+    }
+
+    /// <summary>
+    /// Vuelve a dejar en pequeño la ventana que pide la contraseña. Hace falta al volver de la
+    /// bandeja: al bloquear Windows (Win+L) la bóveda se cierra y la puerta se prepara con la ventana
+    /// escondida; al volver al escritorio, sacarla de la bandeja la restauraba a su tamaño de antes
+    /// (incluso maximizada) con la contraseña dentro.
+    /// </summary>
+    public static void Recompact()
+    {
+        try
+        {
+            if (Current is null || _compactWindow is not { } native)
+                return;
+            if (native.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Maximized } presenter)
+                presenter.Restore();
+            PlaceSmall(native);
+            Current.RefitHeight();
+        }
+        catch (Exception) { }
     }
 #endif
 }

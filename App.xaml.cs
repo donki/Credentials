@@ -176,6 +176,9 @@ public partial class App : Application
                         _tray.Show();
                         if (window.Page is { } page)
                             _ = Pages.Gate.EnsureUnlockedAsync(page);
+                        // Si la puerta ya estaba (se preparó al bloquear, con la ventana escondida),
+                        // sacarla de la bandeja la ha restaurado a su tamaño normal: otra vez en pequeño.
+                        Pages.Gate.Recompact();
                         Pages.Gate.Current?.RetryBiometric();
                     }
                     catch (Exception) { }

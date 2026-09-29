@@ -2,6 +2,17 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.29.01 — Al volver al escritorio, la contraseña se pide en la ventana pequeña (Windows)
+
+`versionCode`: 2026092901 · Windows `2026.9.29.1` · extensión `2026.9.29.1`
+
+- Tras bloquear Windows (Win+L) y volver al escritorio, la contraseña maestra salía en la ventana a
+  su tamaño normal (o maximizada). Ahora sale en la ventana pequeña de abajo a la derecha, como al
+  arrancar: al sacar la ventana de la bandeja se vuelve a poner en pequeño.
+
+**English.** After locking Windows (Win+L) and coming back, the master password was asked in the
+full-size (or maximized) window; it now appears in the small window at the bottom right.
+
 ## 2026.09.29.00 — Textos al día: la extensión de Firefox, desde su tienda
 
 `versionCode`: 2026092900 · Windows `2026.9.29.0` · extensión `2026.9.29.0`
