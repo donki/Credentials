@@ -252,7 +252,7 @@ public static class ExtensionInstaller
     [
         new("edge", "Microsoft Edge", "msedge.exe", @"Software\Microsoft\Edge\NativeMessagingHosts", false, "edge://extensions/", EdgeStoreUrl),
         new("chrome", "Google Chrome", "chrome.exe", @"Software\Google\Chrome\NativeMessagingHosts", false, "chrome://extensions/"),
-        new("firefox", "Mozilla Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, "about:debugging#/runtime/this-firefox", FirefoxStoreUrl),
+        new("firefox", "Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, "about:debugging#/runtime/this-firefox", FirefoxStoreUrl),
     ];
 
     /// <summary>Los navegadores que hay en este PC (por sus «App Paths»).</summary>
@@ -448,11 +448,10 @@ public static class ExtensionSetup
                 ExtensionInstaller.OpenExtensionsPage(b);
             return;
         }
+        // Sin tienda solo queda Chrome (Edge y Firefox instalan desde la suya): carpeta desempaquetada.
         var dir = ExtensionInstaller.ExtensionDir(b.IsFirefox);
-        try { await Clipboard.Default.SetTextAsync(b.IsFirefox ? System.IO.Path.Combine(dir, "manifest.json") : dir); } catch (Exception) { }
-        var steps = b.IsFirefox
-            ? string.Format(l.CurrentCulture, l["ExtStepsFirefox"], b.Name, System.IO.Path.Combine(dir, "manifest.json"))
-            : string.Format(l.CurrentCulture, l["ExtStepsChromium"], b.Name, l["ExtLoadUnpacked_" + b.Key], dir);
+        try { await Clipboard.Default.SetTextAsync(dir); } catch (Exception) { }
+        var steps = string.Format(l.CurrentCulture, l["ExtStepsChromium"], b.Name, l["ExtLoadUnpacked_" + b.Key], dir);
         var open = await SocShared.ModernDialog.AlertAsync(page, string.Format(l.CurrentCulture, l["ExtInstallIn"], b.Name), steps, string.Format(l.CurrentCulture, l["ExtOpenBrowser"], b.Name), l["Cancel"]);
         if (open)
             ExtensionInstaller.OpenExtensionsPage(b);

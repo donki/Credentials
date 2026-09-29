@@ -2,6 +2,23 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.29.00 — Textos al día: la extensión de Firefox, desde su tienda
+
+`versionCode`: 2026092900 · Windows `2026.9.29.0` · extensión `2026.9.29.0`
+
+- Fuera los pasos del «complemento temporal» de Firefox: la extensión ya está en su tienda de
+  complementos, y la guía y Ajustes › Extensiones del navegador lo dicen así, igual que para Edge
+  («se abrirá su página: añádela y confirma»). En Windows el navegador sale como «Firefox».
+- La ayuda de Importar ya no nombra otros gestores ni otras apps: «CSV de Chrome, Edge, Firefox,
+  Brave u otros gestores de contraseñas; JSON de apps de códigos de verificación o de sOC
+  Credentials; QR de exportación de Google Authenticator». El aviso al terminar de importar se
+  titula «Importación terminada» en vez del nombre del programa de origen.
+
+**English.** The Firefox "temporary add-on" steps are gone: the extension is in the Firefox add-ons
+store, and the guide and Settings › Browser extensions now say so, as for Edge ("its page will open:
+add it and confirm"). The Import hint no longer names other managers or apps, and the message after
+importing is titled "Import finished" instead of the source program's name.
+
 ## 2026.09.28.04 — Ventana de desbloqueo solo con la casilla y el botón (Windows)
 
 `versionCode`: 2026092804 · Windows `2026.9.28.4` · extensión `2026.9.28.4`

@@ -511,7 +511,7 @@ public partial class SettingsPage : ContentPage
         var (added, skipped) = Importers.MergeInto(_store.Data!, result.Entries);
         if (added > 0)
             await _store.SaveAsync();
-        await ModernDialog.AlertAsync(this, result.Source, string.Format(_l.CurrentCulture, _l["ImportDone"], added, skipped), _l["Ok"]);
+        await ModernDialog.AlertAsync(this, _l["ImportResultTitle"], string.Format(_l.CurrentCulture, _l["ImportDone"], added, skipped), _l["Ok"]);
     }
 
     private async void OnExportEncryptedClicked(object? sender, EventArgs e) =>
