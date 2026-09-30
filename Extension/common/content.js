@@ -140,8 +140,9 @@
     bar = document.createElement("div");
     bar.style.cssText = "all:initial;position:fixed;top:12px;right:12px;z-index:2147483647;";
     const root = bar.attachShadow({ mode: "closed" });
-    root.innerHTML = `
-      <style>
+    // Construido nodo a nodo (sin innerHTML): los textos van siempre como texto, nunca como HTML.
+    root.append(
+      el("style", {}, `
         .b{font:14px 'Segoe UI',system-ui,sans-serif;background:#1E2130;color:#EEE;border:1px solid #3525CD;border-radius:12px;
            padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:360px;display:flex;flex-direction:column;gap:10px}
         .t{display:flex;align-items:center;gap:8px;font-weight:600}
@@ -149,13 +150,13 @@
         .m{opacity:.9;line-height:1.35}
         .r{display:flex;gap:8px;justify-content:flex-end}
         button{font:inherit;border-radius:8px;padding:6px 12px;cursor:pointer;border:1px solid #3525CD;background:transparent;color:#B5B0FF}
-        button.p{background:#3525CD;color:#fff}
-      </style>
-      <div class="b">
-        <div class="t"><img src="${api.runtime.getURL("icons/icon32.png")}" alt=""> sOC Credentials</div>
-        <div class="m">${escapeHtml(t(mode === "update" ? "updateQuestion" : "saveQuestion", username || "—", site))}</div>
-        <div class="r"><button class="n">${escapeHtml(t("notNow"))}</button><button class="p">${escapeHtml(t(mode === "update" ? "update" : "save"))}</button></div>
-      </div>`;
+        button.p{background:#3525CD;color:#fff}`),
+      el("div", { class: "b" },
+        el("div", { class: "t" }, el("img", { src: api.runtime.getURL("icons/icon32.png"), alt: "" }), " sOC Credentials"),
+        el("div", { class: "m" }, t(mode === "update" ? "updateQuestion" : "saveQuestion", username || "—", site)),
+        el("div", { class: "r" },
+          el("button", { class: "n" }, t("notNow")),
+          el("button", { class: "p" }, t(mode === "update" ? "update" : "save")))));
     root.querySelector(".n").addEventListener("click", () => { bar.remove(); bar = null; });
     root.querySelector(".p").addEventListener("click", async () => {
       const btn = root.querySelector(".p");
@@ -173,7 +174,13 @@
     (document.body ?? document.documentElement).appendChild(bar);
     setTimeout(() => { if (bar) { bar.remove(); bar = null; } }, 45000);
   }
-  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  /** Crea un elemento con atributos e hijos (texto o nodos). Los textos entran como nodos de texto. */
+  function el(tag, attrs, ...children) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    for (const c of children) n.append(typeof c === "string" ? document.createTextNode(c) : c);
+    return n;
+  }
 
   // ---------------------------------------------------------------- lista pegada al campo
 
@@ -221,8 +228,7 @@
     dd.setAttribute("data-soc-credentials", items.map(i => i.kind).join(","));   // solo los tipos, sin datos
     dd.style.cssText = "all:initial;position:fixed;z-index:2147483647;";
     const root = dd.attachShadow({ mode: "closed" });
-    root.innerHTML = `
-      <style>
+    root.append(el("style", {}, `
         .b{font:13px 'Segoe UI',system-ui,sans-serif;background:#1E2130;color:#EEE;border:1px solid #3525CD;border-radius:10px;
            box-shadow:0 8px 24px rgba(0,0,0,.35);min-width:240px;max-width:360px;padding:4px;display:flex;flex-direction:column;gap:2px}
         .h{display:flex;align-items:center;gap:6px;font-size:11px;opacity:.7;padding:4px 8px 2px}
@@ -232,9 +238,9 @@
         .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .u{opacity:.75;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .i.s .t{color:#B5B0FF}.i.s:hover .t{color:#fff}
-        .k{background:#BA1A1A;color:#fff;font-weight:600;border-radius:7px;padding:8px 10px;line-height:1.3}
-      </style>
-      <div class="b"><div class="h"><img src="${api.runtime.getURL("icons/icon32.png")}" alt="">sOC Credentials</div></div>`;
+        .k{background:#BA1A1A;color:#fff;font-weight:600;border-radius:7px;padding:8px 10px;line-height:1.3}`),
+      el("div", { class: "b" },
+        el("div", { class: "h" }, el("img", { src: api.runtime.getURL("icons/icon32.png"), alt: "" }), "sOC Credentials")));
     const box = root.querySelector(".b");
     for (const it of items) {
       // Bóveda cerrada: aviso sin boton, en blanco sobre rojo; no abre nada.

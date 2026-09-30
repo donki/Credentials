@@ -2,6 +2,20 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.30.01 — Extensión sin avisos en la revisión de Firefox
+
+`versionCode`: 2026093001 · Windows `2026.9.30.1` · extensión `2026.9.30.1`
+
+- **Extensión**: la lista pegada al campo, la barra «¿Guardar?» y los iconos del popup se construyen
+  nodo a nodo, sin `innerHTML` (la validación de la tienda de complementos de Firefox lo avisaba). Se
+  ven y funcionan igual.
+- **Firefox**: versión mínima 140 (142 en Android), la primera que entiende la declaración de datos
+  que recoge la extensión (ninguno), que la tienda exige.
+
+**English.** The browser extension builds its list, save bar and popup icons node by node (no
+`innerHTML`), and Firefox now requires version 140 (142 on Android), the first to understand the
+data-collection declaration the add-on store requires. Same look and behaviour.
+
 ## 2026.09.30.00 — Tres fallos que encontró el banco de pruebas nuevo
 
 `versionCode`: 2026093000 · Windows `2026.9.30.0` · extensión `2026.9.30.0` (sin cambios)

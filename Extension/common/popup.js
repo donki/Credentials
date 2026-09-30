@@ -185,16 +185,30 @@ function render(r, q) {
 // Iconos planos de linea (constitucion General 6.2: nunca emoji), del mismo estilo que los de la
 // aplicacion: 24x24, trazo 1.8, color del texto del boton.
 const ICONS = {
-  fill: '<path d="M12 3v11M7 9l5 5 5-5M5 20h14"/>',
-  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
-  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14.5 8.5l2 2"/>',
-  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  fill: [["path", { d: "M12 3v11M7 9l5 5 5-5M5 20h14" }]],
+  user: [["circle", { cx: 12, cy: 8, r: 4 }], ["path", { d: "M4 21c0-4 3.6-6 8-6s8 2 8 6" }]],
+  key: [["circle", { cx: 8, cy: 15, r: 4 }], ["path", { d: "M11 12l9-9M17 6l3 3M14.5 8.5l2 2" }]],
+  copy: [["rect", { x: 9, y: 9, width: 11, height: 11, rx: 2 }], ["path", { d: "M5 15V6a2 2 0 0 1 2-2h9" }]],
 };
+
+/** El icono como SVG construido nodo a nodo (sin innerHTML). */
+function svgIcon(name) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", width: 16, height: 16, fill: "none", stroke: "currentColor",
+    "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) svg.setAttribute(k, v);
+  for (const [tag, attrs] of ICONS[name]) {
+    const s = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) s.setAttribute(k, v);
+    svg.append(s);
+  }
+  return svg;
+}
 
 function btn(icon, title, onClick, primary = false) {
   const b = document.createElement("button");
   b.className = "icon" + (primary ? " primary" : "");
-  b.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[icon]}</svg>`;
+  b.append(svgIcon(icon));
   b.title = title;
   b.setAttribute("aria-label", title);
   b.addEventListener("click", onClick);
