@@ -46,6 +46,9 @@ public sealed class VaultStore
         _browser = browser;
     }
 
+    /// <summary>Con otro cliente HTTP: lo usan las pruebas para hablar con una nube de mentira.</summary>
+    internal VaultStore(ISettingsService settings, IOAuthBrowser browser, HttpClient http) : this(settings, browser) => _http = http;
+
     public static string FilePath => Path.Combine(DataDirectory, "vault.soccred");
 
     /// <summary>

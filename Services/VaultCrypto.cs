@@ -96,13 +96,16 @@ public static class VaultCrypto
         var lines = stored.Split('\n');
         if (lines.Length < 3 || lines[0].Trim() != Magic)
             throw new CryptographicException("El fichero no es una boveda de sOC Credentials.");
+        // Con saltos de linea de Windows (IsVault los admite) el retorno de carro se quedaba pegado a
+        // la cabecera, que son los datos autenticados, y la contraseña correcta no abria.
+        var headerJson = lines[1].TrimEnd('\r');
         var all = Convert.FromBase64String(lines[2].Trim());
         var nonce = all[..12];
         var tag = all[12..28];
         var cipher = all[28..];
         var plain = new byte[cipher.Length];
         using (var aes = new AesGcm(key, 16))
-            aes.Decrypt(nonce, cipher, tag, plain, Encoding.UTF8.GetBytes(lines[1]));
+            aes.Decrypt(nonce, cipher, tag, plain, Encoding.UTF8.GetBytes(headerJson));
         return Encoding.UTF8.GetString(plain);
     }
 

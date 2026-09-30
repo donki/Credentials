@@ -2,6 +2,24 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.09.30.00 — Tres fallos que encontró el banco de pruebas nuevo
+
+`versionCode`: 2026093000 · Windows `2026.9.30.0` · extensión `2026.9.30.0` (sin cambios)
+
+- Con la aplicación en inglés, «Sign-in was not completed in time» y el aviso de «Saved in
+  Credentials» del autocompletar salían en castellano: esos dos textos estaban escritos en la tabla
+  inglesa en vez de en la castellana.
+- Una bóveda con saltos de línea de Windows (la que deja un editor o una copia que los convierte)
+  se reconocía como bóveda, pero la contraseña correcta no la abría. Ahora se abre.
+- Autocompletar: una entrada guardada sin usuario se quedaba duplicada al volver a guardar ese
+  mismo sitio o esa app con usuario; ahora se completa la que había.
+- Pruebas automatizadas (`Credentials.Tests`, 151 pruebas): ver el README.
+
+**English.** With the app in English, "Sign-in was not completed in time" and the autofill "Saved in
+Credentials" message showed in Spanish; a vault with Windows line endings was recognised but the
+right password did not open it; and autofill duplicated an entry saved without a username instead
+of completing it. All three were found by the new automated tests.
+
 ## 2026.09.29.01 — Al volver al escritorio, la contraseña se pide en la ventana pequeña (Windows)
 
 `versionCode`: 2026092901 · Windows `2026.9.29.1` · extensión `2026.9.29.1`

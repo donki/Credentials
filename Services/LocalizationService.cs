@@ -313,8 +313,6 @@ public class LocalizationService : ILocalizationService
         ["SyncFailed"] = "Could not synchronise: {0}",
         ["SignInTimeout"] = "Sign-in was not completed in time. Try again.",
         ["AutofillSaved"] = "Saved in Credentials",
-        ["SignInTimeout"] = "La entrada no se completó a tiempo. Vuelve a intentarlo.",
-        ["AutofillSaved"] = "Guardado en Credentials",
         ["SyncScope"] = "The account did not grant access to the app folder. Sign in again and tick that permission.",
         ["SyncPasswordNeeded"] = "The copy in the cloud was created with a different master password. Type it to merge it here (your current password stays).",
         ["SecurityTitle"] = "Security",
@@ -394,6 +392,8 @@ public class LocalizationService : ILocalizationService
     private static readonly Dictionary<string, string> Spanish = new()
     {
         ["Company"] = "Socratic",
+        ["SignInTimeout"] = "La entrada no se completó a tiempo. Vuelve a intentarlo.",
+        ["AutofillSaved"] = "Guardado en Credentials",
 
         ["MenuHome"] = "Inicio",
         ["About"] = "Acerca de",

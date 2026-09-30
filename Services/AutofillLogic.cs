@@ -63,8 +63,11 @@ public static class AutofillLogic
     public static async Task<bool> UpsertAsync(VaultStore store, string? domain, string? package, string? appLabel, string username, string password)
     {
         var entries = store.Data!.Entries;
-        var existing = Match(entries, domain, package)
-            .FirstOrDefault(e => username.Length == 0 || e.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        var candidates = Match(entries, domain, package);
+        // La del mismo usuario; si no hay, una del sitio guardada sin usuario (se completa abajo). Antes
+        // solo se buscaba la del mismo usuario y la guardada sin el acababa duplicada.
+        var existing = candidates.FirstOrDefault(e => username.Length == 0 || e.Username.Equals(username, StringComparison.OrdinalIgnoreCase))
+            ?? candidates.FirstOrDefault(e => e.Username.Length == 0);
         var now = DateTimeOffset.UtcNow;
         if (existing is not null)
         {

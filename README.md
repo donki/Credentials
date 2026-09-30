@@ -117,6 +117,29 @@ los zips para Chrome Web Store / Edge Add-ons (chromium) y AMO (firefox). En And
 mismos ganchos van como extras del intent: `am start … --es master <clave> --ez demo true --es lang es
 --es page settings`; y en Debug no hay `FLAG_SECURE`, para poder capturar.
 
+## Pruebas
+
+`Credentials.Tests` (xUnit) prueba la lógica de la aplicación: bóveda (Argon2id + AES-GCM, cabecera
+autenticada, clave recordada, desbloqueo de confianza, bloqueo por inactividad, borrado con lápida,
+cambio de contraseña maestra), mezcla por entrada con la nube (Google Drive y OneDrive contra un
+servidor HTTP falso), entrada OAuth con PKCE, TOTP/HOTP con los vectores de los RFC 6238 y 4226,
+generador y fortaleza de contraseñas, importadores (CSV de navegadores, KeePass, KeePassXC,
+Bitwarden; JSON de Aegis, 2FAS, Bitwarden y sOC Credentials; QR de Google Authenticator),
+coincidencia de sitios y apps del autocompletar, ajustes y traducciones (mismas claves, marcadores
+y sin claves repetidas en es/en). Los ficheros de la aplicación se enlazan tal cual en
+`Credentials.Tests/Logic` y las piezas de MAUI que tocan se sustituyen por dobles en memoria: nada
+toca la bóveda, los ajustes ni la red de verdad. La interfaz no se prueba.
+
+| Fecha | Pruebas | Cobertura de lo instrumentado | Cobertura sobre toda la app | Tiempo del banco |
+|---|---|---|---|---|
+| 2026-09-30 | 151 (pasan todas) | 99,4 % (1813 de 1823 líneas) | ≈36 % (1813 de ≈5060 líneas) | ≈7 s |
+
+```powershell
+dotnet test Credentials.Tests
+dotnet test Credentials.Tests --collect:"XPlat Code Coverage"
+dotnet tool restore; dotnet reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:cobertura -reporttypes:TextSummary
+```
+
 ## Licencia
 
 MIT. Terceros: ZXing.Net.Maui (Apache 2.0 / MIT), Konscious.Security.Cryptography.Argon2 (MIT),
