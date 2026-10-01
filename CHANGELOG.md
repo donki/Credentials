@@ -2,6 +2,21 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.10.01.00 — La lista de la extensión ya no sale en casillas de correo que no son de acceso
+
+`versionCode`: 2026100100 · Windows `2026.10.1.0` · extensión `2026.10.1.0`
+
+- **Extensión**: en un portal de administración salía la lista de contraseñas en las casillas de
+  destinatarios de una alerta. Sin contraseña a la vista, una casilla de correo solo cuenta como
+  usuario si la página lo declara (`autocomplete=username`) o si está junto a un botón de entrar
+  («Iniciar sesión», «Siguiente»…), fuera de tablas y listas y sin ser de destinatarios, invitaciones
+  o avisos. Con contraseña, el usuario se busca junto a ella y no en toda la página.
+- **Pruebas**: `Extension/tests/deteccion.ps1` comprueba 15 casos (formulario de gestión,
+  destinatarios de alertas, correo suelto, acceso en dos pasos y acceso clásico) en Edge sin ventana.
+
+**English.** The extension no longer shows the password list in e-mail boxes that are not sign-in
+fields (such as alert recipients in an admin portal); a new automated check covers 15 cases.
+
 ## 2026.09.30.01 — Extensión sin avisos en la revisión de Firefox
 
 `versionCode`: 2026093001 · Windows `2026.9.30.1` · extensión `2026.9.30.1`

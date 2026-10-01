@@ -30,14 +30,34 @@
   // Sin contraseña a la vista (acceso en dos pasos) un campo de texto cualquiera no basta: en una
   // aplicación de gestión (Business Central, un ERP…) hay decenas y la lista salía en todos. Solo
   // cuenta el que se declara usuario o correo, en un formulario corto.
+  // Tampoco basta con que sea un correo: en una página de configuración (los destinatarios de una
+  // alerta en un portal, una invitación…) hay casillas de correo que no son de acceso. Sin
+  // contraseña, o la página lo declara usuario (autocomplete=username), o está junto a un botón de
+  // entrar («Iniciar sesión», «Siguiente»…) y fuera de tablas y listas.
   const USER_HINT = /user|login|e-?mail|correo|usuari|account|cuenta|identifier|logon|signin|sign-in/;
+  const NOT_LOGIN = /recipient|destinatari|invit|share|compart|contact|\bto\b|\bcc\b|\bbcc\b|notif|alert|aviso|newsletter|subscri|suscri/;
+  const LOGIN_ACTION = /(sign|log)\s*-?\s*(in|on)|iniciar sesi|inicia sesi|acceder|entrar|identif|next|siguiente|continu/;
+  function nearLoginButton(input) {
+    let box = input.form ?? input.parentElement;
+    for (let up = 0; box && up < 6; up++, box = box.parentElement) {
+      const buttons = [...box.querySelectorAll("button, input[type=submit], input[type=button], [role=button]")].filter(visible);
+      if (buttons.some(b => LOGIN_ACTION.test(`${b.textContent} ${b.value ?? ""} ${b.getAttribute("aria-label") ?? ""}`.toLowerCase())))
+        return true;
+      if (input.form) break;   // dentro de un formulario, solo cuentan sus propios botones
+    }
+    return false;
+  }
   function looksLikeLoneUser(input, inputs) {
     if (!looksLikeUser(input)) return false;
     const ac = (input.autocomplete || "").toLowerCase();
-    const s = `${input.name} ${input.id} ${input.placeholder} ${input.getAttribute("aria-label") ?? ""}`.toLowerCase();
-    if (!(ac.includes("username") || ac === "email" || input.type === "email" || USER_HINT.test(s))) return false;
+    if (ac.includes("username")) return true;   // la página dice que es el usuario
+    const s = `${input.name} ${input.id} ${input.placeholder} ${input.getAttribute("aria-label") ?? ""} ${input.getAttribute("aria-labelledby") ? document.getElementById(input.getAttribute("aria-labelledby"))?.textContent ?? "" : ""}`.toLowerCase();
+    if (!(ac === "email" || input.type === "email" || USER_HINT.test(s))) return false;
+    if (NOT_LOGIN.test(s)) return false;
+    if (input.closest("table, [role=grid], [role=table], [role=row], [role=listitem], li")) return false;
     const scope = input.form ? [...input.form.querySelectorAll("input")].filter(visible) : inputs;
-    return scope.filter(i => i.type !== "hidden" && i.type !== "checkbox" && i.type !== "submit" && i.type !== "button").length <= 3;
+    if (scope.filter(i => i.type !== "hidden" && i.type !== "checkbox" && i.type !== "submit" && i.type !== "button").length > 3) return false;
+    return nearLoginButton(input);
   }
 
   /** Campos de un formulario de acceso: la contraseña y el usuario más cercano por delante. */
@@ -56,7 +76,15 @@
     }
     // El usuario: por autocomplete=username; si no, el último campo de texto antes de la contraseña
     // (en el mismo formulario si lo hay).
-    const scope = pass.form ?? document;
+    // Sin formulario, el usuario se busca cerca de la contraseña (hasta 6 niveles por encima), no en
+    // toda la página: en un portal hay muchas casillas que no tienen nada que ver con el acceso.
+    let scope = pass.form;
+    if (!scope) {
+      scope = pass.parentElement;
+      for (let up = 0; scope && up < 6; up++, scope = scope.parentElement)
+        if ([...scope.querySelectorAll("input")].some(i => i !== pass && visible(i) && looksLikeUser(i))) break;
+      scope ??= document;
+    }
     const scoped = [...scope.querySelectorAll("input")].filter(visible);
     let user = scoped.find(i => (i.autocomplete || "").includes("username") && i !== pass) ?? null;
     if (!user) {

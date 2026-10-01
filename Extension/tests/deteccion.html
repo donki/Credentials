@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>test</title></head>
+<body>
+<div id="bc">
+  <label>No. <input id="bc_no" type="text"></label>
+  <label>Name <input id="bc_name" type="text"></label>
+  <label>Address <input id="bc_addr" type="text"></label>
+  <label>City <input id="bc_city" type="text"></label>
+  <label>Contact <input id="bc_contact" type="text"></label>
+  <label>User ID <input id="bc_userid" name="UserID" type="text"></label>
+  <label>E-Mail <input id="bc_email" type="text" aria-label="E-Mail"></label>
+  <label>Phone <input id="bc_phone" type="tel"></label>
+</div>
+<div id="az"><div>Alert recipients (email)</div>
+  <div><input id="az1" type="email" aria-label="Alert recipients (email)" value="mcolete@example.com"></div>
+  <div><input id="az2" type="email" aria-label="Alert recipients (email)"></div>
+  <button>Save</button></div>
+<div id="az3wrap"><input id="az3" type="email" aria-label="Email"><button>Save</button></div>
+<div id="ms"><input id="ms_user" type="email" name="loginfmt"><input type="submit" value="Next"></div>
+<form id="twostep"><input id="ts_user" type="email" autocomplete="username"><button>Next</button></form>
+<form id="login"><input id="lg_user" name="login" type="text"><input id="lg_pass" type="password"><button>Sign in</button></form>
+<pre id="out"></pre>
+<script>
+  // API de la extensión simulada: bóveda abierta con una entrada, así la lista sale siempre que el campo cuente.
+  globalThis.chrome = {
+    i18n: { getMessage: (k) => k },
+    runtime: {
+      getURL: (p) => p,
+      sendMessage: async (m) => m.type === "list" ? { entries: [{ id: "1", title: "Demo", username: "u", password: "p", url: "" }] } : {},
+    },
+  };
+</script>
+<script src="../common/content.js"></script>
+<script>
+  const ids0 = 1; const ids = ["bc_no","bc_name","bc_addr","bc_city","bc_contact","bc_userid","bc_email","bc_phone","ts_user","lg_user","lg_pass"];
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  (async () => {
+    const res = [];
+    // Primero la página «Business Central» sola (sin los formularios de acceso).
+    const twostep = document.getElementById("twostep"), login = document.getElementById("login");
+    twostep.style.display = "none"; login.style.display = "none"; for (const id of ["az","az3wrap","ms"]) document.getElementById(id).style.display = "none";
+    for (const id of ids.slice(0, 8)) {
+      document.getElementById(id).focus(); await sleep(120);
+      res.push(id + "=" + (document.querySelector("[data-soc-credentials]") ? "LISTA" : "no"));
+      document.activeElement.blur(); await sleep(200);
+    }
+    // Portal: destinatarios de alertas y un correo suelto con «Save» (no son acceso); luego un acceso tipo Microsoft.
+    const az = document.getElementById("az"), az3w = document.getElementById("az3wrap"), ms = document.getElementById("ms");
+    document.getElementById("bc").style.display = "none";
+    for (const [box, list] of [[az, ["az1","az2"]], [az3w, ["az3"]], [ms, ["ms_user"]]]) {
+      for (const b of [az, az3w, ms]) b.style.display = b === box ? "" : "none";
+      for (const id of list) { document.getElementById(id).focus(); await sleep(120);
+        res.push(id + "=" + (document.querySelector("[data-soc-credentials]") ? "LISTA" : "no")); document.activeElement.blur(); await sleep(200); }
+    }
+    az.style.display = "none"; az3w.style.display = "none"; ms.style.display = "none";
+    // Luego el acceso en dos pasos, solo.
+    document.getElementById("bc").style.display = "none"; twostep.style.display = "";
+    document.getElementById("ts_user").focus(); await sleep(120);
+    res.push("ts_user=" + (document.querySelector("[data-soc-credentials]") ? "LISTA" : "no"));
+    document.activeElement.blur(); await sleep(200);
+    // Y el acceso clásico.
+    twostep.style.display = "none"; login.style.display = "";
+    for (const id of ["lg_user", "lg_pass"]) {
+      document.getElementById(id).focus(); await sleep(120);
+      res.push(id + "=" + (document.querySelector("[data-soc-credentials]") ? "LISTA" : "no"));
+      document.activeElement.blur(); await sleep(200);
+    }
+    document.getElementById("out").textContent = "RESULT " + res.join(" ");
+  })();
+</script>
+</body></html>
