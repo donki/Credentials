@@ -4,13 +4,12 @@ namespace Credentials.Platforms.Windows;
 
 /// <summary>
 /// Minimizar una ventana y dejarle a la vez el tamaño y la posición que tendrá al restaurarla, sin
-/// que se vea el cambio (SetWindowPlacement con la ventana ya minimizada).
+/// que se vea el cambio (SetWindowPlacement con la ventana ya minimizada). Las cuentas, en PlacementMath.
 /// </summary>
 internal static class WindowPlacement
 {
     private const int SW_SHOWMINIMIZED = 2;
     private const int SW_MINIMIZE = 6;
-    private const uint WPF_RESTORETOMAXIMIZED = 0x2;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT { public int X, Y; }
@@ -46,15 +45,10 @@ internal static class WindowPlacement
         var wp = new WINDOWPLACEMENT { length = Marshal.SizeOf<WINDOWPLACEMENT>() };
         if (!GetWindowPlacement(hwnd, ref wp))
             return;
+        var (left, top, right, bottom) = PlacementMath.NormalPosition(new ScreenRect(screen.X, screen.Y, screen.Width, screen.Height), workOffsetX, workOffsetY);
         wp.showCmd = SW_SHOWMINIMIZED;
-        wp.rcNormalPosition = new RECT
-        {
-            Left = screen.X - workOffsetX,
-            Top = screen.Y - workOffsetY,
-            Right = screen.X - workOffsetX + screen.Width,
-            Bottom = screen.Y - workOffsetY + screen.Height,
-        };
-        wp.flags = restoreMaximized ? wp.flags | WPF_RESTORETOMAXIMIZED : wp.flags & ~WPF_RESTORETOMAXIMIZED;
+        wp.rcNormalPosition = new RECT { Left = left, Top = top, Right = right, Bottom = bottom };
+        wp.flags = PlacementMath.Flags(wp.flags, restoreMaximized);
         SetWindowPlacement(hwnd, ref wp);
     }
 }

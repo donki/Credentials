@@ -14,9 +14,12 @@ public static class AppLog
     {
         get
         {
-            var dir = OperatingSystem.IsWindows()
-                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sOCCredentials", "logs")
-                : Path.Combine(FileSystem.AppDataDirectory, "logs");
+            // Con SOC_SANDBOX (Debug) el registro va a la carpeta de pruebas, no al del usuario.
+            var dir = VaultStore.Sandbox
+                ? Path.Combine(VaultStore.DataDirectory, "logs")
+                : OperatingSystem.IsWindows()
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sOCCredentials", "logs")
+                    : Path.Combine(FileSystem.AppDataDirectory, "logs");
             Directory.CreateDirectory(dir);
             return Path.Combine(dir, "app.log");
         }

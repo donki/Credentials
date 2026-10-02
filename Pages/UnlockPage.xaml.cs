@@ -88,7 +88,7 @@ public partial class UnlockPage : ContentPage
     private void OnStoreChanged()
     {
         if (_store.IsUnlocked)
-            MainThread.BeginInvokeOnMainThread(async () => await CloseAsync());
+            Dispatcher.RunOnUi(async () => await CloseAsync());
     }
 
     private void ApplyTexts()
@@ -140,7 +140,7 @@ public partial class UnlockPage : ContentPage
     /// Volver a ofrecer la biometria sin que el usuario la pida: al volver a la sesion de Windows
     /// tras Win+L, que cerro la boveda y saco esta puerta cuando aun no se podia contestar.
     /// </summary>
-    public void RetryBiometric() => MainThread.BeginInvokeOnMainThread(async () =>
+    public void RetryBiometric() => Dispatcher.RunOnUi(async () =>
     {
         try
         {
@@ -168,12 +168,10 @@ public partial class UnlockPage : ContentPage
     {
         var password = PasswordEntry.Text ?? string.Empty;
         ErrorLabel.IsVisible = false;
-        if (password.Length == 0) { ShowError(_l["MasterPasswordEmpty"]); PasswordEntry.Focus(); return; }
-        if (_creating)
-        {
-            if (password.Length < 8) { ShowError(_l["MasterPasswordShort"]); return; }
-            if (password != (RepeatEntry.Text ?? string.Empty)) { ShowError(_l["MasterPasswordMismatch"]); return; }
-        }
+        // Al abrir solo se mira que no este vacia; al crear, tambien el largo y que coincidan.
+        var problem = MasterPasswordRules.Problem(password, _creating ? RepeatEntry.Text ?? string.Empty : null);
+        if (problem == "MasterPasswordEmpty") { ShowError(_l[problem]); PasswordEntry.Focus(); return; }
+        if (_creating && problem is not null) { ShowError(_l[problem]); return; }
         SetBusy(true);
         try
         {

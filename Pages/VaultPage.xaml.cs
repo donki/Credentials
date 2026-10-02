@@ -3,7 +3,6 @@ using System.ComponentModel;
 using Credentials.Helpers;
 using Credentials.Models;
 using Credentials.Services;
-using SocShared;
 
 namespace Credentials.Pages;
 
@@ -54,9 +53,10 @@ public partial class VaultPage : ContentPage
     private readonly VaultStore _store;
     private readonly ISettingsService _settings;
     private readonly IToastService _toast;
+    private readonly IDialogService _dialogs;
     private readonly ObservableCollection<EntryRow> _rows = [];
     private string _search = string.Empty;
-    private string _filter = "all";      // all | fav | kind:X | folder:X | tag:X
+    private string _filter = VaultQuery.All;      // all | fav | kind:X | folder:X | tag:X
     private IDispatcherTimer? _tick;
 
     public VaultPage()
@@ -66,11 +66,12 @@ public partial class VaultPage : ContentPage
         _store = ServiceHelper.GetRequiredService<VaultStore>();
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _toast = ServiceHelper.GetRequiredService<IToastService>();
+        _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
         List.ItemsSource = _rows;
-        _store.Changed += () => MainThread.BeginInvokeOnMainThread(Refresh);
+        _store.Changed += () => Dispatcher.RunOnUi(Refresh);
         // Al bloquearse (boton o inactividad) la lista se vacia y sale la pantalla de desbloqueo,
         // sin esperar a que el usuario toque nada.
-        _store.Locked += () => MainThread.BeginInvokeOnMainThread(async () =>
+        _store.Locked += () => Dispatcher.RunOnUi(async () =>
         {
             _rows.Clear();
             if (await Gate.EnsureUnlockedAsync(this))
@@ -119,12 +120,8 @@ public partial class VaultPage : ContentPage
             return;
         foreach (var row in _rows)
         {
-            if (!row.HasCode)
-                continue;
-            var t = Totp.Parse(row.Entry.Totp);
-            if (t is null) { row.Code = string.Empty; continue; }
-            var (code, left) = t.Now();
-            row.Code = $"{code[..(code.Length / 2)]} {code[(code.Length / 2)..]} · {left}";
+            if (row.HasCode)
+                row.Code = VaultQuery.RowCode(row.Entry.Totp);
         }
     }
 
@@ -134,59 +131,24 @@ public partial class VaultPage : ContentPage
     {
         if (!_store.IsUnlocked)
             return;
-        var entries = _store.Data!.Entries.Where(e => !e.Deleted);
-        entries = _filter switch
-        {
-            "fav" => entries.Where(e => e.Favorite),
-            var f when f.StartsWith("kind:") => entries.Where(e => e.Kind.ToString() == f[5..]),
-            var f when f.StartsWith("folder:") => entries.Where(e => string.Equals(e.Folder, f[7..], StringComparison.OrdinalIgnoreCase)),
-            var f when f.StartsWith("tag:") => entries.Where(e => e.Tags.Contains(f[4..], StringComparer.OrdinalIgnoreCase)),
-            _ => entries,
-        };
-        if (_search.Length > 0)
-        {
-            var q = _search.Trim();
-            entries = entries.Where(e => e.Title.Contains(q, StringComparison.CurrentCultureIgnoreCase)
-                                      || e.Username.Contains(q, StringComparison.CurrentCultureIgnoreCase)
-                                      || e.Url.Contains(q, StringComparison.CurrentCultureIgnoreCase)
-                                      || e.Notes.Contains(q, StringComparison.CurrentCultureIgnoreCase)
-                                      || e.Tags.Any(t => t.Contains(q, StringComparison.CurrentCultureIgnoreCase)));
-        }
-        entries = _settings.SortMode switch
-        {
-            "modified" => entries.OrderByDescending(e => e.ModifiedAt),
-            "created" => entries.OrderByDescending(e => e.CreatedAt),
-            _ => entries.OrderByDescending(e => e.Favorite).ThenBy(e => e.Title, StringComparer.CurrentCultureIgnoreCase),
-        };
-        var list = entries.ToList();
+        var list = VaultQuery.Apply(_store.Data!.Entries, _filter, _search, _settings.SortMode);
         _rows.Clear();
         foreach (var e in list)
             _rows.Add(new EntryRow(e, _l));
         OnTick(null, EventArgs.Empty);
-        CountLabel.Text = list.Count == 1 ? _l["OneEntry"] : string.Format(_l.CurrentCulture, _l["EntriesCount"], list.Count);
+        CountLabel.Text = VaultQuery.CountText(list.Count, _l);
         BuildChips();
     }
 
     private void BuildChips()
     {
         Chips.Clear();
-        var all = _store.Data!.Entries.Where(e => !e.Deleted).ToList();
-        void Chip(string key, string text)
+        foreach (var (key, text) in VaultQuery.Chips(_store.Data!, _l))
         {
-            var on = _filter == key;
-            var b = new Button { Text = text, Style = (Style)Application.Current!.Resources[on ? "ChipOn" : "Chip"] };
-            b.Clicked += (_, _) => { _filter = on ? "all" : key; Refresh(); };
+            var b = new Button { Text = text, Style = (Style)Application.Current!.Resources[_filter == key ? "ChipOn" : "Chip"] };
+            b.Clicked += (_, _) => { _filter = VaultQuery.Toggle(_filter, key); Refresh(); };
             Chips.Add(b);
         }
-        Chip("all", _l["AllEntries"]);
-        if (all.Any(e => e.Favorite))
-            Chip("fav", "★ " + _l["Favorites"]);
-        foreach (var kind in all.Select(e => e.Kind).Distinct().OrderBy(k => k))
-            Chip("kind:" + kind, _l["Kind" + kind]);
-        foreach (var folder in all.Select(e => e.Folder).Concat(_store.Data.Folders).Where(f => f.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(f => f))
-            Chip("folder:" + folder, "/" + folder);   // como ruta: las etiquetas van con «#»
-        foreach (var tag in all.SelectMany(e => e.Tags).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t))
-            Chip("tag:" + tag, "#" + tag);
     }
 
     /// <summary>
@@ -195,9 +157,9 @@ public partial class VaultPage : ContentPage
     /// </summary>
     protected override bool OnBackButtonPressed()
     {
-        if (_search.Length > 0 || _filter != "all")
+        if (_search.Length > 0 || _filter != VaultQuery.All)
         {
-            _filter = "all";
+            _filter = VaultQuery.All;
             if (_search.Length > 0)
                 SearchEntry.Text = string.Empty;   // OnSearchChanged refresca
             else
@@ -223,7 +185,7 @@ public partial class VaultPage : ContentPage
     private async void OnSortClicked(object? sender, EventArgs e)
     {
         var options = new[] { ("title", _l["SortTitle"]), ("modified", _l["SortModified"]), ("created", _l["SortCreated"]) };
-        var chosen = await ModernDialog.ActionSheetAsync(this, _l["SortBy"], _l["Cancel"], options.Select(o => o.Item2).ToArray());
+        var chosen = await _dialogs.ActionSheetAsync(this, _l["SortBy"], _l["Cancel"], options.Select(o => o.Item2).ToArray());
         var pick = options.FirstOrDefault(o => o.Item2 == chosen);
         if (pick.Item1 is null)
             return;
@@ -237,13 +199,11 @@ public partial class VaultPage : ContentPage
     {
         var kinds = new[] { EntryKind.Login, EntryKind.App, EntryKind.Totp, EntryKind.Note };
         var labels = kinds.Select(k => _l["Kind" + k]).ToArray();
-        var chosen = await ModernDialog.ActionSheetAsync(this, _l["Add"], _l["Cancel"], labels);
+        var chosen = await _dialogs.ActionSheetAsync(this, _l["Add"], _l["Cancel"], labels);
         var index = Array.IndexOf(labels, chosen);
         if (index < 0)
             return;
-        var entry = new Credential { Kind = kinds[index] };
-        if (_filter.StartsWith("folder:"))
-            entry.Folder = _filter[7..];
+        var entry = new Credential { Kind = kinds[index], Folder = VaultQuery.FolderOf(_filter) };
         await Navigation.PushAsync(new EntryPage(entry, isNew: true));
     }
 
@@ -261,7 +221,7 @@ public partial class VaultPage : ContentPage
         if ((sender as BindableObject)?.BindingContext is not EntryRow row)
             return;
         _store.Touch();
-        var ok = await ModernDialog.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], row.Entry.Title), _l["Delete"], _l["Cancel"]);
+        var ok = await _dialogs.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], row.Entry.Title), _l["Delete"], _l["Cancel"]);
         if (!ok)
             return;
         await _store.DeleteAsync(row.Entry.Id);
@@ -296,7 +256,8 @@ public static class ClipboardHelper
     {
         if (text.Length == 0)
             return;
-        await Clipboard.Default.SetTextAsync(text);
+        var clipboard = ServiceHelper.GetRequiredService<IClipboard>();
+        await clipboard.SetTextAsync(text);
         toast.Show(message);
         if (!sensitive || settings.ClipboardSeconds <= 0)
             return;
@@ -306,9 +267,9 @@ public static class ClipboardHelper
             await Task.Delay(TimeSpan.FromSeconds(seconds));
             try
             {
-                if (await Clipboard.Default.GetTextAsync() == text)
+                if (await clipboard.GetTextAsync() == text)
                 {
-                    await Clipboard.Default.SetTextAsync(" ");
+                    await clipboard.SetTextAsync(" ");
                     toast.Show(clearedMessage);
                 }
             }

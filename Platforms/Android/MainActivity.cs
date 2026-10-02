@@ -56,11 +56,7 @@ public class MainActivity : MauiAppCompatActivity
         {
             if (intent?.Action != Intent.ActionScreenOff)
                 return;
-            try
-            {
-                if (!Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>().TrustDevice)
-                    Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>().Lock();
-            }
+            try { Platforms.Android.AndroidAutofillLogic.OnScreenOff(Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>(), Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>()); }
             catch (Exception) { }
         }
     }

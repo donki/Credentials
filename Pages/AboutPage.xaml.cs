@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using SocShared;
 using Credentials.Helpers;
 using Credentials.Services;
 
@@ -13,6 +12,7 @@ public partial class AboutPage : ContentPage
     private readonly ILocalizationService _l;
     private readonly ISettingsService _settings;
     private readonly ILogger<AboutPage> _logger;
+    private readonly IDialogService _dialogs;
 
     public AboutPage()
     {
@@ -21,6 +21,7 @@ public partial class AboutPage : ContentPage
         _l = ServiceHelper.GetRequiredService<ILocalizationService>();
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _logger = ServiceHelper.GetRequiredService<ILogger<AboutPage>>();
+        _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
     }
 
     protected override void OnAppearing()
@@ -34,7 +35,7 @@ public partial class AboutPage : ContentPage
         Title = _l["AboutTitle"];
 
         AppNameLabel.Text = _l["AppName"];
-        VersionLabel.Text = string.Format(_l.CurrentCulture, _l["AboutVersion"], AppInfo.Current.VersionString);
+        VersionLabel.Text = string.Format(_l.CurrentCulture, _l["AboutVersion"], ServiceHelper.GetRequiredService<IAppInfo>().VersionString);
         DescriptionLabel.Text = _l["AppDescription"];
         CompanyLabel.Text = _l["Company"];
 
@@ -58,7 +59,7 @@ public partial class AboutPage : ContentPage
         BackButton.Text = _l["Back"];
     }
 
-    private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("//VaultPage");
+    private async void OnBackClicked(object? sender, EventArgs e) => await ServiceHelper.GetRequiredService<INavigationService>().GoToAsync("//VaultPage");
 
     private async void OnContactEmailClicked(object? sender, EventArgs e)
     {
@@ -70,16 +71,16 @@ public partial class AboutPage : ContentPage
                 To = new List<string> { ContactEmail }
             };
 
-            await Email.Default.ComposeAsync(message);
+            await ServiceHelper.GetRequiredService<IEmail>().ComposeAsync(message);
         }
         catch (FeatureNotSupportedException)
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], _l["ErrorEmailNotAvailable"], _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], _l["ErrorEmailNotAvailable"], _l["Ok"]);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not open the email client");
-            await ModernDialog.AlertAsync(this, _l["Error"], $"{_l["ErrorEmail"]}: {ex.Message}", _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], $"{_l["ErrorEmail"]}: {ex.Message}", _l["Ok"]);
         }
     }
 

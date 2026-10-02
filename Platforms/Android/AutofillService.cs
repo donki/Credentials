@@ -1,9 +1,8 @@
-﻿using Android.App;
+using Android.App;
 using Android.App.Assist;
 using Android.Content;
 using Android.OS;
 using Android.Service.Autofill;
-using Android.Text;
 using Android.Views;
 using Android.Views.Autofill;
 using Android.Widget;
@@ -29,13 +28,15 @@ namespace Credentials.Platforms.Android;
 /// pregunta «¿Guardar la contraseña en Credentials?». Si el usuario acepta llega OnSaveRequest:
 /// con la boveda abierta se guarda al momento; bloqueada, se abre AutofillSaveActivity, que pide
 /// desbloquear y guarda.
+///
+/// Las decisiones estan en AndroidAutofillLogic (PlatformLogic, con pruebas); aqui solo se traduce
+/// entre ellas y las clases del sistema.
 /// </remarks>
 [Service(Name = "com.socratic.credentials.AutofillService", Permission = "android.permission.BIND_AUTOFILL_SERVICE", Exported = true, Label = "Credentials")]
 [IntentFilter(["android.service.autofill.AutofillService"])]
 [MetaData("android.autofill", Resource = "@xml/autofill_service")]
 public class CredentialsAutofillService : global::Android.Service.Autofill.AutofillService
 {
-    public const string ExtraEntryId = "entryId";
     public const string ExtraUserField = "userField";
     public const string ExtraPassField = "passField";
 
@@ -43,28 +44,14 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
     {
         try
         {
-            var structure = request.FillContexts[^1].Structure;
-            var fields = FindFields(structure);
-            if (fields.UserId is null && fields.PassId is null)
+            var fields = FindFields(request.FillContexts[^1].Structure);
+            var (kind, entries) = await AndroidAutofillLogic.DecideFillAsync(Helpers.ServiceHelper.GetRequiredService<VaultStore>(), fields);
+            callback.OnSuccess(kind switch
             {
-                callback.OnSuccess(null);
-                return;
-            }
-
-            var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
-            // Con «Confiar en este usuario y dispositivo» se abre sola, sin ofrecer «desbloquear».
-            if (!store.IsUnlocked && !await store.TryTrustedUnlockAsync())
-            {
-                callback.OnSuccess(LockedResponse(fields));
-                return;
-            }
-            var candidates = Match(store.Data!.Entries, fields.WebDomain, fields.Package);
-            var builder = new FillResponse.Builder();
-            foreach (var entry in candidates.Take(8))
-                builder.AddDataset(Dataset(entry, fields));
-            // Aunque no haya nada que ofrecer, se pide guardar lo que el usuario escriba.
-            builder.SetSaveInfo(SaveInfoFor(fields));
-            callback.OnSuccess(builder.Build());
+                FillKind.None => null,
+                FillKind.Locked => LockedResponse(fields),
+                _ => OfferResponse(this, entries, Id(fields.User), Id(fields.Pass)).SetSaveInfo(SaveInfoFor(fields)).Build(),
+            });
         }
         catch (Exception ex)
         {
@@ -77,18 +64,17 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
         try
         {
             var structure = request.FillContexts[^1].Structure;
-            var typed = ReadTyped(structure);
-            if (typed.Password.Length == 0 && typed.Username.Length == 0)
-            {
-                callback.OnSuccess();
-                return;
-            }
+            var typed = AndroidAutofillLogic.ReadTyped(Roots(structure), structure.ActivityComponent?.PackageName);
             var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
-            if (store.IsUnlocked)
+            switch (AndroidAutofillLogic.DecideSave(typed, store))
             {
-                _ = SaveTypedAsync(this, store, typed);
-                callback.OnSuccess();
-                return;
+                case SaveKind.Nothing:
+                    callback.OnSuccess();
+                    return;
+                case SaveKind.SaveNow:
+                    _ = SaveTypedAsync(this, store, typed);
+                    callback.OnSuccess();
+                    return;
             }
             // Boveda bloqueada: una actividad que desbloquea y guarda (Android 9+ deja lanzarla desde aqui).
             var intent = new Intent(this, typeof(AutofillSaveActivity));
@@ -108,185 +94,114 @@ public class CredentialsAutofillService : global::Android.Service.Autofill.Autof
         }
     }
 
-    /// <summary>Que campos hay que vigilar para ofrecer guardar: la contraseña es obligatoria; el usuario, si esta.</summary>
-    private static SaveInfo SaveInfoFor(Fields fields)
+    /// <summary>Que campos hay que vigilar para ofrecer guardar (AndroidAutofillLogic.SavePlanFor).</summary>
+    private static SaveInfo SaveInfoFor(FoundFields fields)
     {
-        var required = new List<AutofillId>();
-        var optional = new List<AutofillId>();
-        var type = SaveDataType.Generic;
-        if (fields.PassId is not null) { required.Add(fields.PassId); type |= SaveDataType.Password; }
-        if (fields.UserId is not null) { (fields.PassId is null ? required : optional).Add(fields.UserId); type |= SaveDataType.Username; }
-        var builder = new SaveInfo.Builder(type, required.ToArray());
-        if (optional.Count > 0)
-            builder.SetOptionalIds(optional.ToArray());
+        var plan = AndroidAutofillLogic.SavePlanFor(fields);
+        var builder = new SaveInfo.Builder((SaveDataType)plan.DataType, plan.Required.Select(Id).ToArray()!);
+        if (plan.Optional.Count > 0)
+            builder.SetOptionalIds(plan.Optional.Select(Id).ToArray()!);
         // En las webs el formulario desaparece al enviarse sin «commit» explicito: que pregunte igual.
         builder.SetFlags(SaveFlags.SaveOnAllViewsInvisible);
         return builder.Build();
     }
 
-    public sealed class Typed
+    /// <summary>Guarda lo escrito y avisa con un toast.</summary>
+    public static async Task SaveTypedAsync(Context context, VaultStore store, TypedCredentials typed)
     {
-        public string Username = string.Empty;
-        public string Password = string.Empty;
-        public string? WebDomain;
-        public string? Package;
-    }
-
-    /// <summary>Lo que el usuario ha escrito en los campos de usuario y contraseña de la pantalla.</summary>
-    public static Typed ReadTyped(AssistStructure structure)
-    {
-        var typed = new Typed { Package = structure.ActivityComponent?.PackageName };
-        for (var i = 0; i < structure.WindowNodeCount; i++)
-            WalkTyped(structure.GetWindowNodeAt(i).RootViewNode, typed);
-        return typed;
-    }
-
-    private static void WalkTyped(AssistStructure.ViewNode? node, Typed typed)
-    {
-        if (node is null)
+        if (!await AndroidAutofillLogic.SaveTypedAsync(store, typed, package => AppLabel(context, package)))
             return;
-        if (!string.IsNullOrEmpty(node.WebDomain))
-            typed.WebDomain ??= node.WebDomain;
-        if (node.AutofillId is not null && node.AutofillValue is { IsText: true } value)
-        {
-            var text = value.TextValue?.ToString() ?? string.Empty;
-            var kind = Classify(node);
-            if (kind == 'p' && typed.Password.Length == 0 && text.Length > 0) typed.Password = text;
-            else if (kind == 'u' && typed.Username.Length == 0 && text.Length > 0) typed.Username = text;
-        }
-        for (var i = 0; i < node.ChildCount; i++)
-            WalkTyped(node.GetChildAt(i), typed);
-    }
-
-    /// <summary>Guarda lo escrito (AutofillLogic.UpsertAsync) y avisa con un toast.</summary>
-    public static async Task SaveTypedAsync(Context context, VaultStore store, Typed typed)
-    {
-        try
-        {
-            var web = !string.IsNullOrEmpty(typed.WebDomain);
-            if (!await AutofillLogic.UpsertAsync(store, typed.WebDomain, typed.Package, web ? null : AppLabel(context, typed.Package), typed.Username, typed.Password))
-                return;
-            var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
-            new Handler(Looper.MainLooper!).Post(() => Toast.MakeText(context, l["AutofillSaved"], ToastLength.Short)?.Show());
-        }
-        catch (Exception) { /* sin red para subir, o la boveda se cerro en medio: el sistema no muestra nada y ya */ }
+        var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
+        new Handler(Looper.MainLooper!).Post(() => Toast.MakeText(context, l["AutofillSaved"], ToastLength.Short)?.Show());
     }
 
     private static string? AppLabel(Context context, string? package)
     {
         if (string.IsNullOrEmpty(package))
             return null;
-        try
-        {
-            var pm = context.PackageManager!;
-            return pm.GetApplicationLabel(pm.GetApplicationInfo(package, 0)).ToString();
-        }
+        try { return context.PackageManager!.GetApplicationLabel(context.PackageManager.GetApplicationInfo(package, 0)).ToString(); }
         catch (Exception) { return null; }
     }
 
-    // ------------------------------------------------------------------ que se rellena
-
     /// <summary>Un dataset por entrada: usuario y contraseña en sus campos, con el nombre de la entrada como texto.</summary>
-    private Dataset Dataset(Credential entry, Fields fields)
+    public static FillResponse.Builder OfferResponse(Context context, IEnumerable<Credential> entries, AutofillId? user, AutofillId? pass)
     {
-        var views = new RemoteViews(PackageName, global::Android.Resource.Layout.SimpleListItem1);
-        views.SetTextViewText(global::Android.Resource.Id.Text1, entry.Username.Length > 0 ? $"{entry.Title} · {entry.Username}" : entry.Title);
-        var builder = new Dataset.Builder(views);
-        if (fields.UserId is not null)
-            builder.SetValue(fields.UserId, AutofillValue.ForText(entry.Username));
-        if (fields.PassId is not null)
-            builder.SetValue(fields.PassId, AutofillValue.ForText(entry.Password));
-        return builder.Build();
+        var builder = new FillResponse.Builder();
+        foreach (var entry in entries)
+        {
+            var views = new RemoteViews(context.PackageName, global::Android.Resource.Layout.SimpleListItem1);
+            views.SetTextViewText(global::Android.Resource.Id.Text1, AndroidAutofillLogic.DatasetLabel(entry));
+            var ds = new Dataset.Builder(views);
+            if (user is not null) ds.SetValue(user, AutofillValue.ForText(entry.Username));
+            if (pass is not null) ds.SetValue(pass, AutofillValue.ForText(entry.Password));
+            builder.AddDataset(ds.Build());
+        }
+        return builder;
     }
 
     /// <summary>Boveda bloqueada: una sola sugerencia que abre la aplicacion para desbloquear y vuelve con los datos.</summary>
-    private FillResponse LockedResponse(Fields fields)
+    private FillResponse LockedResponse(FoundFields fields)
     {
         var views = new RemoteViews(PackageName, global::Android.Resource.Layout.SimpleListItem1);
         views.SetTextViewText(global::Android.Resource.Id.Text1, "sOC Credentials");
         var intent = new Intent(this, typeof(AutofillAuthActivity));
-        intent.PutExtra(ExtraUserField, fields.UserId?.ToString() ?? string.Empty);
-        intent.PutExtra(ExtraPassField, fields.PassId?.ToString() ?? string.Empty);
+        intent.PutExtra(ExtraUserField, Id(fields.User)?.ToString() ?? string.Empty);
+        intent.PutExtra(ExtraPassField, Id(fields.Pass)?.ToString() ?? string.Empty);
         intent.PutExtra("domain", fields.WebDomain ?? string.Empty);
         intent.PutExtra("package", fields.Package ?? string.Empty);
         var pending = PendingIntent.GetActivity(this, 1001, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Mutable)!;
-        var ids = new List<AutofillId>();
-        if (fields.UserId is not null) ids.Add(fields.UserId);
-        if (fields.PassId is not null) ids.Add(fields.PassId);
+        var ids = new[] { Id(fields.User), Id(fields.Pass) }.OfType<AutofillId>().ToArray();
         return new FillResponse.Builder()
-            .SetAuthentication(ids.ToArray(), pending.IntentSender, views)
+            .SetAuthentication(ids, pending.IntentSender, views)
             .SetSaveInfo(SaveInfoFor(fields))
             .Build();
     }
 
-    /// <summary>Entradas que casan con el dominio (web) o con el paquete (app): logica comun en AutofillLogic.</summary>
-    public static List<Credential> Match(IEnumerable<Credential> entries, string? domain, string? package) => AutofillLogic.Match(entries, domain, package);
-
     // ------------------------------------------------------------------ que campos hay en pantalla
 
-    public sealed class Fields
-    {
-        public AutofillId? UserId;
-        public AutofillId? PassId;
-        public string? WebDomain;
-        public string? Package;
-    }
+    public static FoundFields FindFields(AssistStructure structure) => AndroidAutofillLogic.FindFields(Roots(structure), structure.ActivityComponent?.PackageName);
 
-    public static Fields FindFields(AssistStructure structure)
-    {
-        var fields = new Fields { Package = structure.ActivityComponent?.PackageName };
-        for (var i = 0; i < structure.WindowNodeCount; i++)
-            Walk(structure.GetWindowNodeAt(i).RootViewNode, fields);
-        return fields;
-    }
+    public static AutofillId? Id(IViewNodeInfo? node) => (node as Node)?.ViewNode.AutofillId;
 
-    private static void Walk(AssistStructure.ViewNode? node, Fields fields)
-    {
-        if (node is null)
-            return;
-        if (!string.IsNullOrEmpty(node.WebDomain))
-            fields.WebDomain ??= node.WebDomain;
-        if (node.AutofillId is not null && node.Visibility == ViewStates.Visible)
-        {
-            var kind = Classify(node);
-            if (kind == 'p' && fields.PassId is null) fields.PassId = node.AutofillId;
-            else if (kind == 'u' && fields.UserId is null) fields.UserId = node.AutofillId;
-        }
-        for (var i = 0; i < node.ChildCount; i++)
-            Walk(node.GetChildAt(i), fields);
-    }
+    private static IEnumerable<IViewNodeInfo?> Roots(AssistStructure structure) =>
+        Enumerable.Range(0, structure.WindowNodeCount).Select(i => Node.Of(structure.GetWindowNodeAt(i)?.RootViewNode));
 
-    /// <summary>'u' usuario, 'p' contraseña, ' ' nada: por pistas, tipo de entrada y atributos HTML.</summary>
-    private static char Classify(AssistStructure.ViewNode node)
+    /// <summary>Un ViewNode del sistema visto como IViewNodeInfo.</summary>
+    private sealed class Node(AssistStructure.ViewNode node) : IViewNodeInfo
     {
-        var hints = node.GetAutofillHints() ?? [];
-        foreach (var h in hints)
+        public static Node? Of(AssistStructure.ViewNode? node) => node is null ? null : new Node(node);
+        public AssistStructure.ViewNode ViewNode => node;
+        public string? WebDomain => node.WebDomain;
+        public bool HasAutofillId => node.AutofillId is not null;
+        public bool IsVisible => node.Visibility == ViewStates.Visible;
+        public string? TextValue => node.AutofillValue is { IsText: true } value ? value.TextValue?.ToString() ?? string.Empty : null;
+        public IReadOnlyList<string>? AutofillHints => node.GetAutofillHints();
+        public int InputType => (int)node.InputType;
+        public string? HtmlTag => node.HtmlInfo?.Tag;
+        public IReadOnlyList<(string? Name, string? Value)>? HtmlAttributes => node.HtmlInfo is { } html ? html.Attributes?.Select(a => (a.First?.ToString(), a.Second?.ToString())).ToList() ?? [] : null;
+        public string? IdEntry => node.IdEntry;
+        public string? Hint => node.Hint;
+        public IEnumerable<IViewNodeInfo?> Children => Enumerable.Range(0, node.ChildCount).Select(i => Of(node.GetChildAt(i)));
+    }
+}
+
+/// <summary>Lo comun a las dos actividades del autocompletar: la puerta (biometria o la pagina de contraseña).</summary>
+internal static class AutofillGate
+{
+    public static Task<bool> EnsureUnlockedAsync(VaultStore store) =>
+        AndroidAutofillLogic.EnsureUnlockedAsync(store, Helpers.ServiceHelper.GetRequiredService<ISettingsService>(), Helpers.ServiceHelper.GetRequiredService<IBiometric>(),
+            Helpers.ServiceHelper.GetRequiredService<ILocalizationService>(), ShowUnlockPageAsync);
+
+    private static async Task ShowUnlockPageAsync()
+    {
+        var page = new Pages.UnlockPage();
+        var tcs = new TaskCompletionSource();
+        page.Disappearing += (_, _) => tcs.TrySetResult();
+        if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page is { } root)
         {
-            var hint = h.ToLowerInvariant();
-            if (hint.Contains("password")) return 'p';
-            if (hint.Contains("username") || hint.Contains("email") || hint.Contains("phone")) return 'u';
+            await root.Navigation.PushModalAsync(page, animated: false);
+            await tcs.Task;
         }
-        var type = node.InputType;
-        var variation = (int)type & (int)InputTypes.MaskVariation;
-        if (variation is (int)InputTypes.TextVariationPassword or (int)InputTypes.TextVariationWebPassword or (int)InputTypes.TextVariationVisiblePassword or (int)InputTypes.NumberVariationPassword)
-            return 'p';
-        if (variation is (int)InputTypes.TextVariationEmailAddress or (int)InputTypes.TextVariationWebEmailAddress)
-            return 'u';
-        var html = node.HtmlInfo;
-        if (html is not null)
-        {
-            var attrs = html.Attributes?.Select(a => (a.First?.ToString() ?? string.Empty).ToLowerInvariant() + "=" + (a.Second?.ToString() ?? string.Empty).ToLowerInvariant()).ToList() ?? [];
-            if (attrs.Contains("type=password")) return 'p';
-            if (attrs.Any(a => a.StartsWith("autocomplete=") && (a.Contains("username") || a.Contains("email")))) return 'u';
-            if (attrs.Any(a => (a.StartsWith("name=") || a.StartsWith("id=")) && (a.Contains("pass")))) return 'p';
-            if (attrs.Any(a => (a.StartsWith("name=") || a.StartsWith("id=")) && (a.Contains("user") || a.Contains("email") || a.Contains("login")))) return 'u';
-            if (html.Tag == "input" && attrs.Contains("type=email")) return 'u';
-        }
-        var id = (node.IdEntry ?? string.Empty).ToLowerInvariant();
-        var hintText = (node.Hint ?? string.Empty).ToLowerInvariant();
-        if (id.Contains("pass") || hintText.Contains("contraseña") || hintText.Contains("password")) return 'p';
-        if (id.Contains("user") || id.Contains("email") || id.Contains("login") || hintText.Contains("usuario") || hintText.Contains("correo") || hintText.Contains("email") || hintText.Contains("user")) return 'u';
-        return ' ';
     }
 }
 
@@ -303,50 +218,17 @@ public class AutofillAuthActivity : MauiAppCompatActivity
         try
         {
             var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
-            var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
-            if (!store.IsUnlocked)
-            {
-                // Primero la biometria, si esta activada; si no, la pagina de contraseña.
-                var settings = Helpers.ServiceHelper.GetRequiredService<ISettingsService>();
-                var bio = Helpers.ServiceHelper.GetRequiredService<IBiometric>();
-                if (!await store.TryTrustedUnlockAsync() && settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
-                    await store.UnlockWithStoredKeyAsync();
-            }
-            if (!store.IsUnlocked)
-            {
-                var page = new Pages.UnlockPage();
-                var tcs = new TaskCompletionSource();
-                page.Disappearing += (_, _) => tcs.TrySetResult();
-                if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page is { } root)
-                {
-                    await root.Navigation.PushModalAsync(page, animated: false);
-                    await tcs.Task;
-                }
-            }
-            if (!store.IsUnlocked)
+            if (!await AutofillGate.EnsureUnlockedAsync(store))
             {
                 SetResult(Result.Canceled);
                 Finish();
                 return;
             }
-            var userField = Intent?.GetStringExtra(CredentialsAutofillService.ExtraUserField);
-            var passField = Intent?.GetStringExtra(CredentialsAutofillService.ExtraPassField);
-            var domain = Intent?.GetStringExtra("domain");
-            var package = Intent?.GetStringExtra("package");
-            var candidates = CredentialsAutofillService.Match(store.Data!.Entries, domain, package);
-            var builder = new FillResponse.Builder();
-            var ids = ParseIds(Intent);
-            foreach (var entry in candidates.Take(8))
-            {
-                var views = new RemoteViews(PackageName, global::Android.Resource.Layout.SimpleListItem1);
-                views.SetTextViewText(global::Android.Resource.Id.Text1, entry.Username.Length > 0 ? $"{entry.Title} · {entry.Username}" : entry.Title);
-                var ds = new Dataset.Builder(views);
-                if (ids.User is not null) ds.SetValue(ids.User, AutofillValue.ForText(entry.Username));
-                if (ids.Pass is not null) ds.SetValue(ids.Pass, AutofillValue.ForText(entry.Password));
-                builder.AddDataset(ds.Build());
-            }
+            // Los AutofillId se pasan por el intent original de autenticacion (Android los conserva en EXTRA_ASSIST_STRUCTURE).
+            var fields = Intent?.GetParcelableExtra(AutofillManager.ExtraAssistStructure) is AssistStructure structure ? CredentialsAutofillService.FindFields(structure) : new FoundFields();
+            var candidates = AndroidAutofillLogic.Candidates(store, Intent?.GetStringExtra("domain"), Intent?.GetStringExtra("package"));
             var reply = new Intent();
-            reply.PutExtra(AutofillManager.ExtraAuthenticationResult, builder.Build());
+            reply.PutExtra(AutofillManager.ExtraAuthenticationResult, CredentialsAutofillService.OfferResponse(this, candidates, CredentialsAutofillService.Id(fields.User), CredentialsAutofillService.Id(fields.Pass)).Build());
             SetResult(Result.Ok, reply);
         }
         catch (Exception)
@@ -354,16 +236,6 @@ public class AutofillAuthActivity : MauiAppCompatActivity
             SetResult(Result.Canceled);
         }
         Finish();
-    }
-
-    /// <summary>Los AutofillId se pasan por el intent original de autenticacion (Android los conserva en EXTRA_ASSIST_STRUCTURE).</summary>
-    private (AutofillId? User, AutofillId? Pass) ParseIds(Intent? intent)
-    {
-        var structure = intent?.GetParcelableExtra(AutofillManager.ExtraAssistStructure) as AssistStructure;
-        if (structure is null)
-            return (null, null);
-        var fields = CredentialsAutofillService.FindFields(structure);
-        return (fields.UserId, fields.PassId);
     }
 }
 
@@ -380,36 +252,9 @@ public class AutofillSaveActivity : MauiAppCompatActivity
         try
         {
             var store = Helpers.ServiceHelper.GetRequiredService<VaultStore>();
-            var l = Helpers.ServiceHelper.GetRequiredService<ILocalizationService>();
-            if (!store.IsUnlocked)
-            {
-                var settings = Helpers.ServiceHelper.GetRequiredService<ISettingsService>();
-                var bio = Helpers.ServiceHelper.GetRequiredService<IBiometric>();
-                if (!await store.TryTrustedUnlockAsync() && settings.Biometrics && store.HasStoredKey && await bio.IsAvailableAsync() && await bio.AuthenticateAsync(l["AppName"], l["BiometricReason"]))
-                    await store.UnlockWithStoredKeyAsync();
-            }
-            if (!store.IsUnlocked)
-            {
-                var page = new Pages.UnlockPage();
-                var tcs = new TaskCompletionSource();
-                page.Disappearing += (_, _) => tcs.TrySetResult();
-                if (Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page is { } root)
-                {
-                    await root.Navigation.PushModalAsync(page, animated: false);
-                    await tcs.Task;
-                }
-            }
-            if (store.IsUnlocked)
-            {
-                var typed = new CredentialsAutofillService.Typed
-                {
-                    Username = Intent?.GetStringExtra("user") ?? string.Empty,
-                    Password = Intent?.GetStringExtra("pass") ?? string.Empty,
-                    WebDomain = Intent?.GetStringExtra("domain") is { Length: > 0 } d ? d : null,
-                    Package = Intent?.GetStringExtra("package") is { Length: > 0 } p ? p : null,
-                };
-                await CredentialsAutofillService.SaveTypedAsync(this, store, typed);
-            }
+            if (await AutofillGate.EnsureUnlockedAsync(store))
+                await CredentialsAutofillService.SaveTypedAsync(this, store, TypedCredentials.FromExtras(
+                    Intent?.GetStringExtra("user"), Intent?.GetStringExtra("pass"), Intent?.GetStringExtra("domain"), Intent?.GetStringExtra("package")));
         }
         catch (Exception) { }
         Finish();

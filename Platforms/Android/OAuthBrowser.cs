@@ -8,9 +8,7 @@ namespace Credentials.Platforms.Android;
 /// que se calcula en oauth.props y recoge WebAuthenticationCallbackActivity.</remarks>
 public class OAuthBrowser : IOAuthBrowser
 {
-    public string RedirectUri(string providerName, string clientId) => providerName == "Google"
-        ? OAuthSecrets.GoogleRedirectScheme + ":/oauth"
-        : "com.socratic.credentials://auth";
+    public string RedirectUri(string providerName, string clientId) => AndroidOAuth.RedirectUri(providerName, OAuthSecrets.GoogleRedirectScheme);
 
     public async Task<Uri> AuthenticateAsync(Uri authorizeUrl, Uri callback, CancellationToken cancellationToken)
     {
@@ -20,7 +18,6 @@ public class OAuthBrowser : IOAuthBrowser
             CallbackUrl = callback,
             PrefersEphemeralWebBrowserSession = false,
         });
-        var query = string.Join('&', result.Properties.Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
-        return new Uri($"{callback}?{query}");
+        return AndroidOAuth.CallbackWithProperties(callback, result.Properties);
     }
 }

@@ -25,6 +25,7 @@ public class TutorialPage : ContentPage
     private readonly ILocalizationService _l;
     private readonly ISettingsService _settings;
     private readonly IToastService _toast;
+    private readonly INavigationService _navigation;
     private List<Step> _steps = [];
     private int _index;
     private IDispatcherTimer? _timer;
@@ -44,6 +45,7 @@ public class TutorialPage : ContentPage
         _l = ServiceHelper.GetRequiredService<ILocalizationService>();
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _toast = ServiceHelper.GetRequiredService<IToastService>();
+        _navigation = ServiceHelper.GetRequiredService<INavigationService>();
 
         _action.Style = Res("PrimaryButton");
         _back.Style = Res("OutlineButton");
@@ -223,13 +225,13 @@ public class TutorialPage : ContentPage
         steps.Add(new("ic_fingerprint.png", _l["TutBioTitle"], _l["TutBioBody"],
             () => _settings.Biometrics,
             _l["TutOpenSettings"],
-            () => Shell.Current.GoToAsync("//SettingsPage"),
+            () => _navigation.GoToAsync("//SettingsPage"),
             Optional: true));
 #endif
         steps.Add(new("ic_sync.png", _l["TutCloudTitle"], _l["TutCloudBody"],
             () => _settings.Storage != StorageMode.Local,
             _l["TutOpenSettings"],
-            () => Shell.Current.GoToAsync("//SettingsPage"),
+            () => _navigation.GoToAsync("//SettingsPage"),
             Optional: true));
         steps.Add(new("ic_check.png", _l["TutEndTitle"], _l["TutEndBody"]));
         return steps;
@@ -324,6 +326,6 @@ public class TutorialPage : ContentPage
         }
         _settings.TutorialDone = true;
         _index = 0;
-        await Shell.Current.GoToAsync("//VaultPage");
+        await _navigation.GoToAsync("//VaultPage");
     }
 }

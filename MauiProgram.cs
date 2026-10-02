@@ -29,6 +29,18 @@ public static class MauiProgram
         builder.Services.AddSingleton<ISettingsService, SettingsService>();
         builder.Services.AddSingleton<ILocalizationService, LocalizationService>();
         builder.Services.AddSingleton<VaultStore>();
+        // Lo que da el sistema, detras de interfaces para poder probar las paginas con dobles.
+        builder.Services.AddSingleton<IDialogService, ModernDialogService>();
+        builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
+        builder.Services.AddSingleton<IQrScanner, Pages.CameraQrScanner>();
+        builder.Services.AddSingleton<ITextFilePicker, TextFilePicker>();
+        builder.Services.AddSingleton(Clipboard.Default);
+        builder.Services.AddSingleton(Share.Default);
+        builder.Services.AddSingleton(Browser.Default);
+        builder.Services.AddSingleton(Email.Default);
+        builder.Services.AddSingleton(AppInfo.Current);
+        builder.Services.AddSingleton(DeviceInfo.Current);
+        builder.Services.AddSingleton(FileSystem.Current);
 #if ANDROID
         builder.Services.AddSingleton<IToastService, Platforms.Android.ToastService>();
         builder.Services.AddSingleton<IBiometric, Platforms.Android.Biometric>();
@@ -37,6 +49,10 @@ public static class MauiProgram
         builder.Services.AddSingleton<IToastService, Platforms.Windows.ToastService>();
         builder.Services.AddSingleton<IBiometric, NoBiometric>();   // sin Windows Hello: decision de Josep del 2026-09-24
         builder.Services.AddSingleton<IOAuthBrowser, Platforms.Windows.OAuthBrowser>();
+#else
+        // Sin plataforma (el destino net10.0, solo para las pruebas): sin biometria ni navegador de entrada.
+        builder.Services.AddSingleton<IBiometric, NoBiometric>();
+        builder.Services.AddSingleton<IOAuthBrowser, NoOAuthBrowser>();
 #endif
 
         // Las paginas (carpeta Pages) las instancia el Shell por DataTemplate y resuelven sus

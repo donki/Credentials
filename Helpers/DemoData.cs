@@ -12,6 +12,9 @@ namespace Credentials.Helpers;
 /// </summary>
 public static class DemoData
 {
+    /// <summary>El respiro antes de abrir la pagina pedida (que el Shell este listo). Las pruebas lo acortan.</summary>
+    internal static TimeSpan PageDelay { get; set; } = TimeSpan.FromMilliseconds(500);
+
     public static async Task ApplyAsync(string? master, bool demo, string? page, string? lang)
     {
         if (!string.IsNullOrEmpty(lang))
@@ -22,6 +25,7 @@ public static class DemoData
         if (string.IsNullOrEmpty(master))
             return;
         var store = ServiceHelper.GetRequiredService<VaultStore>();
+        var navigation = ServiceHelper.GetRequiredService<INavigationService>();
         try
         {
             if (store.Exists) await store.UnlockAsync(master); else await store.CreateAsync(master);
@@ -40,15 +44,15 @@ public static class DemoData
             }
             if (!string.IsNullOrEmpty(page))
             {
-                await Task.Delay(500);
+                await Task.Delay(PageDelay);
                 if (page == "settings")
-                    await Shell.Current.GoToAsync("//SettingsPage");
+                    await navigation.GoToAsync("//SettingsPage");
                 else if (page == "tutorial")
-                    await Shell.Current.GoToAsync("//TutorialPage");
+                    await navigation.GoToAsync("//TutorialPage");
                 else if (page == "about")
-                    await Shell.Current.GoToAsync("//AboutPage");
+                    await navigation.GoToAsync("//AboutPage");
                 else if (page.StartsWith("entry:") && store.Data!.Entries.FirstOrDefault(x => x.Title == page[6..]) is { } entry)
-                    await Shell.Current.Navigation.PushAsync(new Pages.EntryPage(entry, isNew: false));
+                    await navigation.PushAsync(new Pages.EntryPage(entry, isNew: false));
                 else if (page == "lock")
                     store.Lock();
             }

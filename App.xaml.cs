@@ -1,4 +1,6 @@
-﻿namespace Credentials;
+﻿using Credentials.Helpers;
+
+namespace Credentials;
 
 public partial class App : Application
 {
@@ -40,7 +42,7 @@ public partial class App : Application
                 toast.Show(string.Format(loc.CurrentCulture, loc["ExtConnected"], name));
             };
             _extensions.Start();
-            store.Unlocked += () => MainThread.BeginInvokeOnMainThread(async () =>
+            store.Unlocked += () => Dispatcher.RunOnUi(async () =>
             {
                 // Un respiro para que la pagina de desbloqueo se haya cerrado antes de preguntar.
                 await Task.Delay(600);
@@ -72,6 +74,9 @@ public partial class App : Application
 
     /// <summary>La guia de configuracion se esta abriendo sola en esta sesion: las preguntas de despues de desbloquear no salen.</summary>
     internal static bool TutorialOpening { get; private set; }
+
+    /// <summary>El respiro tras desbloquear antes de abrir la guia (que la puerta se haya cerrado). Las pruebas lo acortan.</summary>
+    internal static TimeSpan UnlockPause { get; set; } = TimeSpan.FromMilliseconds(600);
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
@@ -116,14 +121,15 @@ public partial class App : Application
         {
             var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
             var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
-            store.Unlocked += () => MainThread.BeginInvokeOnMainThread(async () =>
+            var navigation = Helpers.ServiceHelper.GetRequiredService<Services.INavigationService>();
+            store.Unlocked += () => Dispatcher.RunOnUi(async () =>
             {
                 if (settings.TutorialDone)
                     return;
                 settings.TutorialDone = true;
                 TutorialOpening = true;
-                await Task.Delay(600);
-                try { await Shell.Current.GoToAsync("//TutorialPage"); }
+                await Task.Delay(UnlockPause);
+                try { await navigation.GoToAsync("//TutorialPage"); }
                 catch (Exception) { }
             });
         }
@@ -197,7 +203,7 @@ public partial class App : Application
             var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
             var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
             var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
-            store.Unlocked += () => MainThread.BeginInvokeOnMainThread(async () =>
+            store.Unlocked += () => Dispatcher.RunOnUi(async () =>
             {
                 await Task.Delay(600);
                 try

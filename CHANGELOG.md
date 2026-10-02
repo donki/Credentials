@@ -2,6 +2,30 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.10.03.00 — Las pantallas y el código de plataforma, también probados
+
+`versionCode`: 2026100300 · Windows `2026.10.3.0` · extensión `2026.10.3.0`
+
+- **Corregido**: los títulos de las secciones del menú lateral (Bóveda, Ajustes, Guía, Acerca de) se
+  quedaban en castellano con la aplicación en inglés.
+- **Corregido (Windows)**: una petición de la extensión del navegador con JSON válido pero con otra
+  forma (una lista, o un tipo numérico) cortaba la conexión; ahora se contesta con un error y la
+  conexión sigue. La tubería con la extensión ya no queda abierta al cancelar o fallar la espera.
+- **Corregido**: el aviso de error del host de mensajería nativa ya no depende de cómo venga escrito
+  el identificador de la petición. En el modo de pruebas de Debug (`SOC_SANDBOX`), el registro de la
+  aplicación va a la carpeta de pruebas y no al del usuario.
+- **Pruebas**: además de la lógica, ahora se prueban las páginas, la `App` y el Shell, y la lógica del
+  autocompletar de Windows y de Android, la extensión, la bandeja, el host y el lanzador, que pasan a
+  clases propias (`PlatformLogic/`); lo que ve y hace el usuario no cambia. 401 pruebas
+  (`dotnet test Credentials.Pruebas.slnx`). La cobertura sobre toda la aplicación pasa del 36,7 % al
+  **82,5 %**, contada de una forma nueva (solo sentencias; ver el README).
+
+**English.** Fixed: the side menu section titles stayed in Spanish with the app in English; on
+Windows, a well-formed but unexpected request from the browser extension dropped the connection (now
+it gets an error reply), and the pipe is released when waiting is cancelled. The pages, the app shell
+and the platform logic (desktop and Android autofill, extension bridge, tray, host, launcher) are now
+covered by tests: 401 tests, whole-app line coverage from 36.7 % to **82.5 %** (statements only).
+
 ## 2026.10.01.00 — La lista de la extensión ya no sale en casillas de correo que no son de acceso
 
 `versionCode`: 2026100100 · Windows `2026.10.1.0` · extensión `2026.10.1.0`

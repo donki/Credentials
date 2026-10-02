@@ -14,7 +14,7 @@ namespace Credentials.Platforms.Android;
 /// </summary>
 public static class AutofillSetup
 {
-    private static bool _offeredThisSession;
+    private static readonly AutofillSetupLogic Offer = new();
 
     public static bool Supported
     {
@@ -46,88 +46,30 @@ public static class AutofillSetup
     public static bool HasPreferredService => Build.VERSION.SdkInt >= BuildVersionCodes.UpsideDownCake;
 
     /// <summary>Abre la pantalla del sistema donde se elige el gestor de contraseñas preferido.</summary>
-    public static bool OpenPreferredService()
-    {
-        var context = global::Android.App.Application.Context;
-        // La pantalla se llama distinto segun la version y la capa del fabricante: se prueban por orden.
-        foreach (var action in new[] { "android.settings.CREDENTIAL_PROVIDER", Settings.ActionRequestSetAutofillService })
-        {
-            try
-            {
-                var intent = new Intent(action);
-                intent.SetData(global::Android.Net.Uri.Parse("package:" + context.PackageName));
-                intent.AddFlags(ActivityFlags.NewTask);
-                context.StartActivity(intent);
-                return true;
-            }
-            catch (Exception) { }
-        }
-        return false;
-    }
+    public static bool OpenPreferredService() => AutofillSetupLogic.OpenFirst(AutofillSetupLogic.PreferredServiceActions, action => StartSettings(action, global::Android.App.Application.Context.PackageName));
 
     /// <summary>Abre los ajustes de un navegador (su ficha de aplicacion): desde ahi se llega a los suyos.</summary>
-    public static bool OpenBrowserSettings(string package)
-    {
-        var context = global::Android.App.Application.Context;
-        try
-        {
-            var intent = new Intent(Settings.ActionApplicationDetailsSettings,
-                global::Android.Net.Uri.Parse("package:" + package));
-            intent.AddFlags(ActivityFlags.NewTask);
-            context.StartActivity(intent);
-            return true;
-        }
-        catch (Exception) { return false; }
-    }
+    public static bool OpenBrowserSettings(string package) => AutofillSetupLogic.OpenFirst([Settings.ActionApplicationDetailsSettings], action => StartSettings(action, package));
 
     /// <summary>Los navegadores Chromium instalados (los que tienen su propio gestor de contraseñas).</summary>
-    public static IReadOnlyList<(string Package, string Name)> InstalledBrowsers()
+    public static IReadOnlyList<(string Package, string Name)> InstalledBrowsers() => AutofillSetupLogic.Installed(package =>
     {
-        var known = new (string Package, string Name)[]
-        {
-            ("com.microsoft.emmx", "Microsoft Edge"),
-            ("com.android.chrome", "Google Chrome"),
-            ("com.brave.browser", "Brave"),
-            ("org.mozilla.firefox", "Firefox"),
-        };
-        var context = global::Android.App.Application.Context;
-        var list = new List<(string, string)>();
-        foreach (var b in known)
-        {
-            try
-            {
-                context.PackageManager?.GetPackageInfo(b.Package, 0);
-                list.Add(b);
-            }
-            catch (Exception) { /* no esta instalado */ }
-        }
-        return list;
-    }
+        try { return global::Android.App.Application.Context.PackageManager?.GetPackageInfo(package, 0) is not null; }
+        catch (Exception) { return false; }   // no esta instalado
+    });
 
     /// <summary>Abre el dialogo del sistema que pregunta si usar sOC Credentials para autocompletar.</summary>
-    public static void Request()
-    {
-        var context = global::Android.App.Application.Context;
-        var intent = new Intent(Settings.ActionRequestSetAutofillService);
-        intent.SetData(global::Android.Net.Uri.Parse("package:" + context.PackageName));
-        intent.AddFlags(ActivityFlags.NewTask);
-        context.StartActivity(intent);
-    }
+    public static void Request() => StartSettings(Settings.ActionRequestSetAutofillService, global::Android.App.Application.Context.PackageName);
 
     /// <summary>Tras desbloquear: si otro gestor (o ninguno) rellena las contraseñas, se propone cambiar a este.</summary>
-    public static async Task OfferAfterUnlockAsync(Page page, ISettingsService settings, ILocalizationService l)
+    public static Task OfferAfterUnlockAsync(Page page, ISettingsService settings, ILocalizationService l) =>
+        Offer.OfferAfterUnlockAsync((title, cancel, options) => SocShared.ModernDialog.ActionSheetAsync(page, title, cancel, options), settings, l, () => Supported, () => IsOurs, Request);
+
+    private static void StartSettings(string action, string? package)
     {
-        if (_offeredThisSession || !settings.AskAutofill || !Supported || IsOurs)
-            return;
-        _offeredThisSession = true;
-        var choice = await SocShared.ModernDialog.ActionSheetAsync(page, l["AutofillOfferTitle"], l["NotNow"], l["AutofillUseThis"], l["ExtDontAsk"]);
-        if (choice == l["ExtDontAsk"])
-        {
-            settings.AskAutofill = false;
-            return;
-        }
-        if (choice == l["AutofillUseThis"])
-            Request();
+        var intent = new Intent(action, global::Android.Net.Uri.Parse("package:" + package));
+        intent.AddFlags(ActivityFlags.NewTask);
+        global::Android.App.Application.Context.StartActivity(intent);
     }
 
     private static AutofillManager? Manager()

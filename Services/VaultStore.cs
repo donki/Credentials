@@ -40,6 +40,9 @@ public sealed class VaultStore
     /// </summary>
     public static Func<TimeSpan?>? SystemIdle { get; set; }
 
+    /// <summary>Donde corre la comprobacion de inactividad: el hilo de la interfaz (las pruebas de la interfaz lo cambian).</summary>
+    internal static Action<Action> OnMainThread { get; set; } = MainThread.BeginInvokeOnMainThread;
+
     public VaultStore(ISettingsService settings, IOAuthBrowser browser)
     {
         _settings = settings;
@@ -242,7 +245,7 @@ public sealed class VaultStore
     private void StartIdleTimer()
     {
         StopIdleTimer();
-        _idleTimer = new Timer(_ => MainThread.BeginInvokeOnMainThread(() => { try { LockIfIdle(); } catch (Exception) { } }), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
+        _idleTimer = new Timer(_ => OnMainThread(() => { try { LockIfIdle(); } catch (Exception) { } }), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
     }
 
     private void StopIdleTimer()

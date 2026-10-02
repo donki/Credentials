@@ -22,18 +22,21 @@ public partial class AppShell : Shell
         SettingsLabel.Text = _l["MenuSettings"];
         AboutLabel.Text = _l["About"];
         TutorialLabel.Text = _l["MenuTutorial"];
-        VersionLabel.Text = $"v{AppInfo.Current.VersionString}";
+        VersionLabel.Text = $"v{ServiceHelper.GetRequiredService<IAppInfo>().VersionString}";
 
-        // Los titulos de las rutas del Shell tambien se localizan (constitucion 8).
+        // Los titulos de las rutas del Shell tambien se localizan (constitucion 8). La ruta es la de
+        // su pagina (ShellContent): la del FlyoutItem la genera MAUI («D_FAULT_FlyoutItem0») y con
+        // ella los titulos se quedaban siempre en castellano.
         foreach (var item in Items)
         {
-            if (item.Route?.Contains("VaultPage") == true)
+            var route = item.CurrentItem?.CurrentItem?.Route ?? item.Route;
+            if (route?.Contains("VaultPage") == true)
                 item.Title = _l["MenuVault"];
-            else if (item.Route?.Contains("SettingsPage") == true)
+            else if (route?.Contains("SettingsPage") == true)
                 item.Title = _l["MenuSettings"];
-            else if (item.Route?.Contains("TutorialPage") == true)
+            else if (route?.Contains("TutorialPage") == true)
                 item.Title = _l["MenuTutorial"];
-            else if (item.Route?.Contains("AboutPage") == true)
+            else if (route?.Contains("AboutPage") == true)
                 item.Title = _l["About"];
         }
     }

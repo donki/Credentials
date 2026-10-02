@@ -1,7 +1,6 @@
 ﻿using Credentials.Helpers;
 using Credentials.Models;
 using Credentials.Services;
-using SocShared;
 
 namespace Credentials.Pages;
 
@@ -16,6 +15,7 @@ public partial class EntryPage : ContentPage
     private readonly VaultStore _store;
     private readonly ISettingsService _settings;
     private readonly IToastService _toast;
+    private readonly IDialogService _dialogs;
     private readonly Credential _original;
     private readonly Credential _entry;
     private readonly bool _isNew;
@@ -30,6 +30,7 @@ public partial class EntryPage : ContentPage
         _store = ServiceHelper.GetRequiredService<VaultStore>();
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _toast = ServiceHelper.GetRequiredService<IToastService>();
+        _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
         _original = entry;
         _entry = entry.Clone();
         _isNew = isNew;
@@ -43,7 +44,7 @@ public partial class EntryPage : ContentPage
         Title = _isNew ? _l["Add"] : _entry.Title;
         KindLabel.Text = _l["Kind" + _entry.Kind];
         TitleTitle.Text = _l["Title"];
-        UsernameTitle.Text = _entry.Kind == EntryKind.Totp ? _l["Username"] : _l["Username"];
+        UsernameTitle.Text = _l["Username"];
         PasswordTitle.Text = _l["Password"];
         UrlTitle.Text = _l["Url"];
         GeneratorTitle.Text = _l["Generator"];
@@ -143,8 +144,8 @@ public partial class EntryPage : ContentPage
         if (!_entry.HasTotp || Totp.Parse(_entry.Totp) is not { } t)
             return;
         var (code, left) = t.Now();
-        TotpCode.Text = $"{code[..(code.Length / 2)]} {code[(code.Length / 2)..]}";
-        TotpProgress.Progress = t.IsCounter ? 1 : left / (double)t.Period;
+        TotpCode.Text = VaultQuery.SplitCode(code);
+        TotpProgress.Progress = EntryRules.TotpProgress(t, left);
     }
 
     // ------------------------------------------------------------------ cambios
@@ -163,10 +164,11 @@ public partial class EntryPage : ContentPage
 
     private void UpdateStrength()
     {
-        var s = PasswordGenerator.Strength(PasswordEntry.Text ?? string.Empty);
-        StrengthBar.Progress = (PasswordEntry.Text ?? string.Empty).Length == 0 ? 0 : (s + 1) / 5.0;
-        StrengthBar.ProgressColor = s switch { 0 => Color.FromArgb("#BA1A1A"), 1 => Color.FromArgb("#D97706"), 2 => Color.FromArgb("#CA8A04"), 3 => Color.FromArgb("#0E9F6E"), _ => Color.FromArgb("#059669") };
-        StrengthLabel.Text = (PasswordEntry.Text ?? string.Empty).Length == 0 ? string.Empty : _l["Strength" + s];
+        var password = PasswordEntry.Text ?? string.Empty;
+        var s = PasswordGenerator.Strength(password);
+        StrengthBar.Progress = EntryRules.StrengthProgress(password, s);
+        StrengthBar.ProgressColor = EntryRules.StrengthColor(s);
+        StrengthLabel.Text = password.Length == 0 ? string.Empty : _l["Strength" + s];
     }
 
     private void OnFavoriteClicked(object? sender, EventArgs e)
@@ -187,13 +189,10 @@ public partial class EntryPage : ContentPage
 
     private async void OnOpenUrlClicked(object? sender, EventArgs e)
     {
-        var url = (UrlEntry.Text ?? string.Empty).Trim();
-        if (url.Length == 0)
+        if (EntryRules.OpenableUrl(UrlEntry.Text) is not { } url)
             return;
-        if (!url.Contains("://", StringComparison.Ordinal))
-            url = "https://" + url;
-        try { await Browser.Default.OpenAsync(url, BrowserLaunchMode.SystemPreferred); }
-        catch (Exception ex) { await ModernDialog.AlertAsync(this, _l["Error"], ex.Message, _l["Ok"]); }
+        try { await ServiceHelper.GetRequiredService<IBrowser>().OpenAsync(url, BrowserLaunchMode.SystemPreferred); }
+        catch (Exception ex) { await _dialogs.AlertAsync(this, _l["Error"], ex.Message, _l["Ok"]); }
     }
 
     // ------------------------------------------------------------------ generador
@@ -231,7 +230,7 @@ public partial class EntryPage : ContentPage
         TotpEntry.IsVisible = ScanButton.IsVisible = t is null;
         if (t is not null)
         {
-            TotpIssuer.Text = string.Join(" · ", new[] { t.Issuer, t.Account }.Where(s => s.Length > 0)) + $"  ({t.Algorithm}, {t.Digits}, {t.Period}s)";
+            TotpIssuer.Text = EntryRules.TotpDescription(t);
             OnTick(null, EventArgs.Empty);
         }
         UpdateSeed();
@@ -260,7 +259,7 @@ public partial class EntryPage : ContentPage
         SeedQr.Value = SeedRow.IsVisible ? t!.ToUri() : null;
         SeedButton.Source = _seedVisible ? "ic_eye_off.png" : "ic_eye.png";
         // En grupos de cuatro, como la dan los sitios: se lee y se teclea mejor.
-        SeedLabel.Text = t is null ? string.Empty : string.Join(" ", t.Secret.TrimEnd('=').Chunk(4).Select(c => new string(c)));
+        SeedLabel.Text = t is null ? string.Empty : EntryRules.SeedGroups(t.Secret);
     }
 
     private async void OnCopySeedClicked(object? sender, EventArgs e)
@@ -282,15 +281,10 @@ public partial class EntryPage : ContentPage
     /// <summary>Lo pegado en la casilla pasa a la lista: uno por linea (o separados por comas), sin repetidos.</summary>
     private bool AddTypedRecovery()
     {
-        var text = RecoveryEditor.Text ?? string.Empty;
-        var codes = text.Split(['\n', '\r', ',', ';', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(c => c.Length > 0)
-            .ToList();
+        var codes = EntryRules.ParseRecovery(RecoveryEditor.Text);
         if (codes.Count == 0)
             return false;
-        foreach (var code in codes)
-            if (!_entry.RecoveryCodes.Any(r => r.Code.Equals(code, StringComparison.OrdinalIgnoreCase)))
-                _entry.RecoveryCodes.Add(new RecoveryCode { Code = code });
+        EntryRules.AddRecovery(_entry.RecoveryCodes, codes);
         RecoveryEditor.Text = string.Empty;
         _dirty = true;
         _recoveryVisible = true;
@@ -303,10 +297,7 @@ public partial class EntryPage : ContentPage
     private void RenderRecovery()
     {
         var total = _entry.RecoveryCodes.Count;
-        var unused = _entry.RecoveryCodes.Count(r => !r.Used);
-        RecoveryHint.Text = total == 0
-            ? _l["RecoveryNone"]
-            : string.Format(_l.CurrentCulture, _l["RecoveryCount"], total, unused);
+        RecoveryHint.Text = EntryRules.RecoverySummary(_entry.RecoveryCodes, _l);
         RecoveryEye.IsVisible = total > 0;
         RecoveryEye.Source = _recoveryVisible ? "ic_eye_off.png" : "ic_eye.png";
         RecoveryBox.IsVisible = _recoveryVisible && total > 0;
@@ -388,7 +379,7 @@ public partial class EntryPage : ContentPage
 
     private async void OnScanClicked(object? sender, EventArgs e)
     {
-        var result = await ScanPage.ScanAsync(this, _l);
+        var result = await ServiceHelper.GetRequiredService<IQrScanner>().ScanAsync(this);
         if (result is null)
             return;
         TotpEntry.Text = result;
@@ -431,7 +422,7 @@ public partial class EntryPage : ContentPage
         var title = (TitleEntry.Text ?? string.Empty).Trim();
         if (title.Length == 0)
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], _l["TitleRequired"], _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], _l["TitleRequired"], _l["Ok"]);
             return;
         }
         // Un secreto de doble factor pegado sin pulsar Intro se aplica ahora; antes se perdia sin avisar.
@@ -443,27 +434,19 @@ public partial class EntryPage : ContentPage
         if (!string.IsNullOrWhiteSpace(RecoveryEditor.Text))
             AddTypedRecovery();
         var newPassword = PasswordEntry.Text ?? string.Empty;
-        if (!_isNew && _original.Password.Length > 0 && newPassword != _original.Password)
-            _entry.History.Insert(0, new PasswordHistoryItem(_original.Password, _original.ModifiedAt));
+        EntryRules.RecordHistory(_original, _entry, _isNew, newPassword);
         _entry.Title = title;
         _entry.Username = (UsernameEntry.Text ?? string.Empty).Trim();
         _entry.Password = newPassword;
         _entry.Url = (UrlEntry.Text ?? string.Empty).Trim();
-        _entry.Folder = (FolderEntry.Text ?? string.Empty).Trim().Trim('/');
-        _entry.Tags = (TagsEntry.Text ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        _entry.Folder = EntryRules.NormalizeFolder(FolderEntry.Text);
+        _entry.Tags = EntryRules.ParseTags(TagsEntry.Text);
         _entry.Notes = NotesEditor.Text ?? string.Empty;
         _entry.Fields = _fieldRows.Where(r => (r.field.Text ?? string.Empty).Trim().Length > 0 || (r.value.Text ?? string.Empty).Length > 0)
             .Select(r => new CustomField { Name = (r.field.Text ?? string.Empty).Trim(), Value = r.value.Text ?? string.Empty, Hidden = r.hidden.IsChecked }).ToList();
         _entry.ModifiedAt = DateTimeOffset.UtcNow;
 
-        var data = _store.Data!;
-        var index = data.Entries.FindIndex(x => x.Id == _entry.Id);
-        if (index >= 0)
-            data.Entries[index] = _entry;
-        else
-            data.Entries.Add(_entry);
-        if (_entry.Folder.Length > 0 && !data.Folders.Contains(_entry.Folder, StringComparer.OrdinalIgnoreCase))
-            data.Folders.Add(_entry.Folder);
+        EntryRules.Commit(_store.Data!, _entry);
         await _store.SaveAsync();
         _dirty = false;
         _toast.Show(_l["Saved"]);
@@ -472,7 +455,7 @@ public partial class EntryPage : ContentPage
 
     private async void OnDeleteClicked(object? sender, EventArgs e)
     {
-        var ok = await ModernDialog.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], _entry.Title), _l["Delete"], _l["Cancel"]);
+        var ok = await _dialogs.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], _entry.Title), _l["Delete"], _l["Cancel"]);
         if (!ok)
             return;
         // Borrado logico (VaultStore.DeleteAsync): la baja tiene que llegar a los demas dispositivos al mezclar.
@@ -486,7 +469,7 @@ public partial class EntryPage : ContentPage
             return base.OnBackButtonPressed();
         Dispatcher.Dispatch(async () =>
         {
-            if (await ModernDialog.AlertAsync(this, _l["Save"], _l["SaveChangesQuestion"], _l["Save"], _l["Cancel"]))
+            if (await _dialogs.AlertAsync(this, _l["Save"], _l["SaveChangesQuestion"], _l["Save"], _l["Cancel"]))
                 OnSaveClicked(this, EventArgs.Empty);
             else
                 await Navigation.PopAsync();

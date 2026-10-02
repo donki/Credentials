@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Credentials.Helpers;
 using Credentials.Services;
-using SocShared;
 
 namespace Credentials.Pages;
 
@@ -17,9 +16,11 @@ public partial class SettingsPage : ContentPage
     private readonly VaultStore _store;
     private readonly IBiometric _biometric;
     private readonly IToastService _toast;
+    private readonly IDialogService _dialogs;
+    private readonly INavigationService _navigation;
     private bool _loading;
-    private static readonly int[] LockMinutes = [0, 1, 2, 5, 10, 15, 30, 60];
-    private static readonly int[] ClipSeconds = [0, 15, 30, 60, 120];
+    private static readonly int[] LockMinutes = SettingsRules.LockMinutes;
+    private static readonly int[] ClipSeconds = SettingsRules.ClipSeconds;
 
     public SettingsPage()
     {
@@ -29,7 +30,9 @@ public partial class SettingsPage : ContentPage
         _store = ServiceHelper.GetRequiredService<VaultStore>();
         _biometric = ServiceHelper.GetRequiredService<IBiometric>();
         _toast = ServiceHelper.GetRequiredService<IToastService>();
-        _store.Status += s => MainThread.BeginInvokeOnMainThread(() => ShowStatus(s));
+        _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
+        _navigation = ServiceHelper.GetRequiredService<INavigationService>();
+        _store.Status += s => Dispatcher.RunOnUi(() => ShowStatus(s));
         _l.LanguageChanged += (_, _) => ApplyTexts();
         ApplyTexts();
     }
@@ -81,10 +84,10 @@ public partial class SettingsPage : ContentPage
         DangerTitle.Text = _l["DangerTitle"];
         DeleteVaultButton.Text = _l["DeleteVault"];
 
-        AutoLockPicker.ItemsSource = LockMinutes.Select(m => m == 0 ? _l["AutoLockNever"] : string.Format(_l.CurrentCulture, _l["AutoLockMinutes"], m)).ToList();
-        AutoLockPicker.SelectedIndex = Math.Max(0, Array.IndexOf(LockMinutes, _settings.AutoLockMinutes));
-        ClipboardPicker.ItemsSource = ClipSeconds.Select(s => s == 0 ? _l["ClipboardNever"] : string.Format(_l.CurrentCulture, _l["ClipboardSeconds"], s)).ToList();
-        ClipboardPicker.SelectedIndex = Math.Max(0, Array.IndexOf(ClipSeconds, _settings.ClipboardSeconds));
+        AutoLockPicker.ItemsSource = SettingsRules.LockLabels(_l);
+        AutoLockPicker.SelectedIndex = SettingsRules.IndexOf(LockMinutes, _settings.AutoLockMinutes);
+        ClipboardPicker.ItemsSource = SettingsRules.ClipLabels(_l);
+        ClipboardPicker.SelectedIndex = SettingsRules.IndexOf(ClipSeconds, _settings.ClipboardSeconds);
         TrustSwitch.IsToggled = _settings.TrustDevice;
         BiometricsSwitch.IsToggled = _settings.Biometrics;
         RefreshStorage();
@@ -125,7 +128,7 @@ public partial class SettingsPage : ContentPage
 
     private void ShowStatus(string status)
     {
-        SyncStatus.Text = status.StartsWith("cloud:ok:") ? string.Empty : status.StartsWith("cloud:error:") ? string.Format(_l.CurrentCulture, _l["SyncFailed"], status[12..]) : status;
+        SyncStatus.Text = SettingsRules.StatusText(status, _l);
         SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
     }
 
@@ -250,13 +253,13 @@ public partial class SettingsPage : ContentPage
         var names = _browsers.Select(b => b.Name).ToArray();
         var chosen = names.Length == 1
             ? names[0]
-            : await SocShared.ModernDialog.ActionSheetAsync(this, _l["AutofillBrowsersOpen"], _l["Cancel"], names);
+            : await _dialogs.ActionSheetAsync(this, _l["AutofillBrowsersOpen"], _l["Cancel"], names);
         if (chosen is null || chosen == _l["Cancel"])
             return;
         var browser = _browsers.FirstOrDefault(b => b.Name == chosen);
         if (browser.Package is null)
             return;
-        await SocShared.ModernDialog.AlertAsync(this, chosen, string.Format(_l.CurrentCulture, _l["AutofillBrowserSteps"], chosen), _l["Ok"]);
+        await _dialogs.AlertAsync(this, chosen, string.Format(_l.CurrentCulture, _l["AutofillBrowserSteps"], chosen), _l["Ok"]);
         if (!Platforms.Android.AutofillSetup.OpenBrowserSettings(browser.Package))
             _toast.Show(_l["AutofillPreferredNoScreen"]);
 #else
@@ -324,7 +327,7 @@ public partial class SettingsPage : ContentPage
         }
         if (!_store.IsConfigured(mode))
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], string.Format(_l.CurrentCulture, _l["StorageNotConfigured"], mode == StorageMode.GoogleDrive ? "Google" : "Microsoft"), _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], string.Format(_l.CurrentCulture, _l["StorageNotConfigured"], SettingsRules.BrandOf(mode)), _l["Ok"]);
             RefreshStorage();
             return;
         }
@@ -349,7 +352,7 @@ public partial class SettingsPage : ContentPage
         {
             _store.SignOut();
             RefreshStorage();
-            await ModernDialog.AlertAsync(this, _l["Error"], ex.Message == "scope" ? _l["SyncScope"] : ex.Message, _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], ex.Message == "scope" ? _l["SyncScope"] : ex.Message, _l["Ok"]);
         }
     }
 
@@ -362,12 +365,12 @@ public partial class SettingsPage : ContentPage
             SyncStatus.Text = "…";
             SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
             var changed = await _store.SyncAsync();
-            SyncStatus.Text = changed > 0 ? string.Format(_l.CurrentCulture, _l["SyncDone"], changed) : _l["SyncNothing"];
+            SyncStatus.Text = SettingsRules.SyncText(changed, _l);
             SyncStatus.IsVisible = SyncStatus.Text.Length > 0;
         }
         catch (VaultPasswordNeededException needed)
         {
-            var password = await ModernDialog.PromptAsync(this, _l["MasterPassword"], _l["SyncPasswordNeeded"], _l["Ok"], _l["Cancel"], isPassword: true);
+            var password = await _dialogs.PromptAsync(this, _l["MasterPassword"], _l["SyncPasswordNeeded"], _l["Ok"], _l["Cancel"], isPassword: true);
             if (string.IsNullOrEmpty(password))
             {
                 SyncStatus.Text = string.Empty;
@@ -412,7 +415,7 @@ public partial class SettingsPage : ContentPage
     {
         if (_loading)
             return;
-        if (e.Value && !await ModernDialog.AlertAsync(this, _l["TrustDevice"], _l["TrustDeviceConfirm"], _l["TrustDeviceYes"], _l["Cancel"]))
+        if (e.Value && !await _dialogs.AlertAsync(this, _l["TrustDevice"], _l["TrustDeviceConfirm"], _l["TrustDeviceYes"], _l["Cancel"]))
         {
             _loading = true;
             TrustSwitch.IsToggled = false;
@@ -455,18 +458,18 @@ public partial class SettingsPage : ContentPage
 
     private async void OnChangeMasterClicked(object? sender, EventArgs e)
     {
-        var p1 = await ModernDialog.PromptAsync(this, _l["ChangeMaster"], _l["MasterPassword"], _l["Continue"], _l["Cancel"], isPassword: true);
+        var p1 = await _dialogs.PromptAsync(this, _l["ChangeMaster"], _l["MasterPassword"], _l["Continue"], _l["Cancel"], isPassword: true);
         if (string.IsNullOrEmpty(p1))
             return;
-        if (p1.Length < 8)
+        if (MasterPasswordRules.Problem(p1, null) is { } tooShort)
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], _l["MasterPasswordShort"], _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], _l[tooShort], _l["Ok"]);
             return;
         }
-        var p2 = await ModernDialog.PromptAsync(this, _l["ChangeMaster"], _l["MasterPasswordRepeat"], _l["Save"], _l["Cancel"], isPassword: true);
-        if (p2 != p1)
+        var p2 = await _dialogs.PromptAsync(this, _l["ChangeMaster"], _l["MasterPasswordRepeat"], _l["Save"], _l["Cancel"], isPassword: true);
+        if (MasterPasswordRules.Problem(p1, p2 ?? string.Empty) is { } mismatch)
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], _l["MasterPasswordMismatch"], _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], _l[mismatch], _l["Ok"]);
             return;
         }
         await _store.ChangeMasterPasswordAsync(p1);
@@ -479,23 +482,20 @@ public partial class SettingsPage : ContentPage
     {
         try
         {
-            var file = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = _l["ImportPick"] });
-            if (file is null)
+            var content = await ServiceHelper.GetRequiredService<ITextFilePicker>().PickTextAsync(_l["ImportPick"]);
+            if (content is null)
                 return;
-            using var stream = await file.OpenReadAsync();
-            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-            var content = await reader.ReadToEndAsync();
             await ImportContentAsync(content);
         }
         catch (Exception ex)
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], ex.Message, _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], ex.Message, _l["Ok"]);
         }
     }
 
     private async void OnImportGaClicked(object? sender, EventArgs e)
     {
-        var text = await ScanPage.ScanAsync(this, _l);
+        var text = await ServiceHelper.GetRequiredService<IQrScanner>().ScanAsync(this);
         if (text is not null)
             await ImportContentAsync(text);
     }
@@ -505,42 +505,43 @@ public partial class SettingsPage : ContentPage
         var result = Importers.Parse(content);
         if (result is null)
         {
-            await ModernDialog.AlertAsync(this, _l["Import"], _l["ImportUnknown"], _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Import"], _l["ImportUnknown"], _l["Ok"]);
             return;
         }
         var (added, skipped) = Importers.MergeInto(_store.Data!, result.Entries);
         if (added > 0)
             await _store.SaveAsync();
-        await ModernDialog.AlertAsync(this, _l["ImportResultTitle"], string.Format(_l.CurrentCulture, _l["ImportDone"], added, skipped), _l["Ok"]);
+        await _dialogs.AlertAsync(this, _l["ImportResultTitle"], string.Format(_l.CurrentCulture, _l["ImportDone"], added, skipped), _l["Ok"]);
     }
 
     private async void OnExportEncryptedClicked(object? sender, EventArgs e) =>
-        await ExportAsync($"sOCCredentials-{DateTime.Now:yyyyMMdd-HHmm}.soccred", _store.ExportEncrypted());
+        await ExportAsync(SettingsRules.ExportName(DateTime.Now, "soccred"), _store.ExportEncrypted());
 
     private async void OnExportPlainClicked(object? sender, EventArgs e)
     {
-        if (!await ModernDialog.AlertAsync(this, _l["ExportPlain"], _l["ExportPlainConfirm"], _l["Continue"], _l["Cancel"]))
+        if (!await _dialogs.AlertAsync(this, _l["ExportPlain"], _l["ExportPlainConfirm"], _l["Continue"], _l["Cancel"]))
             return;
-        await ExportAsync($"sOCCredentials-{DateTime.Now:yyyyMMdd-HHmm}.json", _store.ExportPlainJson());
+        await ExportAsync(SettingsRules.ExportName(DateTime.Now, "json"), _store.ExportPlainJson());
     }
 
     private async Task ExportAsync(string name, string content)
     {
         try
         {
-            var folder = DeviceInfo.Platform == DevicePlatform.WinUI
+            var windows = ServiceHelper.GetRequiredService<IDeviceInfo>().Platform == DevicePlatform.WinUI;
+            var folder = windows
                 ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
-                : FileSystem.CacheDirectory;
+                : ServiceHelper.GetRequiredService<IFileSystem>().CacheDirectory;
             var path = Path.Combine(folder, name);
             await File.WriteAllTextAsync(path, content, new UTF8Encoding(false));
-            if (DeviceInfo.Platform == DevicePlatform.WinUI)
+            if (windows)
                 _toast.Show(string.Format(_l.CurrentCulture, _l["Exported"], path));
             else
-                await Share.Default.RequestAsync(new ShareFileRequest { Title = name, File = new ShareFile(path) });
+                await ServiceHelper.GetRequiredService<IShare>().RequestAsync(new ShareFileRequest { Title = name, File = new ShareFile(path) });
         }
         catch (Exception ex)
         {
-            await ModernDialog.AlertAsync(this, _l["Error"], ex.Message, _l["Ok"]);
+            await _dialogs.AlertAsync(this, _l["Error"], ex.Message, _l["Ok"]);
         }
     }
 
@@ -548,14 +549,14 @@ public partial class SettingsPage : ContentPage
 
     private async void OnDeleteVaultClicked(object? sender, EventArgs e)
     {
-        var word = await ModernDialog.PromptAsync(this, _l["DeleteVault"], _l["DeleteVaultConfirm"], _l["Delete"], _l["Cancel"]);
-        if (word is null || !(word.Trim().Equals("BORRAR", StringComparison.OrdinalIgnoreCase) || word.Trim().Equals("DELETE", StringComparison.OrdinalIgnoreCase)))
+        var word = await _dialogs.PromptAsync(this, _l["DeleteVault"], _l["DeleteVaultConfirm"], _l["Delete"], _l["Cancel"]);
+        if (!SettingsRules.IsDeleteWord(word))
             return;
         _settings.TrustDevice = false;
         _store.Lock();
         await _store.RememberKeyAsync(false);
         _store.SignOut();
         try { File.Delete(VaultStore.FilePath); File.Delete(VaultStore.FilePath + ".bak"); } catch (Exception) { }
-        await Shell.Current.GoToAsync("//VaultPage");
+        await _navigation.GoToAsync("//VaultPage");
     }
 }

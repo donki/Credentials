@@ -1,125 +1,46 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace Credentials.Platforms.Windows;
 
 /// <summary>
 /// Al minimizar, la ventana se esconde y queda un icono en el area de notificacion; clic para
 /// volver, boton derecho para «Abrir» o «Salir». WinUI no trae icono de bandeja, asi que va con
-/// Shell_NotifyIcon y una subclase del procedimiento de la ventana (para cazar SC_MINIMIZE).
+/// Shell_NotifyIcon y una subclase del procedimiento de la ventana (para cazar SC_MINIMIZE). Que
+/// hacer con cada mensaje lo decide TrayController (PlatformLogic, con pruebas); aqui, Win32.
 /// </summary>
-public sealed class TrayIcon
+public sealed class TrayIcon : TrayController
 {
-    private const int WmSysCommand = 0x0112;
-    private const int WmCommand = 0x0111;
-    private const int WmRButtonUp = 0x0205;
-    private const int WmLButtonUp = 0x0202;
-    private const int WmLButtonDblClk = 0x0203;
-    private const int WmTray = 0x8001;   // WM_APP + 1
-    private const int ScMinimize = 0xF020;
-    private const int WmWtsSessionChange = 0x02B1;
-    private const int WtsSessionLock = 0x7;
-    private const int WtsSessionUnlock = 0x8;
-    private const int IdOpen = 1, IdExit = 2;
-
     private readonly IntPtr _hwnd;
     private readonly WndProc _proc;
     private readonly IntPtr _oldProc;
     private readonly Func<string, string> _text;
-    private readonly Action _exit;
-    private bool _shown;
 
     private delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    /// <summary>Si al minimizar se esconde en la bandeja (ajuste del usuario) o se minimiza como siempre.</summary>
-    public bool MinimizeToTray { get; set; } = true;
-
-    /// <summary>El usuario ha bloqueado la sesion de Windows (Win+L, o el bloqueo automatico del sistema).</summary>
-    public event Action? SessionLocked;
-
-    /// <summary>El usuario ha vuelto a la sesion de Windows (tras Win+L o la pantalla de bloqueo).</summary>
-    public event Action? SessionUnlocked;
-
-    /// <summary>La ventana esta escondida en la bandeja (solo se ve el icono).</summary>
-    public bool IsHidden => _shown;
 
     /// <summary>Cuanto lleva el PC sin teclado ni raton (GetLastInputInfo), para el bloqueo por inactividad real.</summary>
     public static TimeSpan? SystemIdle()
     {
         var info = new LastInputInfo { cbSize = Marshal.SizeOf<LastInputInfo>() };
-        if (!GetLastInputInfo(ref info))
-            return null;
-        var ms = unchecked((uint)Environment.TickCount) - info.dwTime;
-        return TimeSpan.FromMilliseconds(ms);
+        return GetLastInputInfo(ref info) ? IdleTime(unchecked((uint)Environment.TickCount), info.dwTime) : null;
     }
 
-    /// <summary>Esconder ahora (arranque con --tray).</summary>
-    public void HideToTray() => Hide();
-
-    /// <summary>Traer la ventana al frente (desde la bandeja o desde detras de otras).</summary>
-    public void Show() => Restore();
-
-    public TrayIcon(IntPtr hwnd, Func<string, string> text, Action exit)
+    public TrayIcon(IntPtr hwnd, Func<string, string> text, Action exit) : base(SingleInstance.ShowMessage, exit)
     {
         _hwnd = hwnd;
         _text = text;
-        _exit = exit;
-        _proc = HandleMessage;
+        _proc = (h, msg, wParam, lParam) => Handle(msg, (long)wParam, (long)lParam) ? IntPtr.Zero : CallWindowProc(_oldProc, h, msg, wParam, lParam);
         _oldProc = SetWindowLongPtr(hwnd, -4 /* GWLP_WNDPROC */, Marshal.GetFunctionPointerForDelegate(_proc));
         // Avisos de sesion (bloqueo, cierre) para esta ventana.
         WTSRegisterSessionNotification(hwnd, 0 /* NOTIFY_FOR_THIS_SESSION */);
     }
 
-    private IntPtr HandleMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
-    {
-        switch (msg)
-        {
-            case WmSysCommand when ((long)wParam & 0xFFF0) == ScMinimize && MinimizeToTray:
-                Hide();
-                return IntPtr.Zero;
-            case WmTray:
-                var evt = (int)((long)lParam & 0xFFFF);
-                if (evt is WmLButtonUp or WmLButtonDblClk)
-                    Restore();
-                else if (evt == WmRButtonUp)
-                    ShowMenu();
-                return IntPtr.Zero;
-            case WmCommand when (int)((long)wParam & 0xFFFF) == IdOpen:
-                Restore();
-                return IntPtr.Zero;
-            case WmCommand when (int)((long)wParam & 0xFFFF) == IdExit:
-                Remove();
-                _exit();
-                return IntPtr.Zero;
-            case WmWtsSessionChange when (int)wParam == WtsSessionLock:
-                SessionLocked?.Invoke();
-                break;
-            case WmWtsSessionChange when (int)wParam == WtsSessionUnlock:
-                SessionUnlocked?.Invoke();
-                break;
-            case var m when m == SingleInstance.ShowMessage:
-                // Otra instancia ha arrancado: esta se enseña en su lugar y se lo confirma (si no
-                // contestara, la otra arrancaria igual para que el usuario no se quede sin ventana).
-                Restore();
-                SingleInstance.NotifyShown();
-                return IntPtr.Zero;
-        }
-        return CallWindowProc(_oldProc, hWnd, msg, wParam, lParam);
-    }
+    protected override void ShowWindow(int command) => ShowWindow(_hwnd, command);
 
-    private void Hide()
-    {
-        Add();
-        ShowWindow(_hwnd, 0 /* SW_HIDE */);
-    }
+    protected override void BringToForeground() => SetForegroundWindow(_hwnd);
 
-    private void Restore()
-    {
-        ShowWindow(_hwnd, 9 /* SW_RESTORE */);
-        SetForegroundWindow(_hwnd);
-        Remove();
-    }
+    protected override void NotifyShown() => SingleInstance.NotifyShown();
 
-    private void ShowMenu()
+    protected override void ShowMenu()
     {
         var menu = CreatePopupMenu();
         AppendMenu(menu, 0, IdOpen, _text("TrayOpen"));
@@ -133,48 +54,32 @@ public sealed class TrayIcon
         DestroyMenu(menu);
     }
 
-    private void Add()
+    protected override void AddIcon()
     {
-        if (_shown)
-            return;
         var data = Data();
         data.uFlags = 0x1 | 0x2 | 0x4;   // NIF_MESSAGE | NIF_ICON | NIF_TIP
         data.uCallbackMessage = WmTray;
         data.hIcon = LoadAppIcon();
         data.szTip = "sOC Credentials";
         Shell_NotifyIcon(0 /* NIM_ADD */, ref data);
-        _shown = true;
     }
 
-    private void Remove()
+    protected override void RemoveIcon()
     {
-        if (!_shown)
-            return;
         var data = Data();
         Shell_NotifyIcon(2 /* NIM_DELETE */, ref data);
-        _shown = false;
     }
 
-    private NotifyIconData Data() => new()
-    {
-        cbSize = Marshal.SizeOf<NotifyIconData>(),
-        hWnd = _hwnd,
-        uID = 1,
-    };
+    private NotifyIconData Data() => new() { cbSize = Marshal.SizeOf<NotifyIconData>(), hWnd = _hwnd, uID = 1 };
 
     /// <summary>El icono del propio ejecutable; si no lo tiene, el generico de aplicacion.</summary>
     private static IntPtr LoadAppIcon()
     {
+        var small = new IntPtr[1];
         try
         {
-            var path = Environment.ProcessPath;
-            if (path is not null)
-            {
-                var large = new IntPtr[1];
-                var small = new IntPtr[1];
-                if (ExtractIconEx(path, 0, large, small, 1) > 0 && small[0] != IntPtr.Zero)
-                    return small[0];
-            }
+            if (Environment.ProcessPath is { } path && ExtractIconEx(path, 0, new IntPtr[1], small, 1) > 0 && small[0] != IntPtr.Zero)
+                return small[0];
         }
         catch (Exception) { }
         return LoadIcon(IntPtr.Zero, new IntPtr(32512) /* IDI_APPLICATION */);
@@ -208,7 +113,6 @@ public sealed class TrayIcon
 
     [DllImport("user32.dll")] private static extern bool GetLastInputInfo(ref LastInputInfo info);
     [DllImport("wtsapi32.dll")] private static extern bool WTSRegisterSessionNotification(IntPtr hWnd, int flags);
-
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern bool Shell_NotifyIcon(int message, ref NotifyIconData data);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int index, IntPtr newLong);
     [DllImport("user32.dll", EntryPoint = "CallWindowProcW")] private static extern IntPtr CallWindowProc(IntPtr prev, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);

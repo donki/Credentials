@@ -119,25 +119,49 @@ mismos ganchos van como extras del intent: `am start … --es master <clave> --e
 
 ## Pruebas
 
-`Credentials.Tests` (xUnit) prueba la lógica de la aplicación: bóveda (Argon2id + AES-GCM, cabecera
-autenticada, clave recordada, desbloqueo de confianza, bloqueo por inactividad, borrado con lápida,
-cambio de contraseña maestra), mezcla por entrada con la nube (Google Drive y OneDrive contra un
-servidor HTTP falso), entrada OAuth con PKCE, TOTP/HOTP con los vectores de los RFC 6238 y 4226,
-generador y fortaleza de contraseñas, importadores (CSV de navegadores, KeePass, KeePassXC,
-Bitwarden; JSON de Aegis, 2FAS, Bitwarden y sOC Credentials; QR de Google Authenticator),
-coincidencia de sitios y apps del autocompletar, ajustes y traducciones (mismas claves, marcadores
-y sin claves repetidas en es/en). Los ficheros de la aplicación se enlazan tal cual en
-`Credentials.Tests/Logic` y las piezas de MAUI que tocan se sustituyen por dobles en memoria: nada
-toca la bóveda, los ajustes ni la red de verdad. La interfaz no se prueba.
+El banco entero se lanza con un solo `dotnet test Credentials.Pruebas.slnx` (dos proyectos xUnit):
+
+- `Credentials.Tests` prueba la lógica: bóveda (Argon2id + AES-GCM, cabecera autenticada, clave
+  recordada, desbloqueo de confianza, bloqueo por inactividad, borrado con lápida, cambio de
+  contraseña maestra), mezcla por entrada con la nube (Google Drive y OneDrive contra un servidor
+  HTTP falso), entrada OAuth con PKCE, TOTP/HOTP con los vectores de los RFC 6238 y 4226, generador y
+  fortaleza de contraseñas, importadores, coincidencia de sitios y apps del autocompletar, ajustes y
+  traducciones; y la lógica de plataforma sacada a `PlatformLogic/`: el autocompletar de escritorio
+  y el de Android, el protocolo con la extensión del navegador y su instalación (registro en memoria),
+  la bandeja, la instancia única, la entrada por 127.0.0.1, el host de mensajería nativa y el lanzador.
+  Los ficheros se enlazan tal cual en `Credentials.Tests/Logic`.
+- `Credentials.Tests/Ui` construye de verdad la `App`, el Shell y todas las páginas MAUI (el proyecto
+  de la app compila también para `net10.0`, solo para esto) y pulsa sus botones: desbloqueo, bóveda,
+  ficha, ajustes, guía, Acerca de y lector QR. Diálogos, navegación, portapapeles, compartir,
+  biometría y cámara van por interfaces con un doble.
+
+Nada toca la bóveda real, los ajustes ni la red: cada prueba usa una carpeta temporal (también como
+`SOC_SANDBOX`), SecureStorage y Preferences en memoria y servidores falsos.
 
 | Fecha | Pruebas | Cobertura de lo instrumentado | Cobertura sobre toda la app | Tiempo del banco |
 |---|---|---|---|---|
+| 2026-10-03 | 401 (pasan todas: 280 + 121) | 92,1 % (3545 de 3851 líneas) | **82,5 %** (3545 de 4295 líneas) | ≈37 s (8 s + 29 s) |
 | 2026-09-30 | 151 (pasan todas) | 99,4 % (1813 de 1823 líneas) | ≈36 % (1813 de ≈5060 líneas) | ≈7 s |
 
+**Cómo se cuenta «toda la app»** (`tools/cobertura-app.py`, desde el 2026-10-03): todos los `.cs`
+de la app, `Host/` y `Launcher/` (fuera `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs` y las pruebas).
+Solo cuentan las líneas con **sentencias**, que es lo que coverlet mide: no cuentan llaves sueltas,
+`using`, `namespace`, atributos, constantes, campos sin valor, declaraciones `extern`, firmas de
+métodos ni el interior de interfaces y enum. De lo que compila el banco se toman las líneas que marca
+coverlet (sin excluir `CompilerGeneratedAttribute`: cuentan los métodos `async` y las lambdas); lo que
+no compila (`Platforms/Android`, `Platforms/Windows`, y lo que va bajo `#if ANDROID`/`#if WINDOWS`
+en un fichero común) se cuenta con esas reglas y entra como **no cubierto**. Con esta cuenta, el
+banco del 2026-09-30 daba el 36,7 %. En lo instrumentado, las reglas y coverlet difieren en un 1 %.
+
+Lo que falta para el 90 % (750 líneas sin cubrir): el código nativo de `Platforms/` (≈440: servicio
+de autocompletar y actividad de Android, ganchos Win32 del autocompletar de escritorio, bandeja,
+registro real del puente con la extensión) y los bloques `#if WINDOWS`/`#if ANDROID` de `App`, Ajustes,
+la guía, la bóveda y el desbloqueo (≈280). El plan está en las tareas de la app.
+
 ```powershell
-dotnet test Credentials.Tests
-dotnet test Credentials.Tests --collect:"XPlat Code Coverage"
-dotnet tool restore; dotnet reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:cobertura -reporttypes:TextSummary
+dotnet test Credentials.Pruebas.slnx
+dotnet test Credentials.Pruebas.slnx --collect:"XPlat Code Coverage" --results-directory cobertura
+python tools/cobertura-app.py cobertura --detalle
 ```
 
 ## Licencia

@@ -7,10 +7,13 @@ namespace Credentials.Platforms.Windows;
 /// La ventana es del exe interno (en %LOCALAPPDATA%\…\app\version), asi que «anclar a la barra de
 /// tareas» apuntaba a un exe de carpeta versionada y no funcionaba. Con un AppUserModelID y las
 /// propiedades de relanzamiento (comando, nombre e icono) la barra ancla el lanzador, que es lo
-/// que el usuario copio y lo que sobrevive a las actualizaciones.
+/// que el usuario copio y lo que sobrevive a las actualizaciones. Que propiedades van lo decide
+/// TaskbarProperties; aqui se escriben.
 /// </summary>
 internal static class TaskbarIdentity
 {
+    private static readonly Guid AppUserModel = new("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");
+
     public static void Apply(IntPtr hwnd, string appUserModelId, string displayName, string? launcherPath)
     {
         try
@@ -18,13 +21,8 @@ internal static class TaskbarIdentity
             var iid = typeof(IPropertyStore).GUID;
             if (SHGetPropertyStoreForWindow(hwnd, ref iid, out var store) != 0 || store is null)
                 return;
-            SetString(store, PKEY_AppUserModel_ID, appUserModelId);
-            if (!string.IsNullOrEmpty(launcherPath) && File.Exists(launcherPath))
-            {
-                SetString(store, PKEY_AppUserModel_RelaunchCommand, "\"" + launcherPath + "\"");
-                SetString(store, PKEY_AppUserModel_RelaunchDisplayNameResource, displayName);
-                SetString(store, PKEY_AppUserModel_RelaunchIconResource, launcherPath + ",0");
-            }
+            foreach (var (pid, value) in TaskbarProperties.For(appUserModelId, displayName, launcherPath, File.Exists))
+                SetString(store, new PropertyKey(AppUserModel, pid), value);
             store.Commit();
             Marshal.ReleaseComObject(store);
         }
@@ -40,12 +38,6 @@ internal static class TaskbarIdentity
         try { store.SetValue(ref key, ref v); }
         finally { Marshal.FreeCoTaskMem(v.p); }
     }
-
-    private static readonly Guid AppUserModel = new("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");
-    private static readonly PropertyKey PKEY_AppUserModel_ID = new(AppUserModel, 5);
-    private static readonly PropertyKey PKEY_AppUserModel_RelaunchCommand = new(AppUserModel, 2);
-    private static readonly PropertyKey PKEY_AppUserModel_RelaunchIconResource = new(AppUserModel, 3);
-    private static readonly PropertyKey PKEY_AppUserModel_RelaunchDisplayNameResource = new(AppUserModel, 4);
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     private struct PropertyKey(Guid fmtid, uint pid)
