@@ -2,6 +2,12 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## Sin publicar
+
+- **Windows**: el menú del icono de la bandeja tiene el aspecto común de las apps sOC (General 6.14):
+  menú de WinUI con iconos, esquinas redondeadas y los colores de la app en claro y oscuro, en lugar
+  del menú gris del sistema.
+
 ## 2026.10.03.00 — Las pantallas y el código de plataforma, también probados
 
 `versionCode`: 2026100300 · Windows `2026.10.3.0` · extensión `2026.10.3.0`

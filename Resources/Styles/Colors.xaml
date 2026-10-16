@@ -39,5 +39,11 @@
     <!-- Recuadro de advertencia del aviso legal (rojo muy tenue) -->
     <Color x:Key="WarningSurfaceLight">#FDF2F2</Color>
     <Color x:Key="WarningSurfaceDark">#2B1E1E</Color>
+    <!-- Fondo del elemento senalado en los menus (General 6.14, como sOC ScreenShare) -->
+    <Color x:Key="SelectionSurfaceLight">#E4E1FF</Color>
+    <Color x:Key="SelectionSurfaceDark">#2E2A55</Color>
+    <!-- Indigo para iconos sobre superficie: en oscuro, mas claro para que se lea -->
+    <Color x:Key="PrimaryTextLight">#3525CD</Color>
+    <Color x:Key="PrimaryTextDark">#A9A3FF</Color>
 
 </ResourceDictionary>

@@ -62,6 +62,26 @@ public class DesktopShellTests
         Assert.False(tray.Handle(WmCommand, 99, 0));
     }
 
+    /// <summary>
+    /// El menu de la bandeja (General 6.14): Abrir, separador y Salir, todo elemento con su icono y su
+    /// texto en los dos idiomas, y cada uno manda un id que la bandeja atiende.
+    /// </summary>
+    [Fact]
+    public void Tray_MenuEntries_HaveIconTextAndAreHandled()
+    {
+        Assert.Equal([IdOpen, 0, IdExit], MenuEntries.Select(e => e.Id));
+        Assert.True(MenuEntries[1].IsSeparator);
+        foreach (var entry in MenuEntries.Where(e => !e.IsSeparator))
+        {
+            Assert.Single(entry.Glyph);
+            Assert.InRange(entry.Glyph[0], '', '');   // glifo de Segoe Fluent Icons
+            Assert.False(string.IsNullOrWhiteSpace(TextTables.Spanish[entry.TextKey]));
+            Assert.False(string.IsNullOrWhiteSpace(TextTables.English[entry.TextKey]));
+            var tray = new FakeTray(0xC123, () => { });
+            Assert.True(tray.Handle(WmCommand, entry.Id, 0));
+        }
+    }
+
     [Fact]
     public void Tray_MinimizeAsUsual_WhenTheUserSaysSo()
     {

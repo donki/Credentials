@@ -21,6 +21,23 @@ public abstract class TrayController(uint showMessage, Action exit)
     public const int IdOpen = 1, IdExit = 2;
     public const int SwHide = 0, SwRestore = 9;
 
+    /// <summary>
+    /// Un elemento del menu de la bandeja: el mensaje que manda (WM_COMMAND con este id), la clave del
+    /// texto, el glifo de Segoe Fluent Icons y si es destructivo (icono en rojo). Id 0 = separador.
+    /// </summary>
+    public sealed record MenuEntry(int Id, string TextKey, string Glyph, bool Danger = false)
+    {
+        public bool IsSeparator => Id == 0;
+    }
+
+    /// <summary>Lo que lleva el menu del boton derecho, en orden (los mismos glifos que sOC ScreenShare).</summary>
+    public static IReadOnlyList<MenuEntry> MenuEntries { get; } =
+    [
+        new(IdOpen, "TrayOpen", ""),
+        new(0, "", ""),
+        new(IdExit, "TrayExit", ""),
+    ];
+
     private bool _shown;
 
     /// <summary>Si al minimizar se esconde en la bandeja (ajuste del usuario) o se minimiza como siempre.</summary>
