@@ -48,7 +48,9 @@ light and dark.
 
 ## What's new in this version
 
-Leave **blank** on the first submission.
+```
+On Windows, the menu of the icon next to the clock now looks the same as in the other sOC apps, with icons, in light and dark theme.
+```
 
 ## Product features
 

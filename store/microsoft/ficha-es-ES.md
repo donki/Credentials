@@ -57,7 +57,9 @@ modo claro y oscuro.
 
 ## Novedades de esta versión
 
-Se deja **en blanco** en el primer envío.
+```
+En Windows, el menú del icono junto al reloj tiene el mismo aspecto que en el resto de aplicaciones sOC, con iconos, en tema claro y oscuro.
+```
 
 ## Características del producto
 

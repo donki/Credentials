@@ -2,11 +2,19 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
-## Sin publicar
+## 2026.10.16.00 — El menú del icono junto al reloj, como en el resto de aplicaciones sOC
+
+`versionCode`: 2026101600 · Windows `2026.10.16.0` · extensión `2026.10.16.0`
+
+**Novedades.** En Windows, el menú del icono junto al reloj tiene el mismo aspecto que en el resto de
+aplicaciones sOC, con iconos, en tema claro y oscuro.
 
 - **Windows**: el menú del icono de la bandeja tiene el aspecto común de las apps sOC (General 6.14):
   menú de WinUI con iconos, esquinas redondeadas y los colores de la app en claro y oscuro, en lugar
   del menú gris del sistema.
+
+**English.** On Windows, the menu of the icon next to the clock now looks the same as in the other
+sOC apps, with icons, in light and dark theme.
 
 ## 2026.10.03.00 — Las pantallas y el código de plataforma, también probados
 
