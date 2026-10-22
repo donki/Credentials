@@ -58,7 +58,7 @@ modo claro y oscuro.
 ## Novedades de esta versión
 
 ```
-En Windows, el menú del icono junto al reloj tiene el mismo aspecto que en el resto de aplicaciones sOC, con iconos, en tema claro y oscuro.
+Corregido: con la aplicación abierta en la bandeja del sistema, la memoria crecía sin parar (más de 12 GB tras varios días); ahora se queda estable.
 ```
 
 ## Características del producto

@@ -10,6 +10,10 @@ namespace Credentials.Pages;
 public sealed class EntryRow(Credential entry, ILocalizationService l) : INotifyPropertyChanged
 {
     public Credential Entry { get; } = entry;
+
+    /// <summary>Como estaba la entrada al hacer la fila (VaultQuery.RowKey): si sigue igual, la fila vale.</summary>
+    public string Key { get; } = VaultQuery.RowKey(entry);
+
     // Pistas de los botones de la fila (tooltip en Windows, pulsacion larga en Android).
     public string CopyUserTip => l["CopyUser"];
     public string CopyPasswordTip => l["CopyPassword"];
@@ -92,7 +96,8 @@ public partial class VaultPage : ContentPage
             SemanticProperties.SetDescription(b, _l[k]);
             ToolTipProperties.SetText(b, _l[k]);
         }
-        Refresh();
+        // Las pistas de cada fila van en el idioma de cuando se hizo: con otro idioma, filas nuevas.
+        Refresh(force: true);
     }
 
     protected override async void OnAppearing()
@@ -127,23 +132,41 @@ public partial class VaultPage : ContentPage
 
     // ------------------------------------------------------------------ lista y filtros
 
-    private void Refresh()
+    private void Refresh() => Refresh(force: false);
+
+    /// <summary>
+    /// Rehace la lista y las fichas de filtro, pero solo si algo de lo que enseñan ha cambiado (o se
+    /// pide con <paramref name="force"/>). Antes se vaciaban y se volvian a llenar en cada aviso de la
+    /// boveda; en Windows las filas viejas no se liberaban y la memoria crecia sin parar.
+    /// </summary>
+    private void Refresh(bool force)
     {
         if (!_store.IsUnlocked)
             return;
         var list = VaultQuery.Apply(_store.Data!.Entries, _filter, _search, _settings.SortMode);
-        _rows.Clear();
-        foreach (var e in list)
-            _rows.Add(new EntryRow(e, _l));
+        if (force || !VaultQuery.SameRows(_rows, list))
+        {
+            _rows.Clear();
+            foreach (var e in list)
+                _rows.Add(new EntryRow(e, _l));
+        }
         OnTick(null, EventArgs.Empty);
         CountLabel.Text = VaultQuery.CountText(list.Count, _l);
-        BuildChips();
+        BuildChips(force);
     }
 
-    private void BuildChips()
+    /// <summary>Lo que enseñan ahora las fichas de filtro (cuales y cual esta activa), para no rehacerlas igual.</summary>
+    private string _chipsShown = string.Empty;
+
+    private void BuildChips(bool force = false)
     {
+        var chips = VaultQuery.Chips(_store.Data!, _l);
+        var shown = _filter + "\u001e" + string.Join("\u001e", chips.Select(c => c.Key + "\u001f" + c.Text));
+        if (!force && shown == _chipsShown && Chips.Count == chips.Count)
+            return;
+        _chipsShown = shown;
         Chips.Clear();
-        foreach (var (key, text) in VaultQuery.Chips(_store.Data!, _l))
+        foreach (var (key, text) in chips)
         {
             var b = new Button { Text = text, Style = (Style)Application.Current!.Resources[_filter == key ? "ChipOn" : "Chip"] };
             b.Clicked += (_, _) => { _filter = VaultQuery.Toggle(_filter, key); Refresh(); };

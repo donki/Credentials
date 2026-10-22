@@ -49,7 +49,7 @@ light and dark.
 ## What's new in this version
 
 ```
-On Windows, the menu of the icon next to the clock now looks the same as in the other sOC apps, with icons, in light and dark theme.
+Fixed: with the app open in the notification area, memory kept growing (over 12 GB after a few days); it now stays flat.
 ```
 
 ## Product features

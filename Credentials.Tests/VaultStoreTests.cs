@@ -311,6 +311,41 @@ public class VaultStoreTests
     }
 
     [Fact]
+    public async Task Sync_WithNothingNew_NeitherRewritesNorNotifies()
+    {
+        // La fuga de 2026.10.22: la sincronizacion de cada cinco minutos guardaba y avisaba de cambios
+        // aunque las dos copias fueran iguales, y en Windows eso rehacia la lista de la boveda.
+        using var box = Sandbox.Create();
+        var cloud = new FakeGoogleDrive(box.Http);
+        GoogleSignInRoutes(box);
+        await box.Store.CreateAsync(Master);
+        await box.Store.SignInAsync(StorageMode.GoogleDrive);
+        box.Store.Data!.Entries.Add(new Credential { Title = "De aqui" });
+        await box.Store.SyncAsync();
+        await WaitFor(() => cloud.Content is not null);
+        var uploaded = cloud.Content;
+        var written = File.GetLastWriteTimeUtc(VaultStore.FilePath);
+        var changes = 0;
+        box.Store.Changed += () => changes++;
+        var calls = box.Http.Calls.Count;
+
+        await Task.Delay(30);
+        Assert.Equal(0, await box.Store.SyncAsync());
+        Assert.Equal(0, await box.Store.SyncAsync());
+        Assert.Equal(0, changes);
+        Assert.Equal(written, File.GetLastWriteTimeUtc(VaultStore.FilePath));
+        Assert.Same(uploaded, cloud.Content);
+        Assert.DoesNotContain(box.Http.Calls.Skip(calls), c => c.Method != HttpMethod.Get && !c.Url.Contains("token"));
+
+        // Con algo nuevo en la nube, si: se guarda y se avisa una vez.
+        var remote = Decrypt(cloud.Content!);
+        remote.Entries.Add(new Credential { Title = "De alli", ModifiedAt = DateTimeOffset.UtcNow.AddMinutes(1) });
+        cloud.Content = Encrypt(remote, cloud.Content!);
+        Assert.Equal(1, await box.Store.SyncAsync());
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
     public async Task Sync_CloudWithAnotherSalt_AsksForThePassword()
     {
         using var box = Sandbox.Create();

@@ -2,6 +2,27 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.10.22.00 — Sin fuga de memoria en la bandeja
+
+`versionCode`: 2026102200 · Windows `2026.10.22.0` · extensión `2026.10.22.0`
+
+**Corregido.** En Windows, la aplicación abierta en la bandeja iba ocupando cada vez más memoria
+(más de 12 GB tras seis días). Ahora se queda estable.
+
+- **Corregido (Windows)**: la sincronización automática con la nube (cada cinco minutos y al volver
+  a la ventana) guardaba la bóveda y avisaba de cambios aunque la copia de la nube fuera igual que la
+  local; cada aviso vaciaba y volvía a llenar la lista de la bóveda, y en Windows las filas viejas
+  (sus vistas, iconos e identificadores) no se liberaban. Medido con una compilación de pruebas que
+  avisa de cambios cada 2 s con 66 entradas y la ventana escondida: antes, +3,3 MB y +11
+  identificadores por aviso sin parar; ahora, plano.
+- La sincronización sin nada nuevo ya no reescribe el fichero ni avisa; la lista y las fichas de
+  filtro solo se rehacen si cambia algo de lo que enseñan (entradas, orden, datos de la fila o
+  idioma). Pruebas nuevas de las dos cosas.
+
+**English.** On Windows, the app kept in the notification area kept growing in memory (over 12 GB
+after six days); the automatic cloud sync rebuilt the vault list every five minutes even with
+nothing new. Fixed: it now stays flat.
+
 ## 2026.10.16.00 — El menú del icono junto al reloj, como en el resto de aplicaciones sOC
 
 `versionCode`: 2026101600 · Windows `2026.10.16.0` · extensión `2026.10.16.0`

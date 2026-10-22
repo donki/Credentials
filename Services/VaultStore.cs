@@ -410,7 +410,11 @@ public sealed class VaultStore
         var changed = Data!.Merge(theirs);
         // Lo que la nube no tenia (nuestro y mas nuevo) tambien hay que subirlo.
         var localNewer = Data.Entries.Any(e => theirs.Entries.FirstOrDefault(t => t.Id == e.Id) is not { } t || t.ModifiedAt < e.ModifiedAt);
-        await SaveAsync(upload: localNewer);
+        // Si las dos copias ya eran iguales, ni se reescribe el fichero ni se avisa de cambios: la
+        // sincronizacion de cada cinco minutos hacia rehacer la lista entera de la boveda en Windows,
+        // y cada vez se quedaban sin liberar las filas viejas (12 GB tras seis dias en la bandeja).
+        if (changed > 0 || localNewer)
+            await SaveAsync(upload: localNewer);
         Status?.Invoke($"cloud:ok:{drive.Mode}");
         return changed;
     }

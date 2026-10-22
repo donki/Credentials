@@ -71,6 +71,67 @@ public class VaultPageTests
     }
 
     [Fact]
+    public async Task Un_aviso_de_la_boveda_sin_cambios_no_rehace_la_lista()
+    {
+        // La fuga de 2026.10.22: cada aviso de la boveda (la sincronizacion de cada cinco minutos)
+        // vaciaba y volvia a llenar la lista, y en Windows las filas viejas no se liberaban.
+        using var app = TestHost.Start();
+        await app.CreateVaultAsync("contraseña-larga", Sample());
+        var page = new VaultPage();
+        await page.Appear();
+        var rows = Rows(page).ToList();
+        var chips = Chips(page);
+
+        await app.Store.SaveAsync(upload: false);   // avisa de cambios sin haber ninguno
+        Assert.Equal(rows, Rows(page));              // las mismas filas, no otras iguales
+        Assert.Equal(chips, Chips(page));
+        Assert.Equal("4 entradas", page.Find<Label>("CountLabel").Text);
+
+        // Un cambio de verdad en una entrada (en el mismo objeto, como la ficha): esa fila se rehace.
+        var banco = app.Store.Data!.Entries.Single(e => e.Title == "Banco");
+        banco.Username = "otro-usuario";
+        banco.ModifiedAt = DateTimeOffset.UtcNow.AddSeconds(1);
+        await app.Store.SaveAsync(upload: false);
+        Assert.Equal("otro-usuario", Rows(page).Single(r => r.Title == "Banco").Subtitle);
+        Assert.NotSame(rows[1], Rows(page).Single(r => r.Title == "Banco"));
+        Assert.Equal(chips, Chips(page));            // las fichas no cambian
+
+        // Una entrada nueva en otra carpeta: filas y fichas nuevas.
+        app.Store.Data!.Entries.Add(new Credential { Title = "Nueva", Password = "x", Folder = "Casa" });
+        await app.Store.SaveAsync(upload: false);
+        Assert.Equal(5, Rows(page).Count);
+        Assert.Contains("/Casa", Chips(page).Select(b => b.Text));
+
+        // Otro idioma: filas nuevas, con las pistas en ese idioma.
+        var before = Rows(page).ToList();
+        app.Texts.SetLanguage("en");
+        Assert.DoesNotContain(Rows(page), before.Contains);
+        Assert.Equal(app["CopyUser"], Rows(page)[0].CopyUserTip);
+    }
+
+    [Fact]
+    public void Huella_de_la_fila_y_misma_lista()
+    {
+        using var app = TestHost.Start();
+        var a = new Credential { Title = "A", Username = "ana", Password = "1" };
+        var b = new Credential { Title = "B", Totp = Seed };
+        var rows = new List<EntryRow> { new(a, app.Texts), new(b, app.Texts) };
+        Assert.True(VaultQuery.SameRows(rows, [a, b]));
+        Assert.False(VaultQuery.SameRows(rows, [b, a]));                       // otro orden
+        Assert.False(VaultQuery.SameRows(rows, [a]));                          // una menos
+        Assert.False(VaultQuery.SameRows(rows, [a, new Credential { Id = b.Id, Title = "B", Totp = Seed, ModifiedAt = b.ModifiedAt }])); // otro objeto
+        var key = VaultQuery.RowKey(a);
+        foreach (var change in new Action[] { () => a.Title = "A2", () => a.Username = "eva", () => a.Password = string.Empty,
+                     () => a.Kind = EntryKind.App, () => a.Folder = "F", () => a.Url = "https://x.example", () => a.Totp = Seed })
+        {
+            change();
+            Assert.NotEqual(key, VaultQuery.RowKey(a));
+            Assert.False(VaultQuery.SameRows(rows, [a, b]));
+            key = VaultQuery.RowKey(a);
+        }
+    }
+
+    [Fact]
     public async Task Filas_con_sus_iconos_y_pistas()
     {
         using var app = TestHost.Start();

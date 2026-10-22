@@ -59,6 +59,31 @@ public static class VaultQuery
         return chips;
     }
 
+    /// <summary>
+    /// La huella de lo que enseña la fila de una entrada (titulo, subtitulo, icono, botones y codigo):
+    /// si no cambia, la fila no hace falta rehacerla.
+    /// </summary>
+    public static string RowKey(Credential e) =>
+        string.Join('\u001f', e.Id, e.ModifiedAt.UtcTicks, e.Kind, e.Title, e.Username, e.Host, e.Folder, e.HasPassword, e.Totp, e.Deleted);
+
+    /// <summary>
+    /// La lista ya enseña exactamente estas entradas, en este orden y sin cambios: no hay que rehacerla.
+    /// En Windows, vaciar y volver a llenar la lista dejaba sin liberar las filas viejas (sus vistas y
+    /// sus imagenes); como la sincronizacion de cada cinco minutos avisaba de cambios aunque no los
+    /// hubiera, con la aplicacion en la bandeja la memoria crecia sin parar.
+    /// </summary>
+    public static bool SameRows(IReadOnlyList<EntryRow> shown, IReadOnlyList<Credential> next)
+    {
+        if (shown.Count != next.Count)
+            return false;
+        for (var i = 0; i < next.Count; i++)
+        {
+            if (!ReferenceEquals(shown[i].Entry, next[i]) || shown[i].Key != RowKey(next[i]))
+                return false;
+        }
+        return true;
+    }
+
     /// <summary>Pulsar una ficha: la activa, o la quita si ya lo estaba.</summary>
     public static string Toggle(string current, string chip) => current == chip ? All : chip;
 
