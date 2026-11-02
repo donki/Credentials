@@ -52,6 +52,13 @@ public class SettingsService : ISettingsService
         set => Preferences.Set("biometrics", value, Shared);
     }
 
+    /// <summary>Android: dejar hacer capturas de pantalla (apagado: la ventana va con FLAG_SECURE).</summary>
+    public bool AllowScreenshots
+    {
+        get => Preferences.Get("allow_screenshots", false, Shared);
+        set => Preferences.Set("allow_screenshots", value, Shared);
+    }
+
     public int ClipboardSeconds
     {
         get => Preferences.Get("clipboard_seconds", 30, Shared);

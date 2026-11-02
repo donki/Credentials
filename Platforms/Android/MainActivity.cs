@@ -72,9 +72,27 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnStart()
     {
         base.OnStart();
+        ApplyScreenshotPolicy(this);
+    }
+
+    /// <summary>
+    /// Bloquea las capturas salvo que el usuario las permita en Ajustes (por ejemplo, para mandar
+    /// una captura a quien le ayuda). En Debug siempre se deja capturar (pantallas para las tiendas).
+    /// </summary>
+    public static void ApplyScreenshotPolicy(Activity? activity = null)
+    {
 #if !DEBUG
-        // En Debug se deja capturar (pantallas para las tiendas, con datos inventados).
-        Window?.SetFlags(global::Android.Views.WindowManagerFlags.Secure, global::Android.Views.WindowManagerFlags.Secure);
+        try
+        {
+            var window = (activity ?? Platform.CurrentActivity)?.Window;
+            if (window is null)
+                return;
+            if (Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>().AllowScreenshots)
+                window.ClearFlags(global::Android.Views.WindowManagerFlags.Secure);
+            else
+                window.SetFlags(global::Android.Views.WindowManagerFlags.Secure, global::Android.Views.WindowManagerFlags.Secure);
+        }
+        catch (Exception) { }
 #endif
     }
 

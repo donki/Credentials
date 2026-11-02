@@ -18,6 +18,9 @@ public interface ISettingsService
     /// <summary>Desbloquear con huella o cara en Android (la clave queda en la boveda del sistema).</summary>
     bool Biometrics { get; set; }
 
+    /// <summary>Android: permitir capturas de pantalla (apagado por defecto: la ventana va con FLAG_SECURE).</summary>
+    bool AllowScreenshots { get; set; }
+
     /// <summary>«Confiar en este usuario y dispositivo»: la boveda se abre sola con la clave guardada en el sistema, sin pedir la contraseña.</summary>
     bool TrustDevice { get; set; }
 

@@ -54,6 +54,13 @@
                         </VerticalStackLayout>
                         <Switch Grid.Column="1" x:Name="BiometricsSwitch" OnColor="{StaticResource Primary}" Toggled="OnBiometricsToggled" VerticalOptions="Center" />
                     </Grid>
+                    <Grid x:Name="ScreenshotsRow" ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="ScreenshotsLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="ScreenshotsHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="ScreenshotsSwitch" OnColor="{StaticResource Primary}" Toggled="OnScreenshotsToggled" VerticalOptions="Center" />
+                    </Grid>
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0" x:Name="AutoLockLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" />
                         <Picker Grid.Column="1" x:Name="AutoLockPicker" SelectedIndexChanged="OnAutoLockChanged" MinimumWidthRequest="120" />

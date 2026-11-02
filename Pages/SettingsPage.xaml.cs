@@ -72,6 +72,8 @@ public partial class SettingsPage : ContentPage
         TrustHint.Text = _l["TrustDeviceHint"];
         BiometricsLabel.Text = _l["Biometrics"];
         BiometricsHint.Text = _l["BiometricsHint"];
+        ScreenshotsLabel.Text = _l["AllowScreenshots"];
+        ScreenshotsHint.Text = _l["AllowScreenshotsHint"];
         AutoLockLabel.Text = _l["AutoLock"];
         ClipboardLabel.Text = _l["ClipboardClear"];
         ChangeMasterButton.Text = _l["ChangeMaster"];
@@ -90,6 +92,7 @@ public partial class SettingsPage : ContentPage
         ClipboardPicker.SelectedIndex = SettingsRules.IndexOf(ClipSeconds, _settings.ClipboardSeconds);
         TrustSwitch.IsToggled = _settings.TrustDevice;
         BiometricsSwitch.IsToggled = _settings.Biometrics;
+        ScreenshotsSwitch.IsToggled = _settings.AllowScreenshots;
         RefreshStorage();
         _loading = false;
     }
@@ -102,6 +105,7 @@ public partial class SettingsPage : ContentPage
         RefreshAutofill();
 #if WINDOWS
         BiometricsRow.IsVisible = false;   // en Windows no hay desbloqueo biometrico
+        ScreenshotsRow.IsVisible = false;  // ni bloqueo de capturas
 #endif
         BiometricsSwitch.IsEnabled = await _biometric.IsAvailableAsync();
         if (!BiometricsSwitch.IsEnabled)
@@ -442,6 +446,17 @@ public partial class SettingsPage : ContentPage
         }
         _settings.Biometrics = e.Value;
         await _store.RememberKeyAsync(e.Value || _settings.TrustDevice);
+    }
+
+    /// <summary>«Permitir capturas de pantalla»: quita o vuelve a poner FLAG_SECURE en la ventana al momento.</summary>
+    private void OnScreenshotsToggled(object? sender, ToggledEventArgs e)
+    {
+        if (_loading)
+            return;
+        _settings.AllowScreenshots = e.Value;
+#if ANDROID
+        MainActivity.ApplyScreenshotPolicy();
+#endif
     }
 
     private void OnAutoLockChanged(object? sender, EventArgs e)

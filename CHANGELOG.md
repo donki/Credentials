@@ -2,6 +2,22 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.11.02.00 — Capturas de pantalla a elección y móviles de 32 bits
+
+`versionCode`: 2026110200 · Windows `2026.11.2.0` · extensión `2026.11.2.0`
+
+**Novedades (Android).** En Ajustes › Seguridad, **Permitir capturas de pantalla**: apagado por
+defecto, como hasta ahora (la ventana no deja capturar ni sale en las apps recientes, porque enseña
+contraseñas). Encendido, se puede capturar al momento, sin reiniciar la aplicación; sirve para
+mandar una captura a quien te ayuda o a quien prueba la app.
+
+- **Corregido (Android)**: la aplicación ya se puede instalar en móviles con Android de 32 bits
+  (por ejemplo, el Samsung Galaxy A20e): solo se compilaba para 64 bits y Play no conseguía
+  descargarla en ellos.
+
+**English.** Android: new *Allow screenshots* switch in Settings › Security (off by default, takes
+effect at once). The app now also installs on 32-bit Android phones such as the Galaxy A20e.
+
 ## 2026.10.22.00 — Sin fuga de memoria en la bandeja
 
 `versionCode`: 2026102200 · Windows `2026.10.22.0` · extensión `2026.10.22.0`
