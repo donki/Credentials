@@ -107,6 +107,39 @@ public class VaultQueryTests
         var code = VaultQuery.RowCode("otpauth://totp/X?secret=JBSWY3DPEHPK3PXP");
         Assert.Matches(@"^\d{3} \d{3} · \d{1,2}$", code);
     }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("   \n\t ", "")]
+    [InlineData("pin 1234", "pin 1234")]
+    [InlineData("  línea uno\r\n\r\n  línea   dos\t", "línea uno línea dos")]
+    public void Trozo_de_una_nota(string notes, string expected) =>
+        Assert.Equal(expected, VaultQuery.NotePreview(notes));
+
+    [Fact]
+    public void Trozo_de_una_nota_larga_se_corta()
+    {
+        var exact = new string('a', VaultQuery.NotePreviewLength);
+        Assert.Equal(exact, VaultQuery.NotePreview(exact));   // justo el largo: entera
+        var cut = VaultQuery.NotePreview(new string('b', 200));
+        Assert.Equal(new string('b', VaultQuery.NotePreviewLength) + "…", cut);
+        // El corte cae en un espacio: sin espacio antes de «…».
+        Assert.Equal(new string('c', 79) + "…", VaultQuery.NotePreview(new string('c', 79) + " " + new string('d', 50)));
+        // Ni un emoji (dos unidades UTF-16) partido por la mitad.
+        var emoji = VaultQuery.NotePreview(new string('e', 79) + "😀" + new string('f', 10));
+        Assert.Equal(new string('e', 79) + "…", emoji);
+    }
+
+    [Fact]
+    public void La_huella_de_la_fila_cuenta_el_trozo_de_la_nota()
+    {
+        var note = E("Nota", EntryKind.Note, notes: "secreto");
+        var login = E("Web", notes: "secreto");
+        Assert.Equal(VaultQuery.RowKey(note), VaultQuery.RowKey(note, notePreview: false));
+        Assert.NotEqual(VaultQuery.RowKey(note), VaultQuery.RowKey(note, notePreview: true));   // con el ajuste, otra fila
+        Assert.Equal(VaultQuery.RowKey(login), VaultQuery.RowKey(login, notePreview: true));   // solo las notas
+        Assert.DoesNotContain("secreto", VaultQuery.RowKey(note));   // sin el ajuste, nada del texto
+    }
 }
 
 public class SettingsRulesTests
@@ -121,6 +154,58 @@ public class SettingsRulesTests
     [InlineData("12345678", "", "MasterPasswordMismatch")]
     public void Contraseña_maestra(string password, string? repeat, string? problem) =>
         Assert.Equal(problem, MasterPasswordRules.Problem(password, repeat));
+
+    [Theory]
+    [InlineData("12345678 ", null)]
+    [InlineData(" 12345678", null)]
+    [InlineData("12345678\t", "12345678\t")]
+    [InlineData(" 12345678", null)]   // espacio duro (el que pegan algunos teclados)
+    [InlineData("12345678\n", null)]
+    [InlineData("   ", null)]               // solo espacios: tampoco
+    [InlineData("1 ", null)]                // antes que «corta»: lo que hay que arreglar primero
+    public void Contraseña_maestra_con_espacios_al_principio_o_al_final(string password, string? repeat) =>
+        Assert.Equal("MasterPasswordSpaces", MasterPasswordRules.Problem(password, repeat));
+
+    [Theory]
+    [InlineData("frase con espacios", true)]   // por dentro, si
+    [InlineData("12345678", true)]
+    [InlineData("12345678 ", false)]
+    [InlineData(" x", false)]
+    [InlineData("", true)]
+    public void Espacios_solo_en_los_bordes(string password, bool ok) =>
+        Assert.Equal(!ok, MasterPasswordRules.HasEdgeSpaces(password));
+
+    [Theory]
+    // Windows: confiar en el dispositivo (no hay huella).
+    [InlineData(true, false, false, false, false, false, "UnlockHintTrustLater")]
+    [InlineData(false, false, false, false, false, false, "UnlockHintTrust")]
+    [InlineData(false, false, true, true, true, false, "UnlockHintTrust")]
+    [InlineData(false, false, false, false, false, true, "UnlockHintTrustRestore")]
+    // Android: huella o cara.
+    [InlineData(true, true, true, false, false, false, "UnlockHintBioLater")]
+    [InlineData(true, true, false, false, false, false, null)]
+    [InlineData(false, true, false, false, false, false, "UnlockHintBioNone")]
+    [InlineData(false, true, false, true, true, false, "UnlockHintBioNone")]
+    [InlineData(false, true, true, false, false, false, "UnlockHintBioOff")]
+    [InlineData(false, true, true, true, false, false, "UnlockHintBioRestore")]
+    [InlineData(false, true, true, true, true, false, null)]
+    public void Ayuda_de_la_pantalla_de_desbloqueo(bool creating, bool android, bool available, bool on, bool key, bool trust, string? expected) =>
+        Assert.Equal(expected, UnlockHelp.HintKey(creating, android, available, on, key, trust));
+
+    [Fact]
+    public void Las_ayudas_existen_en_los_dos_idiomas()
+    {
+        using var app = TestHost.Start();
+        foreach (var key in new[] { "UnlockHintTrustLater", "UnlockHintTrust", "UnlockHintTrustRestore", "UnlockHintBioLater", "UnlockHintBioNone", "UnlockHintBioOff", "UnlockHintBioRestore" })
+        {
+            foreach (var lang in new[] { "es", "en" })
+            {
+                app.Texts.SetLanguage(lang);
+                Assert.NotEqual(key, app[key]);
+                Assert.DoesNotContain("aparato", app[key], StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
 
     [Fact]
     public void Opciones_de_bloqueo_y_portapapeles()

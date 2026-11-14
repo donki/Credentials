@@ -6,25 +6,32 @@ using Credentials.Services;
 
 namespace Credentials.Pages;
 
-/// <summary>Una fila de la lista: la entrada, su icono y el codigo TOTP vivo si lo tiene.</summary>
-public sealed class EntryRow(Credential entry, ILocalizationService l) : INotifyPropertyChanged
+/// <summary>
+/// Una fila de la lista: la entrada, su icono y el codigo TOTP vivo si lo tiene. Con
+/// <paramref name="notePreview"/>, las notas seguras enseñan ademas un trozo de su texto.
+/// </summary>
+public sealed class EntryRow(Credential entry, ILocalizationService l, bool notePreview = false) : INotifyPropertyChanged
 {
     public Credential Entry { get; } = entry;
 
     /// <summary>Como estaba la entrada al hacer la fila (VaultQuery.RowKey): si sigue igual, la fila vale.</summary>
-    public string Key { get; } = VaultQuery.RowKey(entry);
+    public string Key { get; } = VaultQuery.RowKey(entry, notePreview);
+
+    /// <summary>El trozo de la nota segura que se enseña en la fila; vacio si no toca.</summary>
+    public string Preview { get; } = notePreview && entry.Kind == EntryKind.Note ? VaultQuery.NotePreview(entry.Notes) : string.Empty;
+    public bool HasPreview => Preview.Length > 0;
 
     // Pistas de los botones de la fila (tooltip en Windows, pulsacion larga en Android).
     public string CopyUserTip => l["CopyUser"];
     public string CopyPasswordTip => l["CopyPassword"];
     public string CopyCodeTip => l["CopyCode"];
-    public string DeleteTip => l["DeleteEntry"];
     public string Title => Entry.Title;
     public string Subtitle => Entry.Kind switch
     {
         EntryKind.Note => Entry.Folder.Length > 0 ? Entry.Folder : string.Empty,
         _ => string.Join(" · ", new[] { Entry.Username, Entry.Host }.Where(s => s.Length > 0)),
     };
+    public bool HasSubtitle => Subtitle.Length > 0;
     public string Icon => Entry.Kind switch
     {
         EntryKind.App => "ic_app.png",
@@ -66,6 +73,8 @@ public partial class VaultPage : ContentPage
     public VaultPage()
     {
         InitializeComponent();
+        // La barra de Android es del color de la marca (icono blanco); la de Windows sigue el tema.
+        LockItem.IconImageSource = OperatingSystem.IsAndroid() ? "ic_lock_w.png" : "ic_lock.png";
         _l = ServiceHelper.GetRequiredService<ILocalizationService>();
         _store = ServiceHelper.GetRequiredService<VaultStore>();
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
@@ -91,11 +100,15 @@ public partial class VaultPage : ContentPage
         SearchEntry.Placeholder = _l["SearchPlaceholder"];
         EmptyLabel.Text = _l["NoEntries"];
         EmptyHint.Text = _l["NoEntriesHint"];
-        foreach (var (b, k) in new[] { (SortButton, "SortBy"), (LockButton, "Lock"), (AddButton, "Add") })
+        foreach (var (b, k) in new[] { (SortButton, "SortBy"), (AddButton, "Add") })
         {
             SemanticProperties.SetDescription(b, _l[k]);
             ToolTipProperties.SetText(b, _l[k]);
         }
+        // Bloquear, solo el icono (General 6.1): la descripcion la lee el lector de pantalla en
+        // Android y sale como pista en Windows.
+        SemanticProperties.SetDescription(LockItem, _l["Lock"]);
+        ToolTipProperties.SetText(LockItem, _l["Lock"]);
         // Las pistas de cada fila van en el idioma de cuando se hizo: con otro idioma, filas nuevas.
         Refresh(force: true);
     }
@@ -144,11 +157,12 @@ public partial class VaultPage : ContentPage
         if (!_store.IsUnlocked)
             return;
         var list = VaultQuery.Apply(_store.Data!.Entries, _filter, _search, _settings.SortMode);
-        if (force || !VaultQuery.SameRows(_rows, list))
+        var preview = _settings.NotePreview;
+        if (force || !VaultQuery.SameRows(_rows, list, preview))
         {
             _rows.Clear();
             foreach (var e in list)
-                _rows.Add(new EntryRow(e, _l));
+                _rows.Add(new EntryRow(e, _l, preview));
         }
         OnTick(null, EventArgs.Empty);
         CountLabel.Text = VaultQuery.CountText(list.Count, _l);
@@ -236,19 +250,6 @@ public partial class VaultPage : ContentPage
             return;
         _store.Touch();
         await Navigation.PushAsync(new EntryPage(row.Entry, isNew: false));
-    }
-
-    /// <summary>Borrar desde la fila, con confirmacion: mismo borrado logico que en la ficha.</summary>
-    private async void OnDeleteRowClicked(object? sender, EventArgs e)
-    {
-        if ((sender as BindableObject)?.BindingContext is not EntryRow row)
-            return;
-        _store.Touch();
-        var ok = await _dialogs.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], row.Entry.Title), _l["Delete"], _l["Cancel"]);
-        if (!ok)
-            return;
-        await _store.DeleteAsync(row.Entry.Id);
-        _toast.Show(_l["EntryDeleted"]);
     }
 
     // ------------------------------------------------------------------ copiar desde la fila

@@ -95,6 +95,48 @@ public class VaultStoreTests
     }
 
     [Fact]
+    public async Task DeleteLocal_ForgetsVaultKeyTrustAndCloudSession()
+    {
+        using var box = Sandbox.Create();
+        var store = box.Store;
+        var locked = 0;
+        store.Locked += () => locked++;
+        await store.CreateAsync(Master);
+        await store.SaveAsync();   // deja también la copia .bak
+        box.Settings.TrustDevice = true;
+        box.Settings.Storage = StorageMode.OneDrive;
+        box.Settings.AccountEmail = "ana@example.com";
+        await store.RememberKeyAsync(true);
+        Assert.True(File.Exists(VaultStore.FilePath + ".bak"));
+
+        await store.DeleteLocalAsync();
+        Assert.False(store.Exists);
+        Assert.False(File.Exists(VaultStore.FilePath + ".bak"));
+        Assert.False(store.IsUnlocked);
+        Assert.Equal(1, locked);
+        Assert.False(store.HasStoredKey);
+        Assert.False(box.Settings.TrustDevice);
+        Assert.Equal(StorageMode.Local, box.Settings.Storage);
+        Assert.Equal(string.Empty, box.Settings.AccountEmail);
+
+        // Ya sin boveda: otra vez no falla. Y una nueva con otra contraseña se crea sin mas.
+        await store.DeleteLocalAsync();
+        await store.CreateAsync("Otra Contraseña Distinta");
+        Assert.Empty(store.Data!.Entries);
+    }
+
+    [Fact]
+    public async Task DeleteLocal_ThatCannotDeleteTheFile_IsLogged()
+    {
+        using var box = Sandbox.Create();
+        // En el sitio del fichero hay una carpeta: no se puede borrar como fichero.
+        Directory.CreateDirectory(VaultStore.FilePath);
+        await box.Store.DeleteLocalAsync();
+        Assert.Contains(AppLog.Lines, l => l.Contains("borrar la boveda local"));
+        Directory.Delete(VaultStore.FilePath);
+    }
+
+    [Fact]
     public async Task TrustedUnlock_WithoutVault_IsFalse()
     {
         using var box = Sandbox.Create();

@@ -63,8 +63,26 @@ public static class VaultQuery
     /// La huella de lo que enseña la fila de una entrada (titulo, subtitulo, icono, botones y codigo):
     /// si no cambia, la fila no hace falta rehacerla.
     /// </summary>
-    public static string RowKey(Credential e) =>
-        string.Join('\u001f', e.Id, e.ModifiedAt.UtcTicks, e.Kind, e.Title, e.Username, e.Host, e.Folder, e.HasPassword, e.Totp, e.Deleted);
+    public static string RowKey(Credential e, bool notePreview = false) =>
+        string.Join('\u001f', e.Id, e.ModifiedAt.UtcTicks, e.Kind, e.Title, e.Username, e.Host, e.Folder, e.HasPassword, e.Totp, e.Deleted,
+            notePreview && e.Kind == EntryKind.Note ? NotePreview(e.Notes) : string.Empty);
+
+    /// <summary>Lo mas largo que enseña la fila de una nota segura.</summary>
+    public const int NotePreviewLength = 80;
+
+    /// <summary>
+    /// El trozo de una nota segura que cabe en la fila: el principio del texto en una sola linea
+    /// (saltos y espacios seguidos, uno), cortado con «…» si es mas largo.
+    /// </summary>
+    public static string NotePreview(string notes)
+    {
+        var flat = string.Join(' ', notes.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (flat.Length <= NotePreviewLength)
+            return flat;
+        // Sin partir un caracter compuesto (emoji, letras con marcas) por la mitad.
+        var cut = System.Globalization.StringInfo.ParseCombiningCharacters(flat).TakeWhile(i => i <= NotePreviewLength).Last();
+        return flat[..cut].TrimEnd() + "…";
+    }
 
     /// <summary>
     /// La lista ya enseña exactamente estas entradas, en este orden y sin cambios: no hay que rehacerla.
@@ -72,13 +90,13 @@ public static class VaultQuery
     /// sus imagenes); como la sincronizacion de cada cinco minutos avisaba de cambios aunque no los
     /// hubiera, con la aplicacion en la bandeja la memoria crecia sin parar.
     /// </summary>
-    public static bool SameRows(IReadOnlyList<EntryRow> shown, IReadOnlyList<Credential> next)
+    public static bool SameRows(IReadOnlyList<EntryRow> shown, IReadOnlyList<Credential> next, bool notePreview = false)
     {
         if (shown.Count != next.Count)
             return false;
         for (var i = 0; i < next.Count; i++)
         {
-            if (!ReferenceEquals(shown[i].Entry, next[i]) || shown[i].Key != RowKey(next[i]))
+            if (!ReferenceEquals(shown[i].Entry, next[i]) || shown[i].Key != RowKey(next[i], notePreview))
                 return false;
         }
         return true;

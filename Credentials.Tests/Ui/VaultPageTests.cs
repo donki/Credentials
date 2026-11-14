@@ -28,7 +28,14 @@ public class VaultPageTests
         Assert.Equal(app["MenuVault"], page.Title);
         Assert.Equal(app["SearchPlaceholder"], page.Find<Entry>("SearchEntry").Placeholder);
         Assert.Equal(app["NoEntries"], page.Find<Label>("EmptyLabel").Text);
-        Assert.Equal(app["Lock"], SemanticProperties.GetDescription(page.Find<Button>("LockButton")));
+        // Bloquear va solo en la barra de arriba, no entre «ordenar» y «añadir».
+        var lockItem = page.Find<ToolbarItem>("LockItem");
+        Assert.Contains(lockItem, page.ToolbarItems);
+        Assert.Equal(app["Lock"], SemanticProperties.GetDescription(lockItem));
+        Assert.Equal(app["Lock"], ToolTipProperties.GetText(lockItem));
+        Assert.Equal("ic_lock.png", ((FileImageSource)lockItem.IconImageSource).File);   // en Windows, el del tema
+        Assert.Null(page.FindByName("LockButton"));
+        Assert.Equal(3, page.Find<Button>("SortButton").Parent is Grid g ? g.Children.Count : 0);   // buscador, ordenar y añadir
         Assert.Equal(app["Add"], ToolTipProperties.GetText(page.Find<Button>("AddButton")));
         Assert.Empty(Rows(page));
 
@@ -144,14 +151,18 @@ public class VaultPageTests
         Assert.Equal(app["CopyUser"], github.CopyUserTip);
         Assert.Equal(app["CopyPassword"], github.CopyPasswordTip);
         Assert.Equal(app["CopyCode"], github.CopyCodeTip);
-        Assert.Equal(app["DeleteEntry"], github.DeleteTip);
+        Assert.True(github.HasSubtitle);
+        Assert.False(github.HasPreview);   // las notas, sin el ajuste, no enseñan nada de su texto
         var note = rows.Single(r => r.Title == "Licencia");
         Assert.Equal("Trabajo", note.Subtitle);
+        Assert.Equal(string.Empty, note.Preview);
+        Assert.False(note.HasPreview);
         Assert.Equal("ic_note.png", note.Icon);
         Assert.False(note.HasUser || note.HasPassword || note.HasCode);
         Assert.Equal("ic_totp.png", rows.Single(r => r.Title == "Roto").Icon);
         Assert.Equal("ic_app.png", new EntryRow(new Credential { Kind = EntryKind.App }, app.Texts).Icon);
         Assert.Equal(string.Empty, new EntryRow(new Credential { Kind = EntryKind.Note }, app.Texts).Subtitle);
+        Assert.False(new EntryRow(new Credential { Kind = EntryKind.Note }, app.Texts).HasSubtitle);
     }
 
     [Fact]
@@ -247,23 +258,43 @@ public class VaultPageTests
     }
 
     [Fact]
-    public async Task Borrar_desde_la_fila_con_confirmacion()
+    public async Task Las_filas_no_tienen_papelera()
     {
         using var app = TestHost.Start();
         await app.CreateVaultAsync("contraseña-larga", Sample());
         var page = new VaultPage();
-        var banco = Rows(page).Single(r => r.Title == "Banco");
+        // Se pulsaba sin querer: borrar va en la ficha, con confirmacion (EntryPageTests).
+        Assert.Null(typeof(VaultPage).GetMethod("OnDeleteRowClicked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance));
+        Assert.Null(typeof(EntryRow).GetProperty("DeleteTip"));
+        var template = (Grid)((Border)page.Find<CollectionView>("List").ItemTemplate.CreateContent()).Content;
+        Assert.DoesNotContain(template.Children.OfType<ImageButton>(), b => b.Source is FileImageSource { File: "ic_trash_danger.png" });
+        Assert.Equal(4, Rows(page).Count);
+    }
 
-        await Ui.Call(page, "OnDeleteRowClicked", new Button(), EventArgs.Empty);   // sin fila: nada
-        await Ui.Call(page, "OnDeleteRowClicked", new Button { BindingContext = banco }, EventArgs.Empty);   // «no»
-        Assert.False(banco.Entry.Deleted);
-        Assert.Equal(string.Format(app["DeleteEntryConfirm"], "Banco"), app.Dialogs.Log[^1].Message);
+    [Fact]
+    public async Task Notas_seguras_con_un_trozo_solo_con_el_ajuste()
+    {
+        using var app = TestHost.Start();
+        var nota = new Credential { Kind = EntryKind.Note, Title = "Wifi", Notes = "  red: casa\n\n\tclave:   secreta  " };
+        await app.CreateVaultAsync("contraseña-larga", nota, new Credential { Title = "Web", Notes = "no es nota" });
+        var page = new VaultPage();
+        Assert.All(Rows(page), r => Assert.False(r.HasPreview));   // apagado por defecto
 
-        app.Dialogs.Answer(true);
-        await Ui.Call(page, "OnDeleteRowClicked", new Button { BindingContext = banco }, EventArgs.Empty);
-        Assert.True(app.Store.Data!.Entries.Single(e => e.Id == banco.Entry.Id).Deleted);
-        Assert.Equal(app["EntryDeleted"], app.Toast.Shown[^1]);
-        Assert.DoesNotContain(Rows(page), r => r.Title == "Banco");   // la lista se refresca sola (Changed)
+        app.Settings.NotePreview = true;
+        await page.Appear();   // al volver de Ajustes, la lista lo recoge
+        var row = Rows(page).Single(r => r.Title == "Wifi");
+        Assert.Equal("red: casa clave: secreta", row.Preview);
+        Assert.True(row.HasPreview);
+        Assert.False(Rows(page).Single(r => r.Title == "Web").HasPreview);   // solo las notas seguras
+
+        app.Store.Lock();   // bloqueada, la lista (y el trozo) desaparece
+        Assert.Empty(Rows(page));
+        await Ui.UnlockThrough(page, "contraseña-larga");
+        await Ui.Until(() => Rows(page).Count == 2);
+
+        app.Settings.NotePreview = false;
+        await page.Appear();
+        Assert.All(Rows(page), r => Assert.False(r.HasPreview));
     }
 
     [Fact]
@@ -333,7 +364,7 @@ public class VaultPageTests
         Assert.Equal(4, Rows(page).Count);
 
         // Sin esperar al manejador: la puerta queda abierta hasta que se use (como en pantalla).
-        page.Find<Button>("LockButton").SendClicked();
+        ((IMenuItemController)page.Find<ToolbarItem>("LockItem")).Activate();
         Assert.False(app.Store.IsUnlocked);
         Assert.Empty(Rows(page));
         await Ui.UnlockThrough(page, "contraseña-larga");

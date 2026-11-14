@@ -98,6 +98,10 @@ public class SettingsPageTests
         Assert.False(app.Settings.AskAutofill);
         page.Find<Switch>("DesktopAutofillSwitch").IsToggled = false;
         Assert.False(app.Settings.DesktopAutofill);
+        Assert.False(page.Find<Switch>("NotePreviewSwitch").IsToggled);   // las notas, ocultas por defecto
+        Assert.Equal(app["NotePreview"], page.Find<Label>("NotePreviewLabel").Text);
+        page.Find<Switch>("NotePreviewSwitch").IsToggled = true;
+        Assert.True(app.Settings.NotePreview);
 
         page.Find<Picker>("AutoLockPicker").SelectedIndex = 4;
         Assert.Equal(10, app.Settings.AutoLockMinutes);
@@ -114,8 +118,10 @@ public class SettingsPageTests
         page.Find<Switch>("StartupSwitch").IsToggled = false;
         await AsyncVoid.Run(() => page.Find<Switch>("TrustSwitch").IsToggled = true);
         await AsyncVoid.Run(() => page.Find<Switch>("BiometricsSwitch").IsToggled = true);
+        page.Find<Switch>("NotePreviewSwitch").IsToggled = false;
         await Ui.Call(page, "OnStorageClicked", page.Find<Button>("GoogleButton"), EventArgs.Empty);
         Ui.SetField(page, "_loading", false);
+        Assert.True(app.Settings.NotePreview);
         Assert.False(app.Settings.TrayOnMinimize);
         Assert.False(app.Settings.TrustDevice);
         Assert.False(app.Settings.Biometrics);
@@ -182,6 +188,9 @@ public class SettingsPageTests
         app.Dialogs.Answer("corta");
         await page.Click("ChangeMasterButton");
         Assert.Equal(app["MasterPasswordShort"], app.Dialogs.Log[^1].Message);
+        app.Dialogs.Answer("otra-contraseña ");   // espacio al final: no se deja (no se recorta a escondidas)
+        await page.Click("ChangeMasterButton");
+        Assert.Equal(app["MasterPasswordSpaces"], app.Dialogs.Log[^1].Message);
         app.Dialogs.Answer("otra-contraseña", "otra-distinta");
         await page.Click("ChangeMasterButton");
         Assert.Equal(app["MasterPasswordMismatch"], app.Dialogs.Log[^1].Message);

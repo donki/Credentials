@@ -245,7 +245,7 @@ internal sealed class FakeFilePicker : ITextFilePicker
 /// </summary>
 internal sealed class FakeDialogs : IDialogService
 {
-    public sealed record Shown(string Kind, string? Title, string? Message, string[] Options);
+    public sealed record Shown(string Kind, string? Title, string? Message, string[] Options, bool OutsideCloses = true);
 
     public List<Shown> Log { get; } = [];
     public Queue<object?> Answers { get; } = new();
@@ -259,9 +259,9 @@ internal sealed class FakeDialogs : IDialogService
 
     private object? Next() => Answers.Count > 0 ? Answers.Dequeue() : null;
 
-    public Task<bool> AlertAsync(Page page, string title, string message, string accept, string? cancel = null)
+    public Task<bool> AlertAsync(Page page, string title, string message, string accept, string? cancel = null, bool dismissOnOutsideTap = true)
     {
-        Log.Add(new("alert", title, message, cancel is null ? [accept] : [accept, cancel]));
+        Log.Add(new("alert", title, message, cancel is null ? [accept] : [accept, cancel], dismissOnOutsideTap));
         // Sin boton de cancelar no hay nada que decidir; con el, lo dice la cola (por defecto, no).
         return Task.FromResult(cancel is null || Next() is true);
     }

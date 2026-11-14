@@ -40,6 +40,14 @@
             <Border Style="{StaticResource Card}">
                 <VerticalStackLayout Padding="16,12" Spacing="8">
                     <Label x:Name="SecurityTitle" Style="{StaticResource SectionTitle}" />
+                    <!-- Capturas, lo primero: es lo que se busca aqui cuando Android no deja capturar. -->
+                    <Grid x:Name="ScreenshotsRow" ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0">
+                            <Label x:Name="ScreenshotsLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="ScreenshotsHint" Style="{StaticResource HintText}" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="ScreenshotsSwitch" OnColor="{StaticResource Primary}" Toggled="OnScreenshotsToggled" VerticalOptions="Center" />
+                    </Grid>
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Grid.Column="0">
                             <Label x:Name="TrustLabel" Style="{StaticResource BodyText}" />
@@ -54,12 +62,12 @@
                         </VerticalStackLayout>
                         <Switch Grid.Column="1" x:Name="BiometricsSwitch" OnColor="{StaticResource Primary}" Toggled="OnBiometricsToggled" VerticalOptions="Center" />
                     </Grid>
-                    <Grid x:Name="ScreenshotsRow" ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Grid.Column="0">
-                            <Label x:Name="ScreenshotsLabel" Style="{StaticResource BodyText}" />
-                            <Label x:Name="ScreenshotsHint" Style="{StaticResource HintText}" FontSize="11" />
+                            <Label x:Name="NotePreviewLabel" Style="{StaticResource BodyText}" />
+                            <Label x:Name="NotePreviewHint" Style="{StaticResource HintText}" FontSize="11" />
                         </VerticalStackLayout>
-                        <Switch Grid.Column="1" x:Name="ScreenshotsSwitch" OnColor="{StaticResource Primary}" Toggled="OnScreenshotsToggled" VerticalOptions="Center" />
+                        <Switch Grid.Column="1" x:Name="NotePreviewSwitch" OnColor="{StaticResource Primary}" Toggled="OnNotePreviewToggled" VerticalOptions="Center" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0" x:Name="AutoLockLabel" Style="{StaticResource BodyText}" VerticalOptions="Center" />

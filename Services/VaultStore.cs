@@ -351,6 +351,28 @@ public sealed class VaultStore
         return _settings.AccountEmail;
     }
 
+    /// <summary>
+    /// Borra la boveda de este dispositivo (el fichero y su copia .bak), la clave guardada en el
+    /// sistema, la confianza en el dispositivo y la sesion de la nube; la copia de la nube no se toca.
+    /// Es la unica salida si se olvida la contraseña maestra: sin ella nadie puede descifrar nada.
+    /// </summary>
+    public async Task DeleteLocalAsync()
+    {
+        _settings.TrustDevice = false;
+        Lock();
+        await RememberKeyAsync(false);
+        SignOut();
+        try
+        {
+            File.Delete(FilePath);
+            File.Delete(FilePath + ".bak");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("No se pudo borrar la boveda local", ex);
+        }
+    }
+
     public void SignOut()
     {
         SecureStorage.Default.Remove(TokensSlot);

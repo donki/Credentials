@@ -6,8 +6,12 @@ namespace Credentials.Services;
 /// </summary>
 public interface IDialogService
 {
-    /// <summary>Aviso o confirmacion. True si se pulsa <paramref name="accept"/>.</summary>
-    Task<bool> AlertAsync(Page page, string title, string message, string accept, string? cancel = null);
+    /// <summary>
+    /// Aviso o confirmacion. True si se pulsa <paramref name="accept"/>. Con
+    /// <paramref name="dismissOnOutsideTap"/> a false, tocar fuera de la tarjeta no la cierra: para lo
+    /// que no tiene vuelta atras (borrar), solo cuentan los dos botones.
+    /// </summary>
+    Task<bool> AlertAsync(Page page, string title, string message, string accept, string? cancel = null, bool dismissOnOutsideTap = true);
 
     /// <summary>Lista de opciones. La elegida, o null si se cancela.</summary>
     Task<string?> ActionSheetAsync(Page page, string? title, string cancel, params string[] options);
@@ -19,8 +23,8 @@ public interface IDialogService
 /// <inheritdoc cref="IDialogService"/>
 public sealed class ModernDialogService : IDialogService
 {
-    public Task<bool> AlertAsync(Page page, string title, string message, string accept, string? cancel = null) =>
-        SocShared.ModernDialog.AlertAsync(page, title, message, accept, cancel);
+    public Task<bool> AlertAsync(Page page, string title, string message, string accept, string? cancel = null, bool dismissOnOutsideTap = true) =>
+        SocShared.ModernDialog.AlertAsync(page, title, message, accept, cancel, dismissOnOutsideTap);
 
     public Task<string?> ActionSheetAsync(Page page, string? title, string cancel, params string[] options) =>
         SocShared.ModernDialog.ActionSheetAsync(page, title, cancel, options);

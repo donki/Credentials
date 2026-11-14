@@ -199,6 +199,110 @@ public class UnlockPageTests
     }
 
     [Fact]
+    public async Task Crear_con_espacios_al_principio_o_al_final_no_se_deja()
+    {
+        using var app = TestHost.Start();
+        var page = new UnlockPage();
+        foreach (var bad in new[] { Master + " ", " " + Master, Master + "\t" })
+        {
+            page.Find<Entry>("PasswordEntry").Text = bad;
+            page.Find<Entry>("RepeatEntry").Text = bad;
+            await page.Click("GoButton");
+            Assert.Equal(app["MasterPasswordSpaces"], Error(page));
+            Assert.False(app.Store.Exists);
+        }
+        // Por dentro si se puede: una frase.
+        page.Find<Entry>("PasswordEntry").Text = page.Find<Entry>("RepeatEntry").Text = "una frase larga";
+        await page.Click("GoButton");
+        Assert.True(app.Store.IsUnlocked);
+    }
+
+    [Fact]
+    public async Task Una_boveda_vieja_con_espacio_al_final_se_sigue_abriendo()
+    {
+        using var app = TestHost.Start();
+        // Creada antes de la regla, con el espacio dentro de la contraseña: al abrir no se recorta nada.
+        await app.CreateVaultAsync(Master + " ");
+        app.Store.Lock();
+        var page = new UnlockPage();
+        page.Find<Entry>("PasswordEntry").Text = Master;   // sin el espacio no es la misma
+        await page.Click("GoButton");
+        Assert.Equal(app["MasterPasswordWrong"], Error(page));
+        page.Find<Entry>("PasswordEntry").Text = Master + " ";
+        await page.Click("GoButton");
+        Assert.True(app.Store.IsUnlocked);
+    }
+
+    [Fact]
+    public async Task Ayuda_de_desbloqueo_en_Windows_y_contraseña_olvidada()
+    {
+        using var app = TestHost.Start();
+        // Creando: se cuenta que despues se puede confiar en el dispositivo; nada de «olvidada».
+        var creating = new UnlockPage();
+        await creating.Appear();
+        Assert.Equal(app["UnlockHintTrustLater"], creating.Find<Label>("HintLabel").Text);
+        Assert.False(creating.Find<Button>("ForgotButton").IsVisible);
+
+        await app.CreateVaultAsync(Master);
+        app.Store.Lock();
+        var page = new UnlockPage();
+        await page.Appear();
+        Assert.True(page.Find<Label>("HintLabel").IsVisible);
+        Assert.Equal(app["UnlockHintTrust"], page.Find<Label>("HintLabel").Text);
+        Assert.True(page.Find<Button>("ForgotButton").IsVisible);
+        Assert.Equal(app["ForgotMaster"], page.Find<Button>("ForgotButton").Text);
+        app.Texts.SetLanguage("en");
+        Assert.Equal("Forgot your master password?", page.Find<Button>("ForgotButton").Text);
+        Assert.Equal(app["UnlockHintTrust"], page.Find<Label>("HintLabel").Text);
+        app.Texts.SetLanguage("es");
+
+        app.Settings.TrustDevice = true;   // de confianza pero sin la clave: escribirla una vez
+        await page.Appear();
+        Assert.Equal(app["UnlockHintTrustRestore"], page.Find<Label>("HintLabel").Text);
+    }
+
+    [Fact]
+    public async Task Contraseña_olvidada_explica_y_solo_borra_con_BORRAR()
+    {
+        using var app = TestHost.Start();
+        await app.CreateVaultAsync(Master);
+        app.Settings.TrustDevice = true;
+        await app.Store.RememberKeyAsync(true);
+        app.Store.Lock();
+        var page = new UnlockPage();
+
+        // Se cancela la explicacion: no pasa nada. Tocar fuera no cuenta (solo los botones).
+        await page.Click("ForgotButton");
+        var shown = app.Dialogs.Log[^1];
+        Assert.Equal(app["ForgotMasterBody"], shown.Message);
+        Assert.Contains(app["ForgotMasterDelete"], shown.Options);
+        Assert.False(shown.OutsideCloses);
+        Assert.True(app.Store.Exists);
+
+        // Quiere borrar pero no escribe BORRAR: tampoco.
+        app.Dialogs.Answer(true, "borra");
+        await page.Click("ForgotButton");
+        Assert.Equal(app["DeleteVaultConfirm"], app.Dialogs.Log[^1].Message);
+        Assert.True(app.Store.Exists);
+
+        // Con BORRAR: fuera la boveda, la clave guardada y la confianza; la puerta pasa a crear una nueva.
+        app.Dialogs.Answer(true, "BORRAR");
+        await page.Click("ForgotButton");
+        Assert.False(app.Store.Exists);
+        Assert.Empty(app.Secure.Values);
+        Assert.False(app.Settings.TrustDevice);
+        Assert.Equal(app["CreateTitle"], page.Find<Label>("TitleLabel").Text);
+        Assert.True(page.Find<Entry>("RepeatEntry").IsVisible);
+        Assert.False(page.Find<Button>("ForgotButton").IsVisible);
+        Assert.Equal(app["UnlockHintTrustLater"], page.Find<Label>("HintLabel").Text);
+
+        page.Find<Entry>("PasswordEntry").Text = page.Find<Entry>("RepeatEntry").Text = "otra-contraseña";
+        await page.Click("GoButton");
+        Assert.True(app.Store.IsUnlocked);
+        Assert.Empty(app.Store.Data!.Entries);
+    }
+
+    [Fact]
     public async Task Al_aparecer_sin_biometria_el_foco_a_la_contraseña()
     {
         using var app = TestHost.Start();

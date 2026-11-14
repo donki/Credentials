@@ -21,6 +21,12 @@ public interface ISettingsService
     /// <summary>Android: permitir capturas de pantalla (apagado por defecto: la ventana va con FLAG_SECURE).</summary>
     bool AllowScreenshots { get; set; }
 
+    /// <summary>
+    /// Enseñar en la lista de la boveda el principio de las notas seguras. Apagado por defecto: es
+    /// contenido secreto y la lista se ve de un vistazo (por encima del hombro, al compartir pantalla).
+    /// </summary>
+    bool NotePreview { get; set; }
+
     /// <summary>«Confiar en este usuario y dispositivo»: la boveda se abre sola con la clave guardada en el sistema, sin pedir la contraseña.</summary>
     bool TrustDevice { get; set; }
 

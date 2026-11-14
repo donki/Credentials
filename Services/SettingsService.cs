@@ -59,6 +59,13 @@ public class SettingsService : ISettingsService
         set => Preferences.Set("allow_screenshots", value, Shared);
     }
 
+    /// <summary>Enseñar el principio de las notas seguras en la lista (apagado por defecto: es secreto).</summary>
+    public bool NotePreview
+    {
+        get => Preferences.Get("note_preview", false, Shared);
+        set => Preferences.Set("note_preview", value, Shared);
+    }
+
     public int ClipboardSeconds
     {
         get => Preferences.Get("clipboard_seconds", 30, Shared);

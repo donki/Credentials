@@ -140,6 +140,7 @@ Nada toca la bóveda real, los ajustes ni la red: cada prueba usa una carpeta te
 
 | Fecha | Pruebas | Cobertura de lo instrumentado | Cobertura sobre toda la app | Tiempo del banco |
 |---|---|---|---|---|
+| 2026-11-14 | 442 (pasan todas: 284 + 158) | 91,9 % (3658 de 3980 líneas) | **80,7 %** (3658 de 4535 líneas) | ≈44 s (10 s + 34 s) |
 | 2026-10-03 | 401 (pasan todas: 280 + 121) | 92,1 % (3545 de 3851 líneas) | **82,5 %** (3545 de 4295 líneas) | ≈37 s (8 s + 29 s) |
 | 2026-09-30 | 151 (pasan todas) | 99,4 % (1813 de 1823 líneas) | ≈36 % (1813 de ≈5060 líneas) | ≈7 s |
 

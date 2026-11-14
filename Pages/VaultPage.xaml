@@ -4,16 +4,21 @@
              xmlns:pages="clr-namespace:Credentials.Pages"
              x:Class="Credentials.Pages.VaultPage">
 
+    <!-- Bloquear va solo, arriba a la derecha en la barra (Android y Windows): entre «ordenar» y
+         «añadir» se pulsaba sin querer. -->
+    <ContentPage.ToolbarItems>
+        <ToolbarItem x:Name="LockItem" IconImageSource="ic_lock_w.png" Order="Primary" Priority="0" Clicked="OnLockClicked" AutomationId="LockItem" />
+    </ContentPage.ToolbarItems>
+
     <Grid RowDefinitions="Auto,*">
 
         <!-- Cabecera: buscador, filtros (todas, favoritas, clases, carpetas, etiquetas) y botones. -->
         <Border Grid.Row="0" Style="{StaticResource Card}" Margin="12,12,12,6">
             <VerticalStackLayout Padding="16,12" Spacing="10">
-                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                     <Entry Grid.Column="0" x:Name="SearchEntry" Style="{StaticResource Field}" ReturnType="Search" ClearButtonVisibility="WhileEditing" TextChanged="OnSearchChanged" />
                     <Button Grid.Column="1" x:Name="SortButton" Style="{StaticResource IconButton}" ImageSource="ic_refresh.png" Clicked="OnSortClicked" />
-                    <Button Grid.Column="2" x:Name="LockButton" Style="{StaticResource IconButton}" ImageSource="ic_lock.png" Clicked="OnLockClicked" />
-                    <Button Grid.Column="3" x:Name="AddButton" Style="{StaticResource IconButton}" BackgroundColor="{StaticResource Primary}" ImageSource="ic_add_w.png" Clicked="OnAddClicked" />
+                    <Button Grid.Column="2" x:Name="AddButton" Style="{StaticResource IconButton}" BackgroundColor="{StaticResource Primary}" ImageSource="ic_add_w.png" Clicked="OnAddClicked" />
                 </Grid>
                 <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                     <HorizontalStackLayout x:Name="Chips" Spacing="6" />
@@ -26,7 +31,8 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="pages:EntryRow">
                     <Border Style="{StaticResource Card}" Margin="0,3" Padding="0">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
+                        <!-- Sin papelera en la fila: se pulsaba sin querer. Borrar va en la ficha, con confirmacion. -->
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnRowTapped" />
                             </Grid.GestureRecognizers>
@@ -37,7 +43,9 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="{Binding Title}" Style="{StaticResource BodyText}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                <Label Text="{Binding Subtitle}" Style="{StaticResource HintText}" LineBreakMode="MiddleTruncation" />
+                                <Label Text="{Binding Subtitle}" Style="{StaticResource HintText}" LineBreakMode="MiddleTruncation" IsVisible="{Binding HasSubtitle}" />
+                                <!-- Nota segura: un trozo del texto, solo si se encendio en Ajustes > Seguridad. -->
+                                <Label Text="{Binding Preview}" IsVisible="{Binding HasPreview}" Style="{StaticResource HintText}" MaxLines="2" LineBreakMode="TailTruncation" />
                                 <Label Text="{Binding Code}" IsVisible="{Binding HasCode}" TextColor="{StaticResource Primary}" FontAttributes="Bold" FontSize="16" FontFamily="Consolas" />
                             </VerticalStackLayout>
                             <ImageButton Grid.Column="2" Style="{StaticResource RowIconButton}" Source="ic_copy.png" IsVisible="{Binding HasUser}" Clicked="OnCopyUserClicked"
@@ -46,8 +54,6 @@
                                          ToolTipProperties.Text="{Binding CopyPasswordTip}" SemanticProperties.Description="{Binding CopyPasswordTip}" />
                             <ImageButton Grid.Column="4" Style="{StaticResource RowIconButton}" Source="ic_totp.png" IsVisible="{Binding HasCode}" Clicked="OnCopyCodeClicked"
                                          ToolTipProperties.Text="{Binding CopyCodeTip}" SemanticProperties.Description="{Binding CopyCodeTip}" />
-                            <ImageButton Grid.Column="5" Style="{StaticResource RowIconButton}" Source="ic_trash_danger.png" Clicked="OnDeleteRowClicked"
-                                         ToolTipProperties.Text="{Binding DeleteTip}" SemanticProperties.Description="{Binding DeleteTip}" />
                         </Grid>
                     </Border>
                 </DataTemplate>

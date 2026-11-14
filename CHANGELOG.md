@@ -2,6 +2,43 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.11.14.00 — Lo que pidieron los probadores: borrar, bloquear, desbloqueo y notas
+
+`versionCode`: 2026111400 · Windows `2026.11.14.0` · extensión `2026.11.14.0`
+
+Cambios pedidos en los informes de la prueba cerrada, en Android y en Windows.
+
+- **Borrar, solo desde la ficha.** La papelera roja de cada fila de la lista se pulsaba sin querer:
+  ya no está. Se borra desde la ficha del elemento (papelera abajo a la izquierda), que siempre pide
+  confirmación; tocar fuera del aviso no borra ni lo cierra, solo cuentan «Borrar» y «Cancelar».
+- **Bloquear, arriba a la derecha.** El candado estaba entre «ordenar» y «añadir» y se pulsaba sin
+  querer. Ahora va solo en la barra de arriba, a la derecha. El buscador gana ese hueco.
+- **Contraseña maestra sin espacios en los bordes.** Al crearla o cambiarla, si empieza o termina con
+  un espacio (o un tabulador), se avisa y no se acepta: no se ve al escribir y luego la bóveda no se
+  abriría. No se recorta a escondidas. Al **abrir** no cambia nada: las bóvedas creadas antes con un
+  espacio al final se siguen abriendo con su contraseña tal cual.
+- **Pantalla de desbloqueo con ayuda.** Debajo del botón se explica cómo abrirla sin escribir la
+  contraseña: en Android, con la huella o la cara (si el dispositivo las tiene, y dónde activarlo); en
+  Windows, con «Confiar en este usuario y dispositivo». Nuevo botón **«¿Has olvidado la contraseña
+  maestra?»**: dice con claridad que nadie puede recuperarla, qué se puede probar (la huella, u otro
+  dispositivo que la abra) y, si no queda otra, permite borrar la bóveda de este dispositivo
+  (escribiendo BORRAR) y crear una nueva vacía, sin tener que borrar los datos de la aplicación.
+- **Capturas de pantalla.** El interruptor ya existía desde la 2026.11.02.00 (Ajustes › Seguridad,
+  solo Android), pero no se encontraba: ahora es lo primero de Seguridad y la guía de configuración
+  tiene un paso que lo explica. En Windows la aplicación no bloquea las capturas.
+- **Notas seguras con un trozo en la lista.** Nuevo ajuste en Seguridad, **apagado por defecto**:
+  «Enseñar el principio de las notas seguras en la lista» (hasta 80 caracteres, en una línea). Solo
+  con la bóveda abierta; al bloquearse, la lista se vacía.
+- Pruebas nuevas de todo lo anterior (reglas, pantallas y bóveda).
+
+**English.** From the closed-test reports: no delete button on each list row any more (delete from the
+item, always with confirmation; tapping outside does nothing); the lock button moved alone to the top
+right; a new master password cannot start or end with a space (existing vaults still open as before);
+the unlock screen explains fingerprint/face unlock (Android) or trusting the device (Windows) and has a
+“Forgot your master password?” button that honestly explains it cannot be recovered and lets you delete
+the vault and start again; the existing *Allow screenshots* switch is now first in Security and in the
+setup guide; new opt-in setting to show the start of secure notes in the list.
+
 ## 2026.11.02.00 — Capturas de pantalla a elección y móviles de 32 bits
 
 `versionCode`: 2026110200 · Windows `2026.11.2.0` · extensión `2026.11.2.0`

@@ -74,6 +74,8 @@ public partial class SettingsPage : ContentPage
         BiometricsHint.Text = _l["BiometricsHint"];
         ScreenshotsLabel.Text = _l["AllowScreenshots"];
         ScreenshotsHint.Text = _l["AllowScreenshotsHint"];
+        NotePreviewLabel.Text = _l["NotePreview"];
+        NotePreviewHint.Text = _l["NotePreviewHint"];
         AutoLockLabel.Text = _l["AutoLock"];
         ClipboardLabel.Text = _l["ClipboardClear"];
         ChangeMasterButton.Text = _l["ChangeMaster"];
@@ -93,6 +95,7 @@ public partial class SettingsPage : ContentPage
         TrustSwitch.IsToggled = _settings.TrustDevice;
         BiometricsSwitch.IsToggled = _settings.Biometrics;
         ScreenshotsSwitch.IsToggled = _settings.AllowScreenshots;
+        NotePreviewSwitch.IsToggled = _settings.NotePreview;
         RefreshStorage();
         _loading = false;
     }
@@ -459,6 +462,13 @@ public partial class SettingsPage : ContentPage
 #endif
     }
 
+    /// <summary>«Enseñar el principio de las notas seguras»: la lista lo recoge al volver a ella.</summary>
+    private void OnNotePreviewToggled(object? sender, ToggledEventArgs e)
+    {
+        if (!_loading)
+            _settings.NotePreview = e.Value;
+    }
+
     private void OnAutoLockChanged(object? sender, EventArgs e)
     {
         if (!_loading && AutoLockPicker.SelectedIndex >= 0)
@@ -567,11 +577,7 @@ public partial class SettingsPage : ContentPage
         var word = await _dialogs.PromptAsync(this, _l["DeleteVault"], _l["DeleteVaultConfirm"], _l["Delete"], _l["Cancel"]);
         if (!SettingsRules.IsDeleteWord(word))
             return;
-        _settings.TrustDevice = false;
-        _store.Lock();
-        await _store.RememberKeyAsync(false);
-        _store.SignOut();
-        try { File.Delete(VaultStore.FilePath); File.Delete(VaultStore.FilePath + ".bak"); } catch (Exception) { }
+        await _store.DeleteLocalAsync();
         await _navigation.GoToAsync("//VaultPage");
     }
 }

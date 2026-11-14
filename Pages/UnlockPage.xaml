@@ -35,6 +35,12 @@
             <!-- Biometria: solo al desbloquear, y solo si se activo en Ajustes. -->
             <Button x:Name="BiometricButton" Style="{StaticResource OutlineButton}" ImageSource="ic_fingerprint.png" ContentLayout="Left,8" Clicked="OnBiometricClicked" IsVisible="False" />
 
+            <!-- Como abrirla sin escribir la contraseña (huella o cara; confiar en el dispositivo). -->
+            <Label x:Name="HintLabel" Style="{StaticResource HintText}" HorizontalTextAlignment="Center" IsVisible="False" />
+
+            <!-- Contraseña olvidada: lo que se puede hacer, dicho con honestidad (no hay servidor que la recupere). -->
+            <Button x:Name="ForgotButton" Style="{StaticResource OutlineButton}" ImageSource="ic_help.png" ContentLayout="Left,8" LineBreakMode="WordWrap" Clicked="OnForgotClicked" />
+
             <ActivityIndicator x:Name="Busy" IsRunning="False" IsVisible="False" HorizontalOptions="Center" />
         </VerticalStackLayout>
     </ScrollView>

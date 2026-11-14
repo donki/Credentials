@@ -455,11 +455,13 @@ public partial class EntryPage : ContentPage
 
     private async void OnDeleteClicked(object? sender, EventArgs e)
     {
-        var ok = await _dialogs.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], _entry.Title), _l["Delete"], _l["Cancel"]);
+        // Tocar fuera no cuenta (ni para borrar ni para cancelar): solo los dos botones.
+        var ok = await _dialogs.AlertAsync(this, _l["DeleteEntry"], string.Format(_l.CurrentCulture, _l["DeleteEntryConfirm"], _entry.Title), _l["Delete"], _l["Cancel"], dismissOnOutsideTap: false);
         if (!ok)
             return;
         // Borrado logico (VaultStore.DeleteAsync): la baja tiene que llegar a los demas dispositivos al mezclar.
         await _store.DeleteAsync(_entry.Id);
+        _toast.Show(_l["EntryDeleted"]);
         await Navigation.PopAsync();
     }
 

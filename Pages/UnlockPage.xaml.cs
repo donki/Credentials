@@ -15,7 +15,8 @@ public partial class UnlockPage : ContentPage
     private readonly VaultStore _store;
     private readonly ISettingsService _settings;
     private readonly IBiometric _biometric;
-    private readonly bool _creating;
+    private readonly IDialogService _dialogs;
+    private bool _creating;
     private bool _biometricTried;
 
     public UnlockPage()
@@ -25,6 +26,7 @@ public partial class UnlockPage : ContentPage
         _store = ServiceHelper.GetRequiredService<VaultStore>();
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _biometric = ServiceHelper.GetRequiredService<IBiometric>();
+        _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
         _creating = !_store.Exists;
         ApplyTexts();
         // Si la boveda se abre por otro camino (biometria desde otra pagina, el gancho de pruebas
@@ -109,13 +111,37 @@ public partial class UnlockPage : ContentPage
         GoButton.Text = _creating ? _l["Create"] : _l["Unlock"];
         GoButton.ImageSource = _creating ? "ic_key_w.png" : "ic_unlock_w.png";
         BiometricButton.Text = _l["UnlockBiometric"];
+        ForgotButton.Text = _l["ForgotMaster"];
+        ForgotButton.IsVisible = !_creating;
+        SemanticProperties.SetDescription(ForgotButton, _l["ForgotMaster"]);
+        ShowHint();
+    }
+
+    /// <summary>Si el dispositivo tiene huella o cara y si la clave esta guardada (lo mira OnAppearing).</summary>
+    private bool _biometricAvailable, _hasStoredKey, _checked;
+
+    /// <summary>El texto de ayuda bajo el boton (UnlockHelp): como abrirla sin escribir la contraseña.</summary>
+    private void ShowHint()
+    {
+        var android = OperatingSystem.IsAndroid();
+        // En Android depende de la huella, que se pregunta al aparecer: hasta entonces, nada.
+        var key = android && !_checked ? null
+            : UnlockHelp.HintKey(_creating, android, _biometricAvailable, _settings.Biometrics, _hasStoredKey, _settings.TrustDevice);
+        HintLabel.Text = key is null ? string.Empty : _l[key];
+        HintLabel.IsVisible = key is not null;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        var canBio = !_creating && _settings.Biometrics && _store.HasStoredKey && await _biometric.IsAvailableAsync();
+        // Se pregunta siempre (tambien para la ayuda de debajo); si el sensor falla, como si no hubiera.
+        try { _biometricAvailable = await _biometric.IsAvailableAsync(); }
+        catch (Exception) { _biometricAvailable = false; }
+        _hasStoredKey = !_creating && _store.HasStoredKey;
+        _checked = true;
+        var canBio = !_creating && _settings.Biometrics && _hasStoredKey && _biometricAvailable;
         BiometricButton.IsVisible = canBio;
+        ShowHint();
         if (canBio && !_biometricTried)
         {
             _biometricTried = true;
@@ -196,6 +222,29 @@ public partial class UnlockPage : ContentPage
         {
             SetBusy(false);
         }
+    }
+
+    /// <summary>
+    /// «¿Has olvidado la contraseña?»: nadie puede recuperarla (no hay servidor ni copia de la
+    /// contraseña). Se dice que se puede hacer (la huella, otro dispositivo que la abra) y, si no queda
+    /// otra, se ofrece borrar la bóveda de este dispositivo y crear una nueva, escribiendo BORRAR.
+    /// </summary>
+    private async void OnForgotClicked(object? sender, EventArgs e)
+    {
+        var delete = await _dialogs.AlertAsync(this, _l["ForgotMaster"], _l["ForgotMasterBody"], _l["ForgotMasterDelete"], _l["Cancel"], dismissOnOutsideTap: false);
+        if (!delete)
+            return;
+        var word = await _dialogs.PromptAsync(this, _l["DeleteVault"], _l["DeleteVaultConfirm"], _l["Delete"], _l["Cancel"]);
+        if (!SettingsRules.IsDeleteWord(word))
+            return;
+        await _store.DeleteLocalAsync();
+        // Sin bóveda, esta misma puerta pasa a crear una nueva.
+        _creating = true;
+        ErrorLabel.IsVisible = false;
+        PasswordEntry.Text = string.Empty;
+        BiometricButton.IsVisible = false;
+        ApplyTexts();
+        PasswordEntry.Focus();
     }
 
     private void ShowError(string text)

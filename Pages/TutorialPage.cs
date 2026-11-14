@@ -227,6 +227,12 @@ public class TutorialPage : ContentPage
             _l["TutOpenSettings"],
             () => _navigation.GoToAsync("//SettingsPage"),
             Optional: true));
+        // Las capturas van bloqueadas por defecto y los probadores no encontraban como permitirlas.
+        // Sin estado de «hecho»: dejarlas bloqueadas es lo seguro, no un paso pendiente.
+        steps.Add(new("ic_lock.png", _l["TutShotsTitle"], _l["TutShotsBody"],
+            null,
+            _l["TutOpenSettings"],
+            () => _navigation.GoToAsync("//SettingsPage")));
 #endif
         steps.Add(new("ic_sync.png", _l["TutCloudTitle"], _l["TutCloudBody"],
             () => _settings.Storage != StorageMode.Local,

@@ -414,9 +414,11 @@ public class EntryPageTests
         await page.Click("DeleteButton");
         Assert.False(app.Store.Data!.Entries.Single().Deleted);
         Assert.Equal(string.Format(app["DeleteEntryConfirm"], "GitHub"), app.Dialogs.Log[^1].Message);
+        Assert.False(app.Dialogs.Log[^1].OutsideCloses);   // tocar fuera no borra ni cierra: solo los botones
         app.Dialogs.Answer(true);
         await page.Click("DeleteButton");
         Assert.True(app.Store.Data!.Entries.Single().Deleted);
+        Assert.Equal(app["EntryDeleted"], app.Toast.Shown[^1]);
     }
 
     [Fact]
