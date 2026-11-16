@@ -1,39 +1,31 @@
-# Solicitud de acceso a producción en Google Play — Credentials (sOC Credentials)
+# Solicitud de acceso a producción en Google Play — Credentials
 
-Respuestas para el cuestionario de Play Console › **Panel › Solicitar acceso a producción**, en
-catalán (el idioma de la consola). Cada texto cabe en los 300 caracteres del formulario; el número
-entre paréntesis es su longitud. Constitución Mobile §11. **Última actualización: 2026-10-01**
-(versión 2026.10.01.00). Estado en Play: prueba cerrada recién dada de alta (alpha 2026.09.28.04; grupos desde el 2026-09-29).
+**Enviada el 2026-11-16 a las 12:40** desde Play Console › Panel (Google dice que suele tardar 7 días o menos y avisa por correo al propietario).
+Versión en la prueba cerrada: **2026.11.02.00** (alpha). Verificadores: TestCircle (grupo #105, ciclo cerrado). Pruebas automáticas: 284, todas correctas ese día.
+Sin bloqueos ni ANR en 28 días. 6 comentarios en la consola, todos de 5 estrellas y sin fallos. La 2026.11.14.00 (lo que pidieron) no está subida.
 
-> Lo marcado con ⚠ no lo puedo saber yo: compruébalo en la consola antes de enviarlo y cámbialo si
-> no es así.
->
-> - ⚠ La API ya da la alpha 2026.09.28.04 como «completed» (09-PENDIENTE decía borrador): comprueba en la consola que está en revisión o publicada. **Los 14 días no se cumplen antes de mediados de octubre**: hasta entonces no se puede pedir producción.
-> - ⚠ Faltaban en la consola (sin API): política de privacidad, Seguridad de los datos, la declaración del servicio de autocompletar / gestor de contraseñas, clasificación y público.
-> - ⚠ En alpha está la 2026.09.28.04; los arreglos de abajo son de la 2026.09.30.00 en adelante: súbeme la última antes de pedir producción.
-
----
+Respuestas enviadas, en catalán (el idioma de la consola), tal cual:
 
 ## Informació sobre la prova tancada
 
-**Com has reclutat usuaris per a la prova tancada?** (273) ⚠ *el autocompletar se probó en el emulador; comprueba que la usas en el Xiaomi.*
+**Com has reclutat usuaris per a la prova tancada?** (252)
 
 ```
-He afegit a la prova tancada quatre grups públics de Google de verificadors voluntaris (comunitats d'intercanvi de proves de 12 persones durant 14 dies). No he fet servir cap proveïdor de pagament. També l'he fet servir cada dia en un mòbil real amb Android 16 i a Windows.
+Amb un grup gratuït d'intercanvi de proves: uns quants desenvolupadors provem les apps dels altres per etapes durant 14 dies i deixem informes amb captures. No he fet servir cap proveïdor de pagament. També l'he provada en un mòbil real amb Android 16.
 ```
 
-**Fins a quin punt t'ha resultat fàcil reclutar verificadors?** — Propuesta: **Ni fàcil ni difícil** (los grupos públicos dan el número, pero participan poco).
+**Fins a quin punt t'ha resultat fàcil reclutar verificadors?** — **Difícil**.
 
-**Descriu la implicació dels verificadors** (265) ⚠ *comprueba en Estadísticas / Prova tancada que de verdad la abrieron; si no hay datos, quita la parte de las funciones.*
-
-```
-Els verificadors han instal·lat l'app, han creat una bóveda amb contrasenya mestra i hi han desat entrades i codis de segon factor. Un usuari real hi importaria totes les contrasenyes i usaria l'emplenament automàtic cada dia, cosa que amb dades de prova no es veu.
-```
-
-**Resum dels suggeriments i com els has recollit** (256) ⚠ *si algún verificador dejó comentarios (en la consola o por correo), menciónalos.*
+**Descriu la implicació dels verificadors** (252)
 
 ```
-Pocs comentaris escrits dels verificadors; els he recollit des de la consola de Play i GitHub. Les millores han sortit del meu ús diari al mòbil i a Windows i del banc de proves: textos en anglès, bóvedes amb salts de línia de Windows i duplicats en desar.
+Els verificadors han creat la bóveda, hi han desat i cercat entrades i han revisat els ajustos (empremta, importació, emplenament). Un usuari real també la sincronitzaria amb el seu Drive o OneDrive i la faria servir cada dia, cosa que pocs han provat.
+```
+
+**Resum dels suggeriments i com els has recollit** (248)
+
+```
+Recollits als informes de cada etapa del grup i a la consola de Play: cap tancament ni error greu. Han demanat poder fer captures, el botó de bloqueig a dalt a la dreta, confirmar abans d'esborrar la bóveda i veure un tros de les notes a la llista.
 ```
 
 ## Informació sobre l'aplicació
@@ -44,24 +36,24 @@ Pocs comentaris escrits dels verificadors; els he recollit des de la consola de 
 Persones que volen guardar contrasenyes i codis de segon factor de forma segura sense dependre d'un servidor d'un tercer: la bóveda xifrada es queda al mòbil o, si volen, al seu Google Drive o OneDrive. Sense anuncis ni compte.
 ```
 
-**Com proporciona valor als usuaris?** (254)
+**Com proporciona valor als usuaris?** (240)
 
 ```
-Desa contrasenyes, codis de segon factor i notes en una bóveda xifrada amb la contrasenya mestra (Argon2id i AES-256-GCM), s'obre amb l'empremta, emplena a apps i navegadors i importa de Chrome, Edge, Firefox i Google Authenticator. Sense servidor propi.
+Desa contrasenyes, codis de segon factor i notes en una bóveda xifrada amb la contrasenya mestra (Argon2id i AES-256-GCM), s'obre amb l'empremta, emplena a apps i navegadors i importa dels navegadors i d'apps de codis. Sense servidor propi.
 ```
 
-**Instal·lacions esperades el primer any** — Propuesta: **0 - 10.000** (app nueva, sin promoción).
+**Instal·lacions esperades el primer any** — **0 - 10.000**.
 
 ## Preparació per a la producció
 
-**Quins canvis has fet en funció de la prova tancada?** (250) ⚠ *la prueba cerrada acaba de empezar: si los verificadores informan de algo, añádelo aquí.*
+**Quins canvis has fet en funció de la prova tancada?** (244)
 
 ```
-He corregit tres errors que va trobar el banc de 151 proves automàtiques: dos avisos que sortien en castellà amb l'app en anglès, una bóveda amb salts de línia de Windows que no s'obria i una entrada que es duplicava en desar-la des de l'emplenament.
+Un interruptor per permetre captures de pantalla i un paquet de 32 bits perquè un verificador no la podia baixar. Ja tinc a punt la resta: bloqueig a dalt a la dreta, confirmació en esborrar, tros de les notes a la llista i ajuda de l'empremta.
 ```
 
-**Com has decidit que està preparada per a producció?** (282) ⚠ *comprueba en Qualitat › Android Vitals que no hay fallos; si los hay, quita «sense tancaments a la consola». Antes, que estén enviadas la Seguridad de los datos y la declaración de autocompletar.*
+**Com has decidit que està preparada per a producció?** (241)
 
 ```
-Les 151 proves automàtiques passen totes, l'he provada en un mòbil real amb Android 16 sense errors, els verificadors l'han fet servir 14 dies sense tancaments a la consola i la fitxa, la privadesa i la seguretat de les dades i la declaració d'emplenament automàtic estan completes.
+Les 284 proves automàtiques passen totes, l'he provada en un mòbil real amb Android 16 sense errors, a la consola no hi ha cap bloqueig ni ANR en 28 dies i els verificadors la valoren bé. La fitxa i la seguretat de les dades estan completes.
 ```
