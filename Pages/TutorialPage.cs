@@ -175,10 +175,15 @@ public class TutorialPage : ContentPage
             () => _settings.DesktopAutofill,
             _l["TutDesktopAction"],
             () => { _settings.DesktopAutofill = true; return Task.CompletedTask; }));
-        var browsers = Platforms.Windows.ExtensionInstaller.Available
-            ? Platforms.Windows.ExtensionInstaller.Detected()
-            : [];
-        if (browsers.Count == 0)
+        var browsers = Platforms.Windows.ExtensionInstaller.GuideBrowsers();
+        if (Platforms.Windows.ExtensionInstaller.Packaged)
+            // La de la Microsoft Store (MSIX) no puede registrar el puente con el navegador: se
+            // explica y se lleva a la version exe.
+            steps.Add(new("ic_web.png", _l["TutExtPackagedTitle"], _l["TutExtPackagedBody"],
+                null,
+                _l["ExtGetExe"],
+                () => ServiceHelper.GetRequiredService<IBrowser>().OpenAsync(Platforms.Windows.PackageIdentity.ReleasesUrl, BrowserLaunchMode.External)));
+        else if (browsers.Count == 0)
             steps.Add(new("ic_web.png", _l["TutNoBrowsersTitle"], _l["TutNoBrowsersBody"]));
         foreach (var b in browsers)
         {

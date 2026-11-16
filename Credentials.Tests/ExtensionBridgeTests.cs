@@ -222,8 +222,11 @@ public class ExtensionBridgeTests
                 Write(Path.Combine(App, "CredentialsHost.exe"), "host v1");
             }
             Launcher = Path.Combine(Dir, "sOCCredentials.exe");
-            Core = new ExtensionInstallerCore(Registry, Path.Combine(Dir, "data"), App, () => LauncherEnv, () => Path.Combine(App, "Credentials.exe"), (exe, url) => Opened.Add((exe, url)));
+            Core = new ExtensionInstallerCore(Registry, Path.Combine(Dir, "data"), App, () => LauncherEnv, () => Path.Combine(App, "Credentials.exe"), (exe, url) => Opened.Add((exe, url)), () => Packaged);
         }
+
+        /// <summary>Como si fuera la de la Microsoft Store (MSIX).</summary>
+        public bool Packaged { get; set; }
 
         public string Dir { get; }
         public string App { get; }
@@ -535,5 +538,122 @@ public class ExtensionBridgeTests
         prompts.Log.Clear();
         await new ExtensionSetupFlow(empty.Core).InstallAsync(prompts, chrome, l);
         Assert.StartsWith($"alert:{l["Error"]}|", Assert.Single(prompts.Log));
+    }
+
+    // ------------------------------------------------------------------ version de la Microsoft Store (MSIX)
+
+    [Fact]
+    public void PackageIdentity_InterpretsGetCurrentPackageFullName()
+    {
+        // Con bufer de longitud 0: «bufer pequeño» = hay paquete; «sin paquete» = exe suelto.
+        Assert.True(PackageIdentity.Interpret(() => PackageIdentity.ErrorInsufficientBuffer));
+        Assert.True(PackageIdentity.Interpret(() => PackageIdentity.ErrorSuccess));
+        Assert.False(PackageIdentity.Interpret(() => PackageIdentity.AppModelErrorNoPackage));
+        Assert.False(PackageIdentity.Interpret(() => 87 /* ERROR_INVALID_PARAMETER */));
+        // Si la llamada no existe o falla, como siempre: no empaquetada.
+        Assert.False(PackageIdentity.Interpret(() => throw new EntryPointNotFoundException()));
+        Assert.False(PackageIdentity.Interpret(() => throw new DllNotFoundException()));
+    }
+
+    [Fact]
+    public void PackageIdentity_TheTestRunnerIsNotPackaged()
+    {
+        // El proceso de pruebas es un exe suelto: la llamada de verdad tiene que decir que no (y dos
+        // veces lo mismo, va guardado).
+        Assert.False(PackageIdentity.IsPackaged());
+        Assert.False(PackageIdentity.IsPackaged());
+        Assert.Equal("https://github.com/donki/Credentials/releases", PackageIdentity.ReleasesUrl);
+    }
+
+    [Fact]
+    public void Packaged_RegistersNothing_AndOffersNoBrowser()
+    {
+        using var ib = new InstallBox { Packaged = true };
+        ib.AddBrowser("msedge.exe");
+        ib.AddBrowser("chrome.exe");
+        ib.AddBrowser("firefox.exe");
+        var appPaths = ib.Registry.Values.Count;
+
+        Assert.True(ib.Core.Packaged);
+        Assert.True(ib.Core.Available);      // la aplicacion trae la extension...
+        Assert.False(ib.Core.CanInstall);    // ...pero empaquetada no sirve de nada registrarla
+        Assert.Empty(ib.Core.GuideBrowsers());
+        Assert.Equal(3, ib.Core.Detected().Count);
+
+        // Ni al arrancar ni con «Instalar…»: ninguna clave en HKCU, ni la ruta de la app, ni ficheros.
+        ib.Core.RegisterForInstalledBrowsers();
+        foreach (var b in ib.Core.Detected())
+            ib.Core.Install(b);
+        Assert.Equal(appPaths, ib.Registry.Values.Count);
+        Assert.DoesNotContain(ib.Registry.Values.Keys, k => k.Item1 == RegistryRoot.CurrentUser);
+        Assert.All(ib.Core.Detected(), b => Assert.False(ib.Core.IsRegistered(b)));
+        Assert.False(Directory.Exists(ib.Core.HostDir));
+        Assert.False(Directory.Exists(ib.Core.ExtensionDir(false)));
+        Assert.False(Directory.Exists(ib.Core.ExtensionDir(true)));
+    }
+
+    [Fact]
+    public void NotPackaged_KeepsWorkingAsBefore()
+    {
+        using var ib = new InstallBox();
+        ib.AddBrowser("chrome.exe");
+        Assert.False(ib.Core.Packaged);
+        Assert.True(ib.Core.CanInstall);
+        Assert.Equal(["chrome"], ib.Core.GuideBrowsers().Select(b => b.Key));
+        ib.Core.RegisterForInstalledBrowsers();
+        Assert.True(ib.Core.IsRegistered(Assert.Single(ib.Core.Detected())));
+
+        // Sin la extension en la carpeta, nada que proponer en la guia.
+        using var empty = new InstallBox(withExtension: false);
+        empty.AddBrowser("chrome.exe");
+        Assert.False(empty.Core.CanInstall);
+        Assert.Empty(empty.Core.GuideBrowsers());
+
+        // Si la pregunta falla, no empaquetada (como antes de existir).
+        var dir = Path.Combine(Path.GetTempPath(), "soccred-ext-" + Guid.NewGuid().ToString("N"));
+        var failing = new ExtensionInstallerCore(new FakeRegistry(), dir, dir, () => null, () => null, (_, _) => { }, () => throw new InvalidOperationException());
+        Assert.False(failing.Packaged);
+    }
+
+    [Fact]
+    public async Task Packaged_NoOfferAfterUnlock_AndInstallDoesNothing()
+    {
+        using var box = Sandbox.Create();
+        var l = box.Texts("es");
+        using var ib = new InstallBox { Packaged = true };
+        ib.AddBrowser("msedge.exe");
+        ib.AddBrowser("chrome.exe");
+        var prompts = new FakePrompts();
+        var flow = new ExtensionSetupFlow(ib.Core);
+
+        await flow.OfferAfterUnlockAsync(prompts, box.Settings, l);
+        await flow.InstallAsync(prompts, ib.Core.Detected()[0], l);
+        await flow.InstallAsync(prompts, ib.Core.Detected()[1], l);
+
+        Assert.Empty(prompts.Log);
+        Assert.Empty(ib.Opened);
+        Assert.True(box.Settings.AskExtensions);   // no se toca el ajuste: si pasa a la exe, preguntara
+        Assert.All(ib.Core.Detected(), b => Assert.False(ib.Core.IsRegistered(b)));
+
+        // La misma caja sin paquete (la version exe) si lo ofrece.
+        ib.Packaged = false;
+        prompts.Sheets.Enqueue(l["NotNow"]);
+        await new ExtensionSetupFlow(ib.Core).OfferAfterUnlockAsync(prompts, box.Settings, l);
+        Assert.Single(prompts.Log);
+    }
+
+    [Theory]
+    [InlineData("es")]
+    [InlineData("en")]
+    public void Packaged_TextsExistInEveryLanguage_AndPointToTheExe(string language)
+    {
+        using var box = Sandbox.Create();
+        var l = box.Texts(language);
+        foreach (var key in new[] { "ExtPackagedHint", "ExtGetExe", "TutExtPackagedTitle", "TutExtPackagedBody" })
+            Assert.NotEqual(key, l[key]);
+        Assert.Contains("EXE", l["ExtPackagedHint"]);
+        Assert.Contains("EXE", l["ExtGetExe"]);
+        Assert.Contains("EXE", l["TutExtPackagedBody"]);
+        Assert.Contains("Microsoft Store", l["ExtPackagedHint"]);
     }
 }

@@ -44,7 +44,7 @@ public static class AppExecutable
 /// para cargarla, que es lo unico que el navegador no deja automatizar sin publicarla. Las rutas, el
 /// registro y abrir el navegador se le pasan: en Windows son los de verdad (ExtensionInstaller).
 /// </summary>
-public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root, string appDirectory, Func<string?> launcher, Func<string?> processPath, Action<string, string> open)
+public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root, string appDirectory, Func<string?> launcher, Func<string?> processPath, Action<string, string> open, Func<bool>? packaged = null)
 {
     public const string HostName = "com.socratic.credentials";
     public const string ChromiumId = "hbimfdiggibkbjnmkagdcnddpghhckho";   // sale de la clave «key» del manifiesto (carga a mano)
@@ -70,6 +70,25 @@ public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root
 
     /// <summary>La aplicacion trae la extension y el host (en Debug sin publicar el host, no).</summary>
     public bool Available => Directory.Exists(SourceDir) && File.Exists(HostExe);
+
+    /// <summary>
+    /// La aplicacion es la de la Microsoft Store (MSIX): el registro va virtualizado y el navegador no
+    /// encontraria el puente, asi que no se registra nada ni se ofrece instalar la extension.
+    /// </summary>
+    public bool Packaged
+    {
+        get
+        {
+            try { return packaged?.Invoke() ?? false; }
+            catch (Exception) { return false; }
+        }
+    }
+
+    /// <summary>Se puede instalar la extension aqui: la aplicacion la trae y no esta empaquetada.</summary>
+    public bool CanInstall => !Packaged && Available;
+
+    /// <summary>Los navegadores que la guia de configuracion propone (ninguno si no se puede instalar).</summary>
+    public List<Browser> GuideBrowsers() => CanInstall ? Detected() : [];
 
     /// <summary>Los navegadores que hay en este PC (por sus «App Paths»).</summary>
     public List<Browser> Detected() => Known.Select(b => b with { Path = FindExe(b.Exe) }).Where(b => b.Installed).ToList();
@@ -97,6 +116,8 @@ public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root
     /// <summary>Copia la extension (comun + manifiesto del navegador) y escribe el manifiesto del host y su clave.</summary>
     public void Install(Browser b)
     {
+        if (Packaged)
+            return;
         Extract(b.IsFirefox);
         RegisterHost(b);
         RegisterAppPath();
@@ -115,6 +136,8 @@ public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root
     /// </remarks>
     public void RegisterForInstalledBrowsers()
     {
+        if (Packaged)
+            return;
         try
         {
             RegisterAppPath();
@@ -255,7 +278,7 @@ public sealed class ExtensionSetupFlow(ExtensionInstallerCore installer)
     /// <summary>Tras desbloquear: si hay navegadores sin la extension, se ofrece instalarla (una vez por sesion).</summary>
     public async Task OfferAfterUnlockAsync(IExtensionPrompts prompts, ISettingsService settings, ILocalizationService l)
     {
-        if (_offeredThisSession || !settings.AskExtensions || !installer.Available)
+        if (_offeredThisSession || !settings.AskExtensions || !installer.CanInstall)
             return;
         _offeredThisSession = true;
         var missing = installer.Detected().Where(b => settings.ExtensionSeen(b.Key) is null).ToList();
@@ -277,6 +300,8 @@ public sealed class ExtensionSetupFlow(ExtensionInstallerCore installer)
     /// <summary>Instala lo automatizable y guia el paso manual (cargar la carpeta en el navegador).</summary>
     public async Task InstallAsync(IExtensionPrompts prompts, Browser b, ILocalizationService l)
     {
+        if (installer.Packaged)
+            return;
         try
         {
             installer.Install(b);

@@ -154,7 +154,9 @@
                     <Label x:Name="ExtTitle" Style="{StaticResource SectionTitle}" />
                     <Label x:Name="ExtHint" Style="{StaticResource HintText}" />
                     <VerticalStackLayout x:Name="BrowsersBox" Spacing="6" />
-                    <Grid ColumnDefinitions="*,Auto">
+                    <!-- Version de la Microsoft Store (MSIX): las extensiones necesitan la version exe -->
+                    <Button x:Name="ExtGetExeButton" Style="{StaticResource PrimaryButton}" ImageSource="ic_open_w.png" ContentLayout="Left,8" IsVisible="False" HorizontalOptions="Start" Padding="14,8" Clicked="OnExtGetExeClicked" />
+                    <Grid x:Name="ExtAskRow" ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Grid.Column="0">
                             <Label x:Name="ExtAskLabel" Style="{StaticResource BodyText}" />
                             <Label x:Name="ExtAskHint" Style="{StaticResource HintText}" FontSize="11" />

@@ -58,7 +58,8 @@ public partial class SettingsPage : ContentPage
         WindowsCard.IsVisible = true;
         StartupSwitch.IsToggled = Platforms.Windows.WindowsStartup.IsEnabled("sOCCredentials");
         ExtTitle.Text = _l["ExtSection"];
-        ExtHint.Text = _l["ExtSectionHint"];
+        ExtHint.Text = Platforms.Windows.ExtensionInstaller.Packaged ? _l["ExtPackagedHint"] : _l["ExtSectionHint"];
+        ExtGetExeButton.Text = _l["ExtGetExe"];
         ExtAskLabel.Text = _l["ExtAskOnUnlock"];
         ExtAskHint.Text = _l["ExtAskOnUnlockHint"];
         ExtAskSwitch.IsToggled = _settings.AskExtensions;
@@ -294,12 +295,26 @@ public partial class SettingsPage : ContentPage
             _settings.DesktopAutofill = e.Value;
     }
 
+    /// <summary>Version de la Microsoft Store: abre la pagina de descargas de la version exe (la que puede usar las extensiones).</summary>
+    private async void OnExtGetExeClicked(object? sender, EventArgs e)
+    {
+        try { await ServiceHelper.GetRequiredService<IBrowser>().OpenAsync(Platforms.Windows.PackageIdentity.ReleasesUrl, BrowserLaunchMode.External); }
+        catch (Exception) { }
+    }
+
 #if WINDOWS
     /// <summary>Una fila por navegador del PC: nombre, si la extension ya ha conectado, y el boton de instalar.</summary>
     private void RefreshBrowsers()
     {
-        ExtensionsCard.IsVisible = Platforms.Windows.ExtensionInstaller.Available;
         BrowsersBox.Clear();
+        // La de la Microsoft Store (MSIX) no puede registrar el puente: la tarjeta lo explica y
+        // lleva a la version exe, sin navegadores ni «Instalar…» ni la pregunta al desbloquear.
+        var packaged = Platforms.Windows.ExtensionInstaller.Packaged;
+        ExtensionsCard.IsVisible = packaged || Platforms.Windows.ExtensionInstaller.Available;
+        ExtGetExeButton.IsVisible = packaged;
+        ExtAskRow.IsVisible = !packaged;
+        if (packaged)
+            return;
         foreach (var b in Platforms.Windows.ExtensionInstaller.Detected())
         {
             var seen = _settings.ExtensionSeen(b.Key) is not null;

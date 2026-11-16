@@ -2,6 +2,32 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## 2026.11.16.00 — Windows: la versión de la Microsoft Store ya no promete las extensiones
+
+`versionCode`: 2026111600 · Windows `2026.11.16.0` · extensión `2026.11.16.0`
+
+Instalada desde la Microsoft Store (MSIX), la aplicación registraba el puente con el navegador,
+ofrecía «Instalar…» tras desbloquear y enseñaba el paso de la extensión en la guía. Pero dentro del
+paquete el registro va virtualizado y el navegador nunca encontraba el puente: la extensión no podía
+conectar.
+
+- La aplicación sabe si va empaquetada (`PackageIdentity.IsPackaged`, con `GetCurrentPackageFullName`;
+  si la pregunta falla, se da por no empaquetada, como hasta ahora). Una sola comprobación para toda
+  la aplicación (también la de la identidad de la barra de tareas).
+- Empaquetada: no se registra el puente ni la ruta de la aplicación, no se ofrece instalar la
+  extensión al desbloquear y «Instalar…» no hace nada.
+- **Ajustes › Extensiones del navegador** y la **guía de configuración** explican que las extensiones
+  necesitan la versión EXE y llevan, con un botón con icono, a la página de versiones de GitHub
+  (https://github.com/donki/Credentials/releases).
+- La versión EXE (con o sin lanzador) sigue igual.
+- Pruebas nuevas: la lectura de `GetCurrentPackageFullName`, que empaquetada no escribe nada en el
+  registro ni en disco, que no ofrece nada tras desbloquear y los textos en los dos idiomas.
+
+**English.** When installed from the Microsoft Store (MSIX) the app no longer registers the browser
+bridge (the registry is virtualized inside the package, so browsers never found it) nor offers to
+install the extension. Settings › Browser extensions and the setup guide explain that the extensions
+need the EXE version, with a button to the GitHub releases page. The EXE version is unchanged.
+
 ## 2026.11.14.00 — Lo que pidieron los probadores: borrar, bloquear, desbloqueo y notas
 
 `versionCode`: 2026111400 · Windows `2026.11.14.0` · extensión `2026.11.14.0`

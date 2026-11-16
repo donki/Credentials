@@ -34,6 +34,8 @@ public partial class App : Application
             var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
             var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
             var toast = Helpers.ServiceHelper.GetRequiredService<Services.IToastService>();
+            // Empaquetada (Microsoft Store) no registra nada: el registro va virtualizado y el
+            // navegador no veria el puente (ExtensionInstallerCore.Packaged).
             Platforms.Windows.ExtensionInstaller.RegisterForInstalledBrowsers();
             _extensions = new Platforms.Windows.ExtensionServer(store, settings);
             _extensions.BrowserConnected += browser =>
@@ -63,12 +65,6 @@ public partial class App : Application
             });
         }
         catch (Exception) { /* sin extensiones no pasa nada: la aplicacion sigue */ }
-    }
-
-    private static bool IsPackaged()
-    {
-        try { return global::Windows.ApplicationModel.Package.Current is not null; }
-        catch (Exception) { return false; }
     }
 #endif
 
@@ -190,7 +186,7 @@ public partial class App : Application
                     catch (Exception) { }
                 });
                 // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
-                if (!IsPackaged())
+                if (!Platforms.Windows.PackageIdentity.IsPackaged())
                     Platforms.Windows.TaskbarIdentity.Apply(hwnd, "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
                 if (!Services.VaultStore.Sandbox)
                     StartExtensions(window);

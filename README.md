@@ -58,7 +58,9 @@ de Proyectos de Software de sOCratic.
   cargarla («Cargar desempaquetada»); en cuanto conecta, sale como instalada. En Edge y Firefox, que ya la tienen publicada,
   abre directamente su ficha de la tienda para instalarla.
   El MSIX de la Store no puede registrar el host (virtualización del registro): las extensiones
-  necesitan la versión exe. En la página, al entrar en el usuario o la contraseña sale una **lista
+  necesitan la versión exe. Desde la 2026.11.16.00 la app lo detecta (`PlatformLogic/PackageIdentity.cs`,
+  `GetCurrentPackageFullName`): empaquetada no registra el puente ni ofrece instalar la extensión, y
+  Ajustes y la guía explican que hace falta el EXE con un botón a las releases de GitHub. En la página, al entrar en el usuario o la contraseña sale una **lista
   pegada al campo** con las entradas del sitio (una pulsación rellena) y, si hay algo escrito que
   no está en la bóveda, **«Guardar lo escrito»**. La extensión propone una vez **desactivar el
   gestor de contraseñas del navegador** (`privacy.services.passwordSavingEnabled`).
@@ -140,6 +142,7 @@ Nada toca la bóveda real, los ajustes ni la red: cada prueba usa una carpeta te
 
 | Fecha | Pruebas | Cobertura de lo instrumentado | Cobertura sobre toda la app | Tiempo del banco |
 |---|---|---|---|---|
+| 2026-11-16 | 449 (pasan todas: 291 + 158) | 91,7 % (3684 de 4016 líneas) | **80,5 %** (3684 de 4575 líneas) | ≈40 s (9 s + 30 s) |
 | 2026-11-14 | 442 (pasan todas: 284 + 158) | 91,9 % (3658 de 3980 líneas) | **80,7 %** (3658 de 4535 líneas) | ≈44 s (10 s + 34 s) |
 | 2026-10-03 | 401 (pasan todas: 280 + 121) | 92,1 % (3545 de 3851 líneas) | **82,5 %** (3545 de 4295 líneas) | ≈37 s (8 s + 29 s) |
 | 2026-09-30 | 151 (pasan todas) | 99,4 % (1813 de 1823 líneas) | ≈36 % (1813 de ≈5060 líneas) | ≈7 s |

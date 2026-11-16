@@ -111,9 +111,14 @@ public static class ExtensionInstaller
     internal static readonly ExtensionInstallerCore Core = new(new WindowsRegistry(),
         System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sOCCredentials"),
         AppContext.BaseDirectory, () => Environment.GetEnvironmentVariable("SOC_LAUNCHER"), () => Environment.ProcessPath,
-        (exe, url) => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, url) { UseShellExecute = true }));
+        (exe, url) => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, url) { UseShellExecute = true }),
+        PackageIdentity.IsPackaged);
 
     public static Browser[] Known => ExtensionInstallerCore.Known;
+    /// <summary>La de la Microsoft Store (MSIX): sin puente ni extensiones, se remite a la version exe.</summary>
+    public static bool Packaged => Core.Packaged;
+    public static bool CanInstall => Core.CanInstall;
+    public static List<Browser> GuideBrowsers() => Core.GuideBrowsers();
     public static string Root => Core.Root;
     public static string ExtensionDir(bool firefox) => Core.ExtensionDir(firefox);
     public static bool Available => Core.Available;
