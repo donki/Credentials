@@ -244,9 +244,10 @@ public class DemoDataTests
         await DemoData.ApplyAsync("contraseña-demo", false, "about", null);
         Assert.Equal(["//SettingsPage", "//TutorialPage", "//AboutPage"], app.Navigation.Routes);
 
-        await DemoData.ApplyAsync("contraseña-demo", false, "entry:GitHub", null);
+        await DemoData.ApplyAsync("contraseña-demo", false, "entry:Code repository", null);
         var entryPage = Assert.IsType<EntryPage>(Assert.Single(app.Navigation.Pushed));
-        Assert.Equal("GitHub", entryPage.Title);
+        Assert.Equal("Code repository", entryPage.Title);
+        Assert.DoesNotContain(app.Store.Data!.Entries, e => e.Title == "Correo");   // sembrada en inglés, el idioma de la app
         await DemoData.ApplyAsync("contraseña-demo", false, "entry:No existe", null);
         await DemoData.ApplyAsync("contraseña-demo", false, "otra", null);
         Assert.Single(app.Navigation.Pushed);
@@ -259,5 +260,19 @@ public class DemoDataTests
         Assert.False(app.Store.IsUnlocked);
         await DemoData.ApplyAsync("contraseña-demo", false, null, null);
         Assert.True(app.Store.IsUnlocked);
+    }
+}
+
+public class DemoSeedTests
+{
+    [Fact]
+    public void Siembra_en_los_dos_idiomas_sin_marcas()
+    {
+        var es = DemoData.Seed(en: false);
+        var en = DemoData.Seed(en: true);
+        Assert.Equal(es.Count, en.Count);
+        Assert.Contains(es, e => e.Title == "Repositorio");
+        Assert.Contains(en, e => e.Title == "Code repository");
+        Assert.All(es.Concat(en), e => Assert.True(string.IsNullOrEmpty(e.Url) || e.Url.Contains(".example"), e.Url));
     }
 }
