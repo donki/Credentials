@@ -11,8 +11,8 @@ Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11
   las fichas de la Chrome Web Store). La aplicación ya no registra el host de mensajería nativa para
   Chrome y, al arrancar, borra la clave `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.socratic.credentials`
   que dejaron las versiones anteriores (solo esa: el manifiesto es el mismo que usa Edge y se queda).
-  El paquete «chromium» de la extensión sigue siendo el de Edge. Importar el CSV exportado de Chrome
-  sigue igual.
+  El paquete «chromium» de la extensión sigue siendo el de Edge. Los textos de Importar y del
+  autocompletar de Android ya no nombran Chrome (el formato de CSV que se importa no cambia).
 - Por dentro, sin cambios para el usuario: lo de Windows y lo de Android de `App`, Ajustes, la guía,
   la bóveda y la puerta de desbloqueo (antes en bloques `#if WINDOWS`/`#if ANDROID`) va detrás de
   `IDesktopIntegration` e `IAndroidIntegration`, registrados por plataforma en `MauiProgram`; la

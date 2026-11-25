@@ -32,8 +32,8 @@ de Proyectos de Software de sOCratic.
 - **TOTP/HOTP** (RFC 6238/4226, SHA-1/256/512, 6–10 dígitos, periodo): pegando el `otpauth://`,
   la clave o **escaneando el QR** con la cámara (ZXing). Código vivo con cuenta atrás y copiar.
 - **Generador de contraseñas** con longitud y juegos de caracteres, aleatoriedad criptográfica.
-- **Importar** de los navegadores y otros gestores (`Services/Importers.cs`): CSV de **Chrome,
-  Edge, Brave, Opera, Vivaldi** («Exportar contraseñas»), **Firefox**, **Safari**, **Bitwarden**
+- **Importar** de los navegadores y otros gestores (`Services/Importers.cs`): CSV de **Edge,
+  Brave, Opera, Vivaldi** («Exportar contraseñas»), **Firefox**, **Safari**, **Bitwarden**
   (CSV y JSON), **KeePass 2** y **KeePassXC**; JSON de **Aegis** y **2FAS**; el QR de exportación de
   **Google Authenticator** (`otpauth-migration://`, protobuf decodificado a mano); y el JSON en
   claro de la propia aplicación. Las repetidas se saltan.

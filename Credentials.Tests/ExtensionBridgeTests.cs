@@ -589,7 +589,7 @@ public class ExtensionBridgeTests
     {
         using var box = Sandbox.Create();
         var l = box.Texts(language);
-        foreach (var key in new[] { "ExtSectionHint", "TutNoBrowsersBody", "TutExtBodyStore", "ExtStepsStore", "TutBrowserPmWindows", "TutWelcomeWindows" })
+        foreach (var key in new[] { "ExtSectionHint", "TutNoBrowsersBody", "TutExtBodyStore", "ExtStepsStore", "TutBrowserPmWindows", "TutWelcomeWindows", "ImportHint", "AutofillPreferredHint" })
             Assert.DoesNotContain("Chrome", l[key]);
         // Los textos de la carga a mano (modo de desarrollador) ya no existen.
         foreach (var key in new[] { "ExtStepsChromium", "ExtOpenBrowser", "ExtLoadUnpacked_chrome", "ExtLoadUnpacked_edge", "TutExtBodyChromium" })

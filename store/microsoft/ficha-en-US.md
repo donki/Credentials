@@ -38,7 +38,7 @@ ON ALL YOUR DEVICES
   and use the same master password: changes are merged entry by entry, newest wins.
 
 BRING WHAT YOU ALREADY HAVE
-• Import the CSV from Chrome, Edge, Brave, Firefox or Safari, Bitwarden, KeePass and KeePassXC; the
+• Import the CSV from Edge, Brave, Firefox or Safari, Bitwarden, KeePass and KeePassXC; the
   JSON from Aegis or 2FAS; and your Google Authenticator accounts from its export QR.
 • Export the encrypted vault whenever you want.
 
@@ -61,7 +61,7 @@ Lock after inactivity, or no password if you trust the PC
 Passwords, apps, secure notes and 2FA codes (TOTP)
 Two-factor QR with the camera; code with countdown
 Password generator and strength meter
-Import from Chrome, Edge, Firefox, Bitwarden, KeePass, Aegis, 2FAS, Google Authenticator
+Import from Edge, Firefox, Bitwarden, KeePass, Aegis, 2FAS, Google Authenticator
 The same vault on Android
 Free software, English and Spanish, light and dark
 ```

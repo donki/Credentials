@@ -47,7 +47,7 @@ EN TODOS TUS DISPOSITIVOS
   usa la misma contraseña maestra: los cambios se mezclan entrada a entrada, gana la más reciente.
 
 TRAE LO QUE YA TIENES
-• Importa el CSV de Chrome, Edge, Brave, Firefox o Safari, Bitwarden, KeePass y KeePassXC; el JSON
+• Importa el CSV de Edge, Brave, Firefox o Safari, Bitwarden, KeePass y KeePassXC; el JSON
   de Aegis o 2FAS; y las cuentas de Google Authenticator con su QR de exportación.
 • Exporta la bóveda cifrada cuando quieras.
 
@@ -70,7 +70,7 @@ Bloqueo por inactividad, o sin contraseña si confías en el PC
 Contraseñas, aplicaciones, notas seguras y códigos 2FA (TOTP)
 QR de segundo factor con la cámara; código con cuenta atrás
 Generador de contraseñas y medidor de fortaleza
-Importa de Chrome, Edge, Firefox, Bitwarden, KeePass, Aegis, 2FAS, Google Authenticator
+Importa de Edge, Firefox, Bitwarden, KeePass, Aegis, 2FAS, Google Authenticator
 La misma bóveda en Android
 Software libre, en español y en inglés, claro y oscuro
 ```

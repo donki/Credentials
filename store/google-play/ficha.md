@@ -42,7 +42,7 @@ EN TODOS TUS DISPOSITIVOS
 • Autocompletar de Android: en las apps y en el navegador, sOC Credentials te propone las credenciales que casan con el sitio o con la app.
 
 TRAE LO QUE YA TIENES
-• Importa el CSV de Chrome, Edge, Brave, Firefox o Safari, Bitwarden, KeePass y KeePassXC; el JSON de Aegis o 2FAS; y las cuentas de Google Authenticator escaneando su QR de exportación.
+• Importa el CSV de Edge, Brave, Firefox o Safari, Bitwarden, KeePass y KeePassXC; el JSON de Aegis o 2FAS; y las cuentas de Google Authenticator escaneando su QR de exportación.
 • Exporta la bóveda cifrada cuando quieras.
 
 Generador de contraseñas con longitud y juegos de caracteres a tu gusto. Software libre bajo licencia MIT. En castellano y en inglés, con modo claro y oscuro.
@@ -84,7 +84,7 @@ ON ALL YOUR DEVICES
 • Android autofill: in apps and in the browser, sOC Credentials offers the credentials that match the site or the app.
 
 BRING WHAT YOU ALREADY HAVE
-• Import the CSV from Chrome, Edge, Brave, Firefox or Safari, Bitwarden, KeePass and KeePassXC; the JSON from Aegis or 2FAS; and your Google Authenticator accounts by scanning its export QR.
+• Import the CSV from Edge, Brave, Firefox or Safari, Bitwarden, KeePass and KeePassXC; the JSON from Aegis or 2FAS; and your Google Authenticator accounts by scanning its export QR.
 • Export the encrypted vault whenever you want.
 
 Password generator with the length and character sets you like. Free software under the MIT license. In English and Spanish, with light and dark mode.
