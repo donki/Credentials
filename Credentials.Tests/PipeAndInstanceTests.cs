@@ -164,4 +164,30 @@ public class PipeAndInstanceTests
         try { Assert.Null(SystemInstances.VersionOf(text)); }
         finally { File.Delete(text); }
     }
+
+    [Fact]
+    public void Another_Instance_Is_Seen_And_Can_Be_Closed()
+    {
+        // Otra «instancia» de verdad: un proceso de consola sin ventana que arranca la prueba y que es
+        // el unico que se cierra (antes esto solo se recorria si habia otro proceso de pruebas a la vez).
+        using var child = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+            Path.Combine(Environment.SystemDirectory, "PING.EXE"), "-n 60 127.0.0.1") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true })!;
+        try
+        {
+            var instances = Instances(Name("m"), Name("s"), process: child.ProcessName);
+            Assert.True(instances.OtherInstanceAlive());
+            var ours = instances.OtherInstances().ToList();
+            var other = Assert.Single(ours, o => ((System.Diagnostics.Process)o.GetType().GetProperty("Process")!.GetValue(o)!).Id == child.Id);
+            _ = other.Version;   // la de PING lleva texto detras del numero: puede no leerse, sin lanzar
+            other.Kill();
+            other.WaitForExit(10_000);
+            Assert.True(child.HasExited);
+            ours.ForEach(o => o.Dispose());
+        }
+        finally
+        {
+            if (!child.HasExited)
+                child.Kill();
+        }
+    }
 }

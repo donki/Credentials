@@ -173,6 +173,9 @@ public class AppTests
         Assert.IsType<TextFilePicker>(services.GetRequiredService<ITextFilePicker>());
         Assert.IsType<NoBiometric>(services.GetRequiredService<IBiometric>());
         Assert.IsType<NoOAuthBrowser>(services.GetRequiredService<IOAuthBrowser>());
+        // Sin plataforma: ni escritorio de Windows ni Android (cada plataforma registra lo suyo encima).
+        Assert.IsType<NoDesktopIntegration>(services.GetRequiredService<IDesktopIntegration>());
+        Assert.IsType<NoAndroidIntegration>(services.GetRequiredService<IAndroidIntegration>());
         Assert.NotNull(services.GetRequiredService<IClipboard>());
         Assert.NotNull(services.GetRequiredService<IShare>());
         Assert.NotNull(services.GetRequiredService<IBrowser>());

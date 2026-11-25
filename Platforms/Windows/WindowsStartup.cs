@@ -7,13 +7,9 @@ namespace Credentials.Platforms.Windows;
 /// </summary>
 internal static class WindowsStartup
 {
-    private static readonly StartupRegistration Registration = new(new WindowsRegistry(), () => ExecutablePath);
+    internal static readonly StartupRegistration Registration = new(new WindowsRegistry(), () => ExecutablePath);
 
     /// <summary>El exe que hay que arrancar: el lanzador que abrio la aplicacion, o el propio exe.</summary>
     public static string ExecutablePath =>
         AppExecutable.Resolve(Environment.GetEnvironmentVariable("SOC_LAUNCHER"), Environment.ProcessPath, File.Exists) ?? string.Empty;
-
-    public static bool IsEnabled(string valueName) => Registration.IsEnabled(valueName);
-
-    public static void Set(string valueName, bool enabled) => Registration.Set(valueName, enabled);
 }

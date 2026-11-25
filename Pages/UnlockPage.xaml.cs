@@ -16,6 +16,8 @@ public partial class UnlockPage : ContentPage
     private readonly ISettingsService _settings;
     private readonly IBiometric _biometric;
     private readonly IDialogService _dialogs;
+    private readonly IDesktopIntegration _desktop;
+    private readonly IAndroidIntegration _android;
     private bool _creating;
     private bool _biometricTried;
 
@@ -27,6 +29,8 @@ public partial class UnlockPage : ContentPage
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _biometric = ServiceHelper.GetRequiredService<IBiometric>();
         _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
+        _desktop = ServiceHelper.GetRequiredService<IDesktopIntegration>();
+        _android = ServiceHelper.GetRequiredService<IAndroidIntegration>();
         _creating = !_store.Exists;
         ApplyTexts();
         // Si la boveda se abre por otro camino (biometria desde otra pagina, el gancho de pruebas
@@ -34,58 +38,34 @@ public partial class UnlockPage : ContentPage
         _store.Changed += OnStoreChanged;
         _store.Unlocked += OnStoreChanged;
         _l.LanguageChanged += (_, _) => ApplyTexts();
-#if WINDOWS
-        Stack.SizeChanged += (_, _) => FitWindowHeight();
-        SizeChanged += (_, _) => FitWindowHeight();
-#endif
+        if (_desktop.IsAvailable)
+        {
+            Stack.SizeChanged += (_, _) => FitWindowHeight();
+            SizeChanged += (_, _) => FitWindowHeight();
+        }
     }
 
-#if WINDOWS
     /// <summary>
-    /// En Windows la puerta va en una ventana pequeña (ver <c>VaultPage.Compact</c>): su alto se
-    /// ajusta a lo que hay dentro, sin huecos arriba ni abajo, y crece si aparece Windows Hello o un error.
+    /// En Windows la puerta va en una ventana pequeña (<see cref="IDesktopIntegration.CompactForGate"/>):
+    /// su alto se ajusta a lo que hay dentro, sin huecos arriba ni abajo, y crece si aparece un error.
     /// </summary>
-    private double? _titleBar;
-    private double _fittedContent = -1;
-
-    /// <summary>Volver a ajustar el alto (la ventana se ha recolocado desde fuera).</summary>
-    internal void RefitHeight()
+    private void FitWindowHeight(bool force = false)
     {
-        _fittedContent = -1;
-        FitWindowHeight();
-    }
-
-    private void FitWindowHeight()
-    {
+        if (Width <= 0 || Height <= 0)
+            return;
         try
         {
-            if (Width <= 0 || Height <= 0 || Window?.Handler?.PlatformView is not Microsoft.UI.Xaml.Window native)
-                return;
-            var app = native.AppWindow;
-            var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
             // El alto que pide el contenido, no el que ocupa: dentro del ScrollView se estira hasta la ventana.
-            var content = Stack.Measure(Width, double.PositiveInfinity).Height;
-            if (Math.Abs(content - _fittedContent) < 1)
-                return;   // ya ajustada a este contenido (el cambio de tamaño vuelve a llamar aquí)
-            var chrome = app.Size.Height - app.ClientSize.Height;   // bordes de Windows
-            // MAUI pinta su barra de título dentro del área cliente: lo que sobra entre el área
-            // cliente y la página es esa barra. Se mide una vez, con la ventana aún quieta: después
-            // la página va un paso por detrás de cada cambio de tamaño.
-            _titleBar ??= Math.Max(0, app.ClientSize.Height / scale - Height);
-            var wanted = (int)Math.Ceiling((content + _titleBar.Value) * scale) + chrome;
-            _fittedContent = content;
-            if (Math.Abs(app.Size.Height - wanted) < 2)
-                return;
-            // Anclada abajo: crece o encoge hacia arriba.
-            var bottom = app.Position.Y + app.Size.Height;
-            app.MoveAndResize(new global::Windows.Graphics.RectInt32(app.Position.X, bottom - wanted, app.Size.Width, wanted));
+            _desktop.FitGateHeight(this, Stack.Measure(Width, double.PositiveInfinity).Height, force);
         }
         catch (Exception)
         {
             // Solo es la forma de la ventana: si falla, se queda como estaba.
         }
     }
-#endif
+
+    /// <summary>Volver a ajustar el alto (la ventana se ha recolocado desde fuera).</summary>
+    internal void RefitHeight() => FitWindowHeight(force: true);
 
     private void OnStoreChanged()
     {
@@ -100,11 +80,10 @@ public partial class UnlockPage : ContentPage
         // presentación de la app sobra. Al crear la bóveda sí se explica.
         IntroLabel.Text = _creating ? _l["CreateIntro"] : string.Empty;
         IntroLabel.IsVisible = _creating;
-#if WINDOWS
-        // En la ventanita de Windows, al desbloquear, sobran el candado y el título: la casilla y
-        // el botón ya dicen qué hacer (y el botón pone «Desbloquear»).
-        Logo.IsVisible = TitleLabel.IsVisible = _creating;
-#endif
+        // En la ventanita de Windows, al desbloquear, sobran el candado y el titulo: la casilla y
+        // el boton ya dicen que hacer (y el boton pone «Desbloquear»).
+        if (_desktop.IsAvailable)
+            Logo.IsVisible = TitleLabel.IsVisible = _creating;
         PasswordTitle.Text = _l["MasterPassword"];
         RepeatTitle.Text = _l["MasterPasswordRepeat"];
         RepeatTitle.IsVisible = RepeatEntry.IsVisible = _creating;
@@ -282,13 +261,8 @@ public partial class UnlockPage : ContentPage
     /// </summary>
     protected override bool OnBackButtonPressed()
     {
-#if ANDROID
-        var activity = Platform.CurrentActivity;
-        if (activity is MainActivity)
-            activity.MoveTaskToBack(true);
-        else if (activity is not null)
+        if (_android.GateBack() == GateBackAction.CloseGate)
             Dispatcher.Dispatch(async () => await CloseAsync());
-#endif
         return true;
     }
 }

@@ -2,6 +2,30 @@
 
 Todas las versiones siguen el esquema de fecha `AAAA.MM.DD.NN` (constitución 11).
 
+## Sin publicar
+
+- **Chrome ya no se admite** (decisión del 2026-11-25: la Chrome Web Store cobra por publicar). La
+  extensión es para **Edge y Firefox**, cada una desde su tienda. Fuera la opción de Chrome de
+  Ajustes › Extensiones del navegador, de la oferta tras desbloquear y de la guía (con sus textos de
+  «Modo de desarrollador» y «Cargar desempaquetada»), y de README, fichas y herramientas (se borran
+  las fichas de la Chrome Web Store). La aplicación ya no registra el host de mensajería nativa para
+  Chrome y, al arrancar, borra la clave `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.socratic.credentials`
+  que dejaron las versiones anteriores (solo esa: el manifiesto es el mismo que usa Edge y se queda).
+  El paquete «chromium» de la extensión sigue siendo el de Edge. Importar el CSV exportado de Chrome
+  sigue igual.
+- Por dentro, sin cambios para el usuario: lo de Windows y lo de Android de `App`, Ajustes, la guía,
+  la bóveda y la puerta de desbloqueo (antes en bloques `#if WINDOWS`/`#if ANDROID`) va detrás de
+  `IDesktopIntegration` e `IAndroidIntegration`, registrados por plataforma en `MauiProgram`; la
+  ventanita de la lista del autocompletar de escritorio usa `AutofillPopupState` (`PlatformLogic/`).
+  Banco nuevo `Credentials.Tests/Windows` para `Platforms/Windows`. Cobertura de toda la app:
+  80,7 % (3693 de 4579) → **90,7 %** (4237 de 4673; 484 pruebas) (General 8.6).
+
+**English.** Chrome is no longer supported (its store charges to publish): the extension is for Edge
+and Firefox, each from its own store. The app no longer registers the native messaging host for
+Chrome and removes, at startup, the key that older versions left; the Chrome Web Store listings are
+gone. Internally, the Windows and Android code of the pages moved behind platform services, with a new
+Windows test bench; whole-app coverage 80.7 % → 90.7 %.
+
 ## 2026.11.16.00 — Windows: la versión de la Microsoft Store ya no promete las extensiones
 
 `versionCode`: 2026111600 · Windows `2026.11.16.0` · extensión `2026.11.16.0`

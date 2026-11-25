@@ -67,7 +67,7 @@ public sealed class DesktopAutofill : IDisposable
     }
 
     /// <summary>Win32 de verdad.</summary>
-    private sealed class Native(Microsoft.UI.Dispatching.DispatcherQueue ui) : IDesktopNative
+    internal sealed class Native(Microsoft.UI.Dispatching.DispatcherQueue ui) : IDesktopNative
     {
         public string ProcessName(IntPtr hwnd)
         {
@@ -109,7 +109,7 @@ public sealed class DesktopAutofill : IDisposable
         private WUX.Window? _window;
         private WUC.StackPanel? _panel;
         private IntPtr _hwnd;
-        private bool _visible;
+        private readonly AutofillPopupState _state = new();
 
         private void Create()
         {
@@ -136,7 +136,7 @@ public sealed class DesktopAutofill : IDisposable
             _window.AppWindow.IsShownInSwitchers = false;
             var ex = GetWindowLongPtr(_hwnd, -20 /* GWL_EXSTYLE */).ToInt64() | 0x08000000 /* WS_EX_NOACTIVATE */ | 0x00000080 /* WS_EX_TOOLWINDOW */ | 0x00000008 /* WS_EX_TOPMOST */;
             SetWindowLongPtr(_hwnd, -20, new IntPtr(ex));
-            _window.Closed += (_, _) => _visible = false;
+            _window.Closed += (_, _) => _state.Closed();
         }
 
         public void Show(IReadOnlyList<Credential> entries, ScreenRect field, Action<Credential> pick)
@@ -144,13 +144,13 @@ public sealed class DesktopAutofill : IDisposable
             if (_window is null)
                 Create();
             _panel!.Children.Clear();
-            _panel.Children.Add(new WUC.TextBlock { Text = "sOC Credentials", FontSize = 11, Opacity = 0.7, Margin = new WUX.Thickness(8, 2, 8, 4) });
-            foreach (var e in entries)
+            _panel.Children.Add(new WUC.TextBlock { Text = AutofillPopupState.Header, FontSize = 11, Opacity = 0.7, Margin = new WUX.Thickness(8, 2, 8, 4) });
+            foreach (var row in AutofillPopupState.Rows(entries))
             {
                 var text = new WUC.StackPanel();
-                text.Children.Add(new WUC.TextBlock { Text = e.Title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = WUX.TextTrimming.CharacterEllipsis });
-                if (e.Username.Length > 0)
-                    text.Children.Add(new WUC.TextBlock { Text = e.Username, FontSize = 12, Opacity = 0.75, TextTrimming = WUX.TextTrimming.CharacterEllipsis });
+                text.Children.Add(new WUC.TextBlock { Text = row.Title, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, TextTrimming = WUX.TextTrimming.CharacterEllipsis });
+                if (row.Subtitle is { } user)
+                    text.Children.Add(new WUC.TextBlock { Text = user, FontSize = 12, Opacity = 0.75, TextTrimming = WUX.TextTrimming.CharacterEllipsis });
                 var button = new WUC.Button
                 {
                     Content = text,
@@ -160,7 +160,7 @@ public sealed class DesktopAutofill : IDisposable
                     Background = new WUM.SolidColorBrush(Microsoft.UI.Colors.Transparent),
                     BorderThickness = new WUX.Thickness(0),
                 };
-                var entry = e;
+                var entry = row.Entry;
                 button.Click += (_, _) => pick(entry);
                 _panel.Children.Add(button);
             }
@@ -173,20 +173,15 @@ public sealed class DesktopAutofill : IDisposable
                 : (ScreenRect?)null;
             var r = DesktopAutofillEngine.PopupBounds(field, GetDpiForWindow(_hwnd) / 96.0, entries.Count, work);
             _window!.AppWindow.MoveAndResize(new RectInt32(r.X, r.Y, r.Width, r.Height));
-            if (!_visible)
-            {
+            if (_state.Show())
                 _window.AppWindow.Show(false);
-                _visible = true;
-            }
             SetWindowPos(_hwnd, new IntPtr(-1) /* HWND_TOPMOST */, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 /* NOSIZE | NOMOVE | NOACTIVATE */);
         }
 
         public void Hide()
         {
-            if (!_visible)
-                return;
-            _visible = false;
-            _window!.AppWindow.Hide();
+            if (_state.Hide())
+                _window!.AppWindow.Hide();
         }
     }
 

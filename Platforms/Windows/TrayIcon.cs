@@ -19,6 +19,12 @@ public sealed class TrayIcon : TrayController
 
     private delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
+    // Costuras para las pruebas (Credentials.Windows.Tests): poner el icono en el area de notificacion,
+    // enseñar la ventana y traerla al primer plano se ven y le quitan el foco a quien usa el PC.
+    internal static Func<int, NotifyIconData, bool> NotifyIcon { get; set; } = (message, data) => Shell_NotifyIcon(message, ref data);
+    internal static Func<IntPtr, int, bool> ShowWindowCall { get; set; } = ShowWindow;
+    internal static Func<IntPtr, bool> SetForegroundCall { get; set; } = SetForegroundWindow;
+
     /// <summary>Cuanto lleva el PC sin teclado ni raton (GetLastInputInfo), para el bloqueo por inactividad real.</summary>
     public static TimeSpan? SystemIdle()
     {
@@ -36,9 +42,9 @@ public sealed class TrayIcon : TrayController
         WTSRegisterSessionNotification(hwnd, 0 /* NOTIFY_FOR_THIS_SESSION */);
     }
 
-    protected override void ShowWindow(int command) => ShowWindow(_hwnd, command);
+    protected override void ShowWindow(int command) => ShowWindowCall(_hwnd, command);
 
-    protected override void BringToForeground() => SetForegroundWindow(_hwnd);
+    protected override void BringToForeground() => SetForegroundCall(_hwnd);
 
     protected override void NotifyShown() => SingleInstance.NotifyShown();
 
@@ -132,7 +138,7 @@ public sealed class TrayIcon : TrayController
     /// icono de 14 px en el indigo de la app (rojo si es destructivo) y fondo de seleccion al pasar.
     /// Los colores salen de Colors.xaml, en claro u oscuro segun el tema de la app.
     /// </summary>
-    private Xaml.Controls.MenuFlyout BuildMenu(bool dark)
+    internal Xaml.Controls.MenuFlyout BuildMenu(bool dark)
     {
         var card = Brush(dark ? "CardBackgroundDark" : "CardBackgroundLight", dark ? "#201F27" : "#FFFFFF");
         var separator = Brush(dark ? "SeparatorDark" : "SeparatorLight", dark ? "#48454F" : "#C7C4D8");
@@ -220,7 +226,7 @@ public sealed class TrayIcon : TrayController
     }
 
     /// <summary>La ventana de delante es de este proceso (el propio menu, o la principal).</summary>
-    private static bool ForegroundIsOurs()
+    internal static bool ForegroundIsOurs()
     {
         GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
         return pid == (uint)Environment.ProcessId;
@@ -246,19 +252,19 @@ public sealed class TrayIcon : TrayController
         data.uCallbackMessage = WmTray;
         data.hIcon = LoadAppIcon();
         data.szTip = "sOC Credentials";
-        Shell_NotifyIcon(0 /* NIM_ADD */, ref data);
+        NotifyIcon(0 /* NIM_ADD */, data);
     }
 
     protected override void RemoveIcon()
     {
         var data = Data();
-        Shell_NotifyIcon(2 /* NIM_DELETE */, ref data);
+        NotifyIcon(2 /* NIM_DELETE */, data);
     }
 
     private NotifyIconData Data() => new() { cbSize = Marshal.SizeOf<NotifyIconData>(), hWnd = _hwnd, uID = 1 };
 
     /// <summary>El icono del propio ejecutable; si no lo tiene, el generico de aplicacion.</summary>
-    private static IntPtr LoadAppIcon()
+    internal static IntPtr LoadAppIcon()
     {
         var small = new IntPtr[1];
         try
@@ -271,7 +277,7 @@ public sealed class TrayIcon : TrayController
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    private struct NotifyIconData
+    internal struct NotifyIconData
     {
         public int cbSize;
         public IntPtr hWnd;

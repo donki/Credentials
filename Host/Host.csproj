@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Host de mensajeria nativa para las extensiones de navegador (Chrome, Edge, Firefox). El
+    Host de mensajeria nativa para las extensiones de navegador (Edge, Firefox). El
     navegador lo arranca con la extension y le habla por stdin/stdout (marcos de 4 bytes de longitud
     + JSON). Este exe no sabe nada de la boveda: pasa cada mensaje a la aplicacion por una tuberia
     con nombre (\\.\pipe\sOCCredentials) y devuelve la respuesta. Si la aplicacion no esta abierta,

@@ -22,10 +22,13 @@ public interface IRegistryAccess
 
     /// <summary>Borra un valor de HKCU (si no esta, nada).</summary>
     void DeleteValue(string key, string name);
+
+    /// <summary>Borra una clave de HKCU que no tenga subclaves (si no esta, nada).</summary>
+    void DeleteKey(string key);
 }
 
-/// <summary>Un navegador con soporte: donde esta y donde registra sus hosts de mensajeria nativa.</summary>
-public sealed record Browser(string Key, string Name, string Exe, string HostRegistryKey, bool IsFirefox, string ExtensionsUrl, string? StoreUrl = null)
+/// <summary>Un navegador con soporte: donde esta, donde registra sus hosts de mensajeria nativa y la ficha de la extension en su tienda.</summary>
+public sealed record Browser(string Key, string Name, string Exe, string HostRegistryKey, bool IsFirefox, string StoreUrl)
 {
     public string? Path { get; init; }
     public bool Installed => Path is not null;
@@ -39,11 +42,15 @@ public static class AppExecutable
 }
 
 /// <summary>
-/// Instalacion de la extension: deja la carpeta desempaquetada en &lt;raiz&gt;\extension, registra
-/// CredentialsHost.exe para cada navegador (HKCU, sin permisos de administrador) y guia al usuario
-/// para cargarla, que es lo unico que el navegador no deja automatizar sin publicarla. Las rutas, el
-/// registro y abrir el navegador se le pasan: en Windows son los de verdad (ExtensionInstaller).
+/// Instalacion de la extension: deja la carpeta desempaquetada en &lt;raiz&gt;\extension (para quien la
+/// carga a mano en Edge o Firefox), registra CredentialsHost.exe para cada navegador (HKCU, sin
+/// permisos de administrador) y lleva a la ficha de la extension en la tienda del navegador. Las
+/// rutas, el registro y abrir el navegador se le pasan: en Windows son los de verdad (ExtensionInstaller).
 /// </summary>
+/// <remarks>
+/// Chrome no se admite desde el 2026-11-25 (su tienda cobra por publicar): solo Edge y Firefox. Las
+/// versiones de antes registraban tambien el host para Chrome; al arrancar se borra esa clave.
+/// </remarks>
 public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root, string appDirectory, Func<string?> launcher, Func<string?> processPath, Action<string, string> open, Func<bool>? packaged = null)
 {
     public const string HostName = "com.socratic.credentials";
@@ -57,10 +64,12 @@ public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root
 
     public static readonly Browser[] Known =
     [
-        new("edge", "Microsoft Edge", "msedge.exe", @"Software\Microsoft\Edge\NativeMessagingHosts", false, "edge://extensions/", EdgeStoreUrl),
-        new("chrome", "Google Chrome", "chrome.exe", @"Software\Google\Chrome\NativeMessagingHosts", false, "chrome://extensions/"),
-        new("firefox", "Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, "about:debugging#/runtime/this-firefox", FirefoxStoreUrl),
+        new("edge", "Microsoft Edge", "msedge.exe", @"Software\Microsoft\Edge\NativeMessagingHosts", false, EdgeStoreUrl),
+        new("firefox", "Firefox", "firefox.exe", @"Software\Mozilla\NativeMessagingHosts", true, FirefoxStoreUrl),
     ];
+
+    /// <summary>La clave con la que las versiones de antes del 2026-11-25 registraban el host para Chrome.</summary>
+    public const string LegacyChromeHostKey = @"Software\Google\Chrome\NativeMessagingHosts\" + HostName;
 
     public string Root => root;
     public string ExtensionDir(bool firefox) => Path.Combine(root, "extension", firefox ? "firefox" : "chromium");
@@ -138,11 +147,26 @@ public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root
     {
         if (Packaged)
             return;
+        RemoveLegacyChromeHost();
         try
         {
             RegisterAppPath();
             foreach (var b in Detected())
                 Install(b);
+        }
+        catch (Exception) { }
+    }
+
+    /// <summary>
+    /// Chrome ya no se admite: si una version anterior registro el host para el, se borra esa clave (la
+    /// de este host y nada mas). El manifiesto al que apuntaba es el mismo que usa Edge y se queda.
+    /// </summary>
+    public void RemoveLegacyChromeHost()
+    {
+        try
+        {
+            if (registry.GetString(RegistryRoot.CurrentUser, LegacyChromeHostKey, null) is not null)
+                registry.DeleteKey(LegacyChromeHostKey);
         }
         catch (Exception) { }
     }
@@ -222,12 +246,12 @@ public sealed class ExtensionInstallerCore(IRegistryAccess registry, string root
         registry.SetString(AppKey, "AppPath", path);
     }
 
-    /// <summary>Publicada en su tienda: la ficha para instalarla con «Obtener»; si no, la pagina de extensiones para cargarla a mano.</summary>
+    /// <summary>La ficha de la extension en la tienda del navegador, para instalarla con «Obtener».</summary>
     public void OpenExtensionsPage(Browser b)
     {
         if (b.Path is null)
             return;
-        try { open(b.Path, b.StoreUrl ?? b.ExtensionsUrl); }
+        try { open(b.Path, b.StoreUrl); }
         catch (Exception) { }
     }
 }
@@ -266,8 +290,6 @@ public interface IExtensionPrompts
     Task<string?> ActionSheetAsync(string title, string cancel, params string[] options);
 
     Task<bool> AlertAsync(string title, string message, string accept, string? cancel = null);
-
-    Task CopyToClipboardAsync(string text);
 }
 
 /// <summary>La parte con pantalla: la oferta tras desbloquear y la guia de instalacion por navegador.</summary>
@@ -297,7 +319,7 @@ public sealed class ExtensionSetupFlow(ExtensionInstallerCore installer)
             await InstallAsync(prompts, b, l);
     }
 
-    /// <summary>Instala lo automatizable y guia el paso manual (cargar la carpeta en el navegador).</summary>
+    /// <summary>Instala lo automatizable (host y carpeta) y abre la ficha de la extension en la tienda del navegador.</summary>
     public async Task InstallAsync(IExtensionPrompts prompts, Browser b, ILocalizationService l)
     {
         if (installer.Packaged)
@@ -311,18 +333,8 @@ public sealed class ExtensionSetupFlow(ExtensionInstallerCore installer)
             await prompts.AlertAsync(l["Error"], ex.Message, l["Ok"]);
             return;
         }
-        if (b.StoreUrl is not null)
-        {
-            // Publicada en la tienda del navegador: nada de modo de desarrollador, se instala desde su ficha.
-            if (await prompts.AlertAsync(string.Format(l.CurrentCulture, l["ExtInstallIn"], b.Name), string.Format(l.CurrentCulture, l["ExtStepsStore"], b.Name), l["ExtOpenStore"], l["Cancel"]))
-                installer.OpenExtensionsPage(b);
-            return;
-        }
-        // Sin tienda solo queda Chrome (Edge y Firefox instalan desde la suya): carpeta desempaquetada.
-        var dir = installer.ExtensionDir(b.IsFirefox);
-        try { await prompts.CopyToClipboardAsync(dir); } catch (Exception) { }
-        var steps = string.Format(l.CurrentCulture, l["ExtStepsChromium"], b.Name, l["ExtLoadUnpacked_" + b.Key], dir);
-        if (await prompts.AlertAsync(string.Format(l.CurrentCulture, l["ExtInstallIn"], b.Name), steps, string.Format(l.CurrentCulture, l["ExtOpenBrowser"], b.Name), l["Cancel"]))
+        // Publicada en la tienda del navegador: nada de modo de desarrollador, se instala desde su ficha.
+        if (await prompts.AlertAsync(string.Format(l.CurrentCulture, l["ExtInstallIn"], b.Name), string.Format(l.CurrentCulture, l["ExtStepsStore"], b.Name), l["ExtOpenStore"], l["Cancel"]))
             installer.OpenExtensionsPage(b);
     }
 }

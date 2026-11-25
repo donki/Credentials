@@ -14,7 +14,7 @@ namespace Credentials.Services;
 /// copia <see cref="RedactedException"/> del error: tipos y pila de llamadas, NUNCA los mensajes ni los
 /// datos. Asi ni crash.log ni logcat guardan contraseñas, claves o contenido de la boveda.
 /// </summary>
-public static class CrashReporting
+public static partial class CrashReporting
 {
     private static int _installed;
 
@@ -48,36 +48,16 @@ public static class CrashReporting
             CrashGuard.Report(new RedactedException(e.Exception), "TaskScheduler.UnobservedTaskException");
         };
 
-#if ANDROID
-        Android.Runtime.AndroidEnvironment.UnhandledExceptionRaiser += (_, e) =>
-        {
-            e.Handled = true;
-            CrashGuard.Report(new RedactedException(e.Exception), "AndroidEnvironment.UnhandledExceptionRaiser");
-        };
-#endif
-
-#if WINDOWS
-        try
-        {
-            if (Microsoft.UI.Xaml.Application.Current is { } winApp)
-            {
-                winApp.UnhandledException += (_, e) =>
-                {
-                    e.Handled = true;
-                    CrashGuard.Report(e.Exception is null ? null : new RedactedException(e.Exception), "Microsoft.UI.Xaml.Application.UnhandledException");
-                };
-            }
-        }
-        catch (Exception ex)
-        {
-            CrashGuard.Log(new RedactedException(ex), "CrashReporting.Install (Windows)");
-        }
-#endif
+        // Los de cada plataforma (Platforms\*\CrashReporting.*.cs): Android y WinUI.
+        HookPlatform();
 
         string version;
         try { version = AppInfo.Current.VersionString; } catch (Exception) { version = "?"; }
         CrashGuard.Info($"sOC Credentials {version} arrancada; gestor de excepciones enganchado.");
     }
+
+    /// <summary>Los ganchos propios de la plataforma (sin plataforma no hay).</summary>
+    static partial void HookPlatform();
 
     /// <summary>
     /// El error sin nada que pueda ser un dato: por cada excepcion de la cadena (internas y las de un

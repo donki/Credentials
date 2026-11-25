@@ -45,7 +45,7 @@ de Proyectos de Software de sOCratic.
 - **Autocompletar de Android: guardar**: al enviar un formulario con usuario y contraseña, Android
   pregunta «¿Guardar la contraseña en Credentials?»; entrada nueva o cambio de contraseña (la
   anterior al historial), con desbloqueo previo si hace falta.
-- **Extensiones de navegador (Windows)** para **Edge, Chrome y Firefox** (`Extension/`): el icono
+- **Extensiones de navegador (Windows)** para **Edge y Firefox** (`Extension/`): el icono
   de la barra enseña las entradas del sitio con **rellenar**, copiar usuario/contraseña y el
   **código TOTP** en vivo, busca en toda la bóveda, genera contraseñas y, al enviar un formulario
   nuevo, **ofrece guardarlo** (o actualizar la contraseña). Sin servidor: la extensión habla por
@@ -54,9 +54,10 @@ de Proyectos de Software de sOCratic.
   si la aplicación está cerrada, la arranca en la bandeja, y si la bóveda está bloqueada, trae la
   ventana y pide desbloquear. La aplicación la instala desde **Ajustes › Extensiones del navegador**
   (o lo ofrece tras desbloquear): registra el host en `HKCU`, deja la extensión desempaquetada en
-  `%LOCALAPPDATA%\sOCCredentials\extension` y abre el navegador en su página de extensiones para
-  cargarla («Cargar desempaquetada»); en cuanto conecta, sale como instalada. En Edge y Firefox, que ya la tienen publicada,
-  abre directamente su ficha de la tienda para instalarla.
+  `%LOCALAPPDATA%\sOCCredentials\extension` (para cargarla a mano en pruebas) y abre su ficha en la
+  tienda del navegador (Edge Add-ons, Firefox Add-ons) para instalarla; en cuanto conecta, sale como
+  instalada. **Chrome no se admite** desde el 2026-11-25 (su tienda cobra por publicar): la app ya
+  no registra el host para Chrome y, al arrancar, borra la clave que dejaron las versiones anteriores.
   El MSIX de la Store no puede registrar el host (virtualización del registro): las extensiones
   necesitan la versión exe. Desde la 2026.11.16.00 la app lo detecta (`PlatformLogic/PackageIdentity.cs`,
   `GetCurrentPackageFullName`): empaquetada no registra el puente ni ofrece instalar la extensión, y
@@ -115,13 +116,13 @@ entradas inventadas (solo para probar y capturar pantallas; no existe en Release
 `SOC_SANDBOX=<carpeta>` la bóveda y los ajustes van a esa carpeta y no se tocan los del usuario.
 El host de las extensiones se compila aparte (`dotnet publish Host\Host.csproj -c Release`) y el
 proyecto lo copia a la salida si existe. `tools\empaquetar-extension.ps1` deja en `bin\extension\`
-los zips para Chrome Web Store / Edge Add-ons (chromium) y AMO (firefox). En Android (Debug), los
+los zips para Edge Add-ons (chromium) y AMO (firefox). En Android (Debug), los
 mismos ganchos van como extras del intent: `am start … --es master <clave> --ez demo true --es lang es
 --es page settings`; y en Debug no hay `FLAG_SECURE`, para poder capturar.
 
 ## Pruebas
 
-El banco entero se lanza con un solo `dotnet test Credentials.Pruebas.slnx` (dos proyectos xUnit):
+El banco entero se lanza con un solo `dotnet test Credentials.Pruebas.slnx` (tres proyectos xUnit):
 
 - `Credentials.Tests` prueba la lógica: bóveda (Argon2id + AES-GCM, cabecera autenticada, clave
   recordada, desbloqueo de confianza, bloqueo por inactividad, borrado con lápida, cambio de
@@ -135,13 +136,27 @@ El banco entero se lanza con un solo `dotnet test Credentials.Pruebas.slnx` (dos
 - `Credentials.Tests/Ui` construye de verdad la `App`, el Shell y todas las páginas MAUI (el proyecto
   de la app compila también para `net10.0`, solo para esto) y pulsa sus botones: desbloqueo, bóveda,
   ficha, ajustes, guía, Acerca de y lector QR. Diálogos, navegación, portapapeles, compartir,
-  biometría y cámara van por interfaces con un doble.
+  biometría y cámara van por interfaces con un doble. Lo de cada plataforma va detrás de
+  `IDesktopIntegration` (Windows: bandeja, arranque, extensiones, autocompletar de escritorio, la
+  ventanita de la contraseña) e `IAndroidIntegration` (autocompletar del sistema, servicio preferido,
+  navegadores, capturas, atrás): las páginas no llevan `#if` y el banco monta la app «como si fuera»
+  la de Windows (`DesktopIntegration` de verdad sobre un escritorio y un registro de mentira) o la de
+  Android, y recorre cada rama.
+- `Credentials.Tests/Windows` compila `Platforms/Windows` para `net10.0-windows` (enlazado en
+  `Credentials.Tests/Windows/Lib`) con WinUI en un hilo STA propio: el icono de bandeja y su menú de
+  WinUI (construido y pulsado sin enseñarse), minimizar con el tamaño de vuelta, la identidad de la
+  barra de tareas, la ventana de WinUI vista desde `DesktopHost`, la tubería de los navegadores, la
+  accesibilidad del autocompletar de escritorio y el gestor de errores de WinUI, sobre una ventana
+  Win32 oculta de prueba. Lo que se vería o movería el primer plano (poner el icono, enseñar o
+  minimizar ventanas) pasa por costuras; la tubería usa otro nombre para no cruzarse con la app abierta.
 
-Nada toca la bóveda real, los ajustes ni la red: cada prueba usa una carpeta temporal (también como
-`SOC_SANDBOX`), SecureStorage y Preferences en memoria y servidores falsos.
+Nada toca la bóveda real, los ajustes, el registro ni la red, ni abre ventanas visibles: cada prueba
+usa una carpeta temporal (también como `SOC_SANDBOX`), SecureStorage, Preferences y registro en
+memoria y servidores falsos.
 
 | Fecha | Pruebas | Cobertura de lo instrumentado | Cobertura sobre toda la app | Tiempo del banco |
 |---|---|---|---|---|
+| 2026-11-25 | 484 (pasan todas: 298 + 173 + 13) | 96,1 % (4237 de 4407 líneas) | **90,7 %** (4237 de 4673 líneas) | ≈42 s (8 s + 33 s + 1 s) |
 | 2026-11-16 | 449 (pasan todas: 291 + 158) | 91,7 % (3684 de 4016 líneas) | **80,5 %** (3684 de 4575 líneas) | ≈40 s (9 s + 30 s) |
 | 2026-11-14 | 442 (pasan todas: 284 + 158) | 91,9 % (3658 de 3980 líneas) | **80,7 %** (3658 de 4535 líneas) | ≈44 s (10 s + 34 s) |
 | 2026-10-03 | 401 (pasan todas: 280 + 121) | 92,1 % (3545 de 3851 líneas) | **82,5 %** (3545 de 4295 líneas) | ≈37 s (8 s + 29 s) |
@@ -153,14 +168,15 @@ Solo cuentan las líneas con **sentencias**, que es lo que coverlet mide: no cue
 `using`, `namespace`, atributos, constantes, campos sin valor, declaraciones `extern`, firmas de
 métodos ni el interior de interfaces y enum. De lo que compila el banco se toman las líneas que marca
 coverlet (sin excluir `CompilerGeneratedAttribute`: cuentan los métodos `async` y las lambdas); lo que
-no compila (`Platforms/Android`, `Platforms/Windows`, y lo que va bajo `#if ANDROID`/`#if WINDOWS`
-en un fichero común) se cuenta con esas reglas y entra como **no cubierto**. Con esta cuenta, el
+no compila ningún banco (`Platforms/Android`, el arranque de WinUI y lo que vaya bajo `#if ANDROID`/
+`#if WINDOWS` en un fichero común) se cuenta con esas reglas y entra como **no cubierto**. Con esta cuenta, el
 banco del 2026-09-30 daba el 36,7 %. En lo instrumentado, las reglas y coverlet difieren en un 1 %.
 
-Lo que falta para el 90 % (750 líneas sin cubrir): el código nativo de `Platforms/` (≈440: servicio
-de autocompletar y actividad de Android, ganchos Win32 del autocompletar de escritorio, bandeja,
-registro real del puente con la extensión) y los bloques `#if WINDOWS`/`#if ANDROID` de `App`, Ajustes,
-la guía, la bóveda y el desbloqueo (≈280). El plan está en las tareas de la app.
+Lo que queda sin cubrir (≈440 líneas) es casi todo código que solo corre en el dispositivo o que
+se vería en el escritorio: `Platforms/Android` (servicio de autocompletar, actividad, huella; ≈240),
+lo de Win32/WinUI que enseñaría ventanas o engancharía el foco del PC (la ventanita de la lista y los
+ganchos del autocompletar de escritorio, abrir el menú de la bandeja, el registro de verdad; ≈150) y
+los `Main` de `Host/` y `Launcher/`.
 
 ```powershell
 dotnet test Credentials.Pruebas.slnx

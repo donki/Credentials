@@ -5,7 +5,7 @@ using ZXing.Net.Maui.Controls;
 
 namespace Credentials;
 
-public static class MauiProgram
+public static partial class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
@@ -41,19 +41,14 @@ public static class MauiProgram
         builder.Services.AddSingleton(AppInfo.Current);
         builder.Services.AddSingleton(DeviceInfo.Current);
         builder.Services.AddSingleton(FileSystem.Current);
-#if ANDROID
-        builder.Services.AddSingleton<IToastService, Platforms.Android.ToastService>();
-        builder.Services.AddSingleton<IBiometric, Platforms.Android.Biometric>();
-        builder.Services.AddSingleton<IOAuthBrowser, Platforms.Android.OAuthBrowser>();
-#elif WINDOWS
-        builder.Services.AddSingleton<IToastService, Platforms.Windows.ToastService>();
-        builder.Services.AddSingleton<IBiometric, NoBiometric>();   // sin Windows Hello: decision de Josep del 2026-09-24
-        builder.Services.AddSingleton<IOAuthBrowser, Platforms.Windows.OAuthBrowser>();
-#else
-        // Sin plataforma (el destino net10.0, solo para las pruebas): sin biometria ni navegador de entrada.
+        // Sin plataforma (el destino net10.0, el de las pruebas): sin biometria, sin navegador de
+        // entrada y sin nada de Windows ni de Android. Cada plataforma pone lo suyo encima
+        // (Platforms\*\MauiProgram.*.cs): el ultimo registro es el que vale.
         builder.Services.AddSingleton<IBiometric, NoBiometric>();
         builder.Services.AddSingleton<IOAuthBrowser, NoOAuthBrowser>();
-#endif
+        builder.Services.AddSingleton<IDesktopIntegration, NoDesktopIntegration>();
+        builder.Services.AddSingleton<IAndroidIntegration, NoAndroidIntegration>();
+        RegisterPlatformServices(builder.Services);
 
         // Las paginas (carpeta Pages) las instancia el Shell por DataTemplate y resuelven sus
         // servicios via ServiceHelper (constitucion 7: code-behind delgado, sin ViewModels).
@@ -62,4 +57,7 @@ public static class MauiProgram
         ServiceHelper.Initialize(app.Services);
         return app;
     }
+
+    /// <summary>Los servicios de la plataforma (en Windows y en Android; sin plataforma no hay).</summary>
+    static partial void RegisterPlatformServices(IServiceCollection services);
 }

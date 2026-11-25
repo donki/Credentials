@@ -4,69 +4,10 @@ namespace Credentials;
 
 public partial class App : Application
 {
-#if WINDOWS
-    private Platforms.Windows.TrayIcon? _tray;
-    private Platforms.Windows.ExtensionServer? _extensions;
-    private Platforms.Windows.DesktopAutofill? _desktopAutofill;
-    /// <summary>La ventana ha salido solo para pedir la contraseña (arranque con Windows, vuelta a la sesion): al abrir la boveda vuelve a la bandeja.</summary>
-    private bool _hideAfterUnlock;
-
-    /// <summary>El icono de bandeja de la ventana principal (para que Ajustes cambie su comportamiento).</summary>
-    public static Platforms.Windows.TrayIcon? Tray { get; private set; }
-#endif
-
     public App()
     {
         InitializeComponent();
     }
-
-#if WINDOWS
-    /// <summary>
-    /// Extensiones de navegador: la tuberia que atiende al host de mensajeria nativa, el refresco de
-    /// lo ya registrado (la carpeta cambia con la version) y, al desbloquear, la oferta de instalarla
-    /// en los navegadores que no la tengan.
-    /// </summary>
-    private void StartExtensions(Window window)
-    {
-        try
-        {
-            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
-            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
-            var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
-            var toast = Helpers.ServiceHelper.GetRequiredService<Services.IToastService>();
-            // Empaquetada (Microsoft Store) no registra nada: el registro va virtualizado y el
-            // navegador no veria el puente (ExtensionInstallerCore.Packaged).
-            Platforms.Windows.ExtensionInstaller.RegisterForInstalledBrowsers();
-            _extensions = new Platforms.Windows.ExtensionServer(store, settings);
-            _extensions.BrowserConnected += browser =>
-            {
-                var name = Platforms.Windows.ExtensionInstaller.Known.FirstOrDefault(b => b.Key == browser)?.Name ?? browser;
-                toast.Show(string.Format(loc.CurrentCulture, loc["ExtConnected"], name));
-            };
-            _extensions.Start();
-            store.Unlocked += () => Dispatcher.RunOnUi(async () =>
-            {
-                // Un respiro para que la pagina de desbloqueo se haya cerrado antes de preguntar.
-                await Task.Delay(600);
-                // Si sale la guia de configuracion, ni preguntas sueltas ni volver a la bandeja.
-                if (TutorialOpening)
-                {
-                    _hideAfterUnlock = false;
-                    return;
-                }
-                if (window.Page is { } page)
-                    await Platforms.Windows.ExtensionSetup.OfferAfterUnlockAsync(page, settings, loc);
-                // Si la ventana solo salio para pedir la contraseña, vuelve a la bandeja.
-                if (_hideAfterUnlock)
-                {
-                    _hideAfterUnlock = false;
-                    _tray?.HideToTray();
-                }
-            });
-        }
-        catch (Exception) { /* sin extensiones no pasa nada: la aplicacion sigue */ }
-    }
-#endif
 
     /// <summary>La guia de configuracion se esta abriendo sola en esta sesion: las preguntas de despues de desbloquear no salen.</summary>
     internal static bool TutorialOpening { get; private set; }
@@ -77,20 +18,8 @@ public partial class App : Application
     protected override Window CreateWindow(IActivationState? activationState)
     {
         var window = new Window(new AppShell()) { Title = "sOC Credentials" };
-#if WINDOWS
-        // Sin Windows Hello desde 2026.09.24.01: si estaba activado, fuera el ajuste y la clave que
-        // guardaba para el (la boveda se abre solo con la contraseña maestra).
-        {
-            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
-            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
-            if (settings.Biometrics)
-            {
-                settings.Biometrics = false;
-                if (!settings.TrustDevice)
-                    _ = store.RememberKeyAsync(false);
-            }
-        }
-#endif
+        // Windows: bandeja, sesion de escritorio, autocompletar y extensiones (nada en las demas).
+        Helpers.ServiceHelper.GetRequiredService<Services.IDesktopIntegration>().AttachWindow(window);
         // Sincronizacion automatica con la nube: al abrir la boveda, al volver a la aplicacion y cada
         // cinco minutos mientras esta abierta (antes solo con el boton de Ajustes).
         {
@@ -129,91 +58,27 @@ public partial class App : Application
                 catch (Exception) { }
             });
         }
-#if WINDOWS
-        // Tamaño de arranque razonable en el escritorio: la lista es alta y estrecha, como en el movil.
-        window.Width = 900;
-        window.Height = 760;
-        // Al minimizar, a la bandeja (icono en el area de notificacion con Abrir y Salir), si el
-        // usuario no lo ha quitado en Ajustes.
-        window.HandlerChanged += (_, _) =>
+        // Android: al desbloquear, si otro gestor (o ninguno) rellena las contraseñas, se propone que lo haga esta.
         {
-            if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window native && _tray is null)
+            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
+            var android = Helpers.ServiceHelper.GetRequiredService<Services.IAndroidIntegration>();
+            if (android.IsAvailable)
             {
-                var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
-                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(native);
-                var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
-                _tray = new Platforms.Windows.TrayIcon(hwnd, key => loc[key], () => native.Close()) { MinimizeToTray = settings.TrayOnMinimize };
-                Tray = _tray;
-                // La boveda queda abierta mientras se usa el PC: la inactividad es la del sistema
-                // (teclado y raton), y al bloquear la sesion de Windows (Win+L) se cierra al momento.
-                Services.VaultStore.SystemIdle = Platforms.Windows.TrayIcon.SystemIdle;
-                var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
-                _tray.SessionLocked += () => native.DispatcherQueue.TryEnqueue(() => { try { if (!settings.TrustDevice) store.Lock(); } catch (Exception) { } });
-                // Autocompletar en las aplicaciones del escritorio (lista pegada al campo de contraseña).
-                try
+                store.Unlocked += () => Dispatcher.RunOnUi(async () =>
                 {
-                    if (Services.VaultStore.Sandbox)
-                        throw new InvalidOperationException("sandbox");
-                    _desktopAutofill = new Platforms.Windows.DesktopAutofill(store, settings, loc);
-                    _desktopAutofill.Start();
-                }
-                catch (Exception) { _desktopAutofill = null; }
-                // La contraseña se pide una vez por sesion de escritorio: al arrancar con Windows
-                // («--tray») sale la pagina de desbloqueo y, abierta la boveda, la ventana se va a la
-                // bandeja; y al volver a la sesion tras Win+L (que la cerro) se vuelve a pedir. Con
-                // «--background» (la arranca el navegador por algo pasivo) se esconde sin pedir nada:
-                // se pedira cuando el usuario use la extension.
-                var args = Environment.GetCommandLineArgs();
-                if (args.Contains("--background") || (args.Contains("--tray") && store.IsUnlocked))
-                    native.DispatcherQueue.TryEnqueue(() => _tray.HideToTray());
-                else if (args.Contains("--tray"))
-                    _hideAfterUnlock = true;
-                _tray.SessionUnlocked += () => native.DispatcherQueue.TryEnqueue(() =>
-                {
+                    await Task.Delay(UnlockPause);
                     try
                     {
-                        if (store.IsUnlocked || !store.Exists)
+                        // Si sale la guia de configuracion, nada de preguntas sueltas.
+                        if (TutorialOpening)
                             return;
-                        _hideAfterUnlock = _tray.IsHidden;
-                        _tray.Show();
                         if (window.Page is { } page)
-                            _ = Pages.Gate.EnsureUnlockedAsync(page);
-                        // Si la puerta ya estaba (se preparó al bloquear, con la ventana escondida),
-                        // sacarla de la bandeja la ha restaurado a su tamaño normal: otra vez en pequeño.
-                        Pages.Gate.Recompact();
-                        Pages.Gate.Current?.RetryBiometric();
+                            await android.OfferAutofillAfterUnlockAsync(page);
                     }
                     catch (Exception) { }
                 });
-                // Sin paquete (exe suelto o lanzador): identidad para la barra de tareas y anclaje al lanzador.
-                if (!Platforms.Windows.PackageIdentity.IsPackaged())
-                    Platforms.Windows.TaskbarIdentity.Apply(hwnd, "sOCratic.sOCCredentials", "sOC Credentials", Environment.GetEnvironmentVariable("SOC_LAUNCHER"));
-                if (!Services.VaultStore.Sandbox)
-                    StartExtensions(window);
             }
-        };
-#endif
-#if ANDROID
-        // Al desbloquear: si otro gestor (o ninguno) rellena las contraseñas, se propone que lo haga esta.
-        {
-            var store = Helpers.ServiceHelper.GetRequiredService<Services.VaultStore>();
-            var settings = Helpers.ServiceHelper.GetRequiredService<Services.ISettingsService>();
-            var loc = Helpers.ServiceHelper.GetRequiredService<Services.ILocalizationService>();
-            store.Unlocked += () => Dispatcher.RunOnUi(async () =>
-            {
-                await Task.Delay(600);
-                try
-                {
-                    // Si sale la guia de configuracion, nada de preguntas sueltas.
-                    if (TutorialOpening)
-                        return;
-                    if (window.Page is { } page)
-                        await Platforms.Android.AutofillSetup.OfferAfterUnlockAsync(page, settings, loc);
-                }
-                catch (Exception) { }
-            });
         }
-#endif
 #if DEBUG
         SocShared.AuthorNotes.Attach(window);   // notas de autor: SOLO Debug, desactivado en Release/produccion
         // Solo en Debug, para probar sin teclear: «--master clave» crea o abre la boveda con esa

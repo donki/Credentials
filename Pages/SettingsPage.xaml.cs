@@ -18,6 +18,8 @@ public partial class SettingsPage : ContentPage
     private readonly IToastService _toast;
     private readonly IDialogService _dialogs;
     private readonly INavigationService _navigation;
+    private readonly IDesktopIntegration _desktop;
+    private readonly IAndroidIntegration _android;
     private bool _loading;
     private static readonly int[] LockMinutes = SettingsRules.LockMinutes;
     private static readonly int[] ClipSeconds = SettingsRules.ClipSeconds;
@@ -32,6 +34,8 @@ public partial class SettingsPage : ContentPage
         _toast = ServiceHelper.GetRequiredService<IToastService>();
         _dialogs = ServiceHelper.GetRequiredService<IDialogService>();
         _navigation = ServiceHelper.GetRequiredService<INavigationService>();
+        _desktop = ServiceHelper.GetRequiredService<IDesktopIntegration>();
+        _android = ServiceHelper.GetRequiredService<IAndroidIntegration>();
         _store.Status += s => Dispatcher.RunOnUi(() => ShowStatus(s));
         _l.LanguageChanged += (_, _) => ApplyTexts();
         ApplyTexts();
@@ -54,17 +58,18 @@ public partial class SettingsPage : ContentPage
         StartupLabel.Text = _l["StartWithWindows"];
         StartupHint.Text = _l["StartWithWindowsHint"];
         TraySwitch.IsToggled = _settings.TrayOnMinimize;
-#if WINDOWS
-        WindowsCard.IsVisible = true;
-        StartupSwitch.IsToggled = Platforms.Windows.WindowsStartup.IsEnabled("sOCCredentials");
-        ExtTitle.Text = _l["ExtSection"];
-        ExtHint.Text = Platforms.Windows.ExtensionInstaller.Packaged ? _l["ExtPackagedHint"] : _l["ExtSectionHint"];
-        ExtGetExeButton.Text = _l["ExtGetExe"];
-        ExtAskLabel.Text = _l["ExtAskOnUnlock"];
-        ExtAskHint.Text = _l["ExtAskOnUnlockHint"];
-        ExtAskSwitch.IsToggled = _settings.AskExtensions;
-        RefreshBrowsers();
-#endif
+        if (_desktop.IsAvailable)
+        {
+            WindowsCard.IsVisible = true;
+            StartupSwitch.IsToggled = _desktop.StartWithWindows;
+            ExtTitle.Text = _l["ExtSection"];
+            ExtHint.Text = _desktop.ExtensionsPackaged ? _l["ExtPackagedHint"] : _l["ExtSectionHint"];
+            ExtGetExeButton.Text = _l["ExtGetExe"];
+            ExtAskLabel.Text = _l["ExtAskOnUnlock"];
+            ExtAskHint.Text = _l["ExtAskOnUnlockHint"];
+            ExtAskSwitch.IsToggled = _settings.AskExtensions;
+            RefreshBrowsers();
+        }
         RefreshAutofill();
         SyncButton.Text = _l["SyncNow"];
         SignOutButton.Text = _l["SignOut"];
@@ -107,10 +112,11 @@ public partial class SettingsPage : ContentPage
         if (!await Gate.EnsureUnlockedAsync(this))
             return;
         RefreshAutofill();
-#if WINDOWS
-        BiometricsRow.IsVisible = false;   // en Windows no hay desbloqueo biometrico
-        ScreenshotsRow.IsVisible = false;  // ni bloqueo de capturas
-#endif
+        if (_desktop.IsAvailable)
+        {
+            BiometricsRow.IsVisible = false;   // en Windows no hay desbloqueo biometrico
+            ScreenshotsRow.IsVisible = false;  // ni bloqueo de capturas
+        }
         BiometricsSwitch.IsEnabled = await _biometric.IsAvailableAsync();
         if (!BiometricsSwitch.IsEnabled)
             BiometricsHint.Text = _l["BiometricsUnavailable"];
@@ -171,19 +177,14 @@ public partial class SettingsPage : ContentPage
         if (_loading)
             return;
         _settings.TrayOnMinimize = e.Value;
-#if WINDOWS
-        if (App.Tray is { } tray)
-            tray.MinimizeToTray = e.Value;
-#endif
+        _desktop.SetMinimizeToTray(e.Value);
     }
 
     private void OnStartupToggled(object? sender, ToggledEventArgs e)
     {
         if (_loading)
             return;
-#if WINDOWS
-        Platforms.Windows.WindowsStartup.Set("sOCCredentials", e.Value);
-#endif
+        _desktop.StartWithWindows = e.Value;
     }
 
     private void OnExtAskToggled(object? sender, ToggledEventArgs e)
@@ -206,56 +207,57 @@ public partial class SettingsPage : ContentPage
         DesktopAutofillLabel.Text = _l["DesktopAutofill"];
         DesktopAutofillHint.Text = _l["DesktopAutofillHint"];
         DesktopAutofillSwitch.IsToggled = _settings.DesktopAutofill;
-#if ANDROID
-        var supported = Platforms.Android.AutofillSetup.Supported;
-        AutofillCard.IsVisible = supported;
-        DesktopAutofillRow.IsVisible = false;
-        var ours = supported && Platforms.Android.AutofillSetup.IsOurs;
-        AutofillStatus.Text = ours ? "✓ " + _l["AutofillIsOurs"] : _l["AutofillIsOther"];
-        AutofillButton.Text = ours ? _l["AutofillChange"] : _l["AutofillUseThis"];
-        AutofillButton.Style = LookupStyle(ours ? "OutlineButton" : "PrimaryButton");
-        AutofillButton.ImageSource = ours ? "ic_key.png" : "ic_key_w.png";
-        AutofillAskRow.IsVisible = !ours;
-        // Lo de arriba solo manda en las aplicaciones. En los navegadores mandan el «servicio preferido
-        // de contraseñas» del sistema (Android 14+) y el gestor propio del navegador: los dos se abren aqui.
-        var preferred = Platforms.Android.AutofillSetup.HasPreferredService;
-        PreferredHint.IsVisible = preferred;
-        PreferredButton.IsVisible = preferred;
-        PreferredHint.Text = _l["AutofillPreferredHint"];
-        PreferredButton.Text = _l["AutofillPreferredOpen"];
-        _browsers = Platforms.Android.AutofillSetup.InstalledBrowsers();
-        BrowsersHint.IsVisible = _browsers.Count > 0;
-        BrowsersButton.IsVisible = _browsers.Count > 0;
-        BrowsersHint.Text = _l["AutofillBrowsersHint"];
-        BrowsersButton.Text = _l["AutofillBrowsersOpen"];
-#elif WINDOWS
-        AutofillCard.IsVisible = true;
-        AutofillStatus.IsVisible = false;
-        AutofillButton.IsVisible = false;
-        AutofillAskRow.IsVisible = false;
-#else
-        AutofillCard.IsVisible = false;
-#endif
+        if (_android.IsAvailable)
+        {
+            var supported = _android.AutofillSupported;
+            AutofillCard.IsVisible = supported;
+            DesktopAutofillRow.IsVisible = false;
+            var ours = supported && _android.AutofillIsOurs;
+            AutofillStatus.Text = ours ? "✓ " + _l["AutofillIsOurs"] : _l["AutofillIsOther"];
+            AutofillButton.Text = ours ? _l["AutofillChange"] : _l["AutofillUseThis"];
+            AutofillButton.Style = LookupStyle(ours ? "OutlineButton" : "PrimaryButton");
+            AutofillButton.ImageSource = ours ? "ic_key.png" : "ic_key_w.png";
+            AutofillAskRow.IsVisible = !ours;
+            // Lo de arriba solo manda en las aplicaciones. En los navegadores mandan el «servicio
+            // preferido de contraseñas» del sistema (Android 14+) y el gestor propio del navegador: los
+            // dos se abren aqui.
+            var preferred = _android.HasPreferredService;
+            PreferredHint.IsVisible = preferred;
+            PreferredButton.IsVisible = preferred;
+            PreferredHint.Text = _l["AutofillPreferredHint"];
+            PreferredButton.Text = _l["AutofillPreferredOpen"];
+            _browsers = _android.InstalledBrowsers();
+            BrowsersHint.IsVisible = _browsers.Count > 0;
+            BrowsersButton.IsVisible = _browsers.Count > 0;
+            BrowsersHint.Text = _l["AutofillBrowsersHint"];
+            BrowsersButton.Text = _l["AutofillBrowsersOpen"];
+        }
+        else if (_desktop.IsAvailable)
+        {
+            AutofillCard.IsVisible = true;
+            AutofillStatus.IsVisible = false;
+            AutofillButton.IsVisible = false;
+            AutofillAskRow.IsVisible = false;
+        }
+        else
+        {
+            AutofillCard.IsVisible = false;
+        }
         _loading = loading;
     }
 
-#if ANDROID
     private IReadOnlyList<(string Package, string Name)> _browsers = [];
-#endif
 
     /// <summary>Android 14+: la pantalla del sistema donde se elige el gestor de contraseñas preferido.</summary>
     private void OnPreferredClicked(object? sender, EventArgs e)
     {
-#if ANDROID
-        if (!Platforms.Android.AutofillSetup.OpenPreferredService())
+        if (_android.IsAvailable && !_android.OpenPreferredService())
             _toast.Show(_l["AutofillPreferredNoScreen"]);
-#endif
     }
 
     /// <summary>Los ajustes del navegador: su gestor de contraseñas propio se apaga desde dentro.</summary>
     private async void OnBrowserSettingsClicked(object? sender, EventArgs e)
     {
-#if ANDROID
         if (_browsers.Count == 0)
             return;
         var names = _browsers.Select(b => b.Name).ToArray();
@@ -268,19 +270,14 @@ public partial class SettingsPage : ContentPage
         if (browser.Package is null)
             return;
         await _dialogs.AlertAsync(this, chosen, string.Format(_l.CurrentCulture, _l["AutofillBrowserSteps"], chosen), _l["Ok"]);
-        if (!Platforms.Android.AutofillSetup.OpenBrowserSettings(browser.Package))
+        if (!_android.OpenBrowserSettings(browser.Package))
             _toast.Show(_l["AutofillPreferredNoScreen"]);
-#else
-        await Task.CompletedTask;   // en Windows los botones no se enseñan
-#endif
     }
 
     private void OnAutofillClicked(object? sender, EventArgs e)
     {
-#if ANDROID
-        try { Platforms.Android.AutofillSetup.Request(); }
+        try { _android.RequestAutofill(); }
         catch (Exception ex) { _toast.Show(ex.Message); }
-#endif
     }
 
     private void OnAutofillAskToggled(object? sender, ToggledEventArgs e)
@@ -302,20 +299,19 @@ public partial class SettingsPage : ContentPage
         catch (Exception) { }
     }
 
-#if WINDOWS
     /// <summary>Una fila por navegador del PC: nombre, si la extension ya ha conectado, y el boton de instalar.</summary>
     private void RefreshBrowsers()
     {
         BrowsersBox.Clear();
         // La de la Microsoft Store (MSIX) no puede registrar el puente: la tarjeta lo explica y
         // lleva a la version exe, sin navegadores ni «Instalar…» ni la pregunta al desbloquear.
-        var packaged = Platforms.Windows.ExtensionInstaller.Packaged;
-        ExtensionsCard.IsVisible = packaged || Platforms.Windows.ExtensionInstaller.Available;
+        var packaged = _desktop.ExtensionsPackaged;
+        ExtensionsCard.IsVisible = packaged || _desktop.ExtensionsAvailable;
         ExtGetExeButton.IsVisible = packaged;
         ExtAskRow.IsVisible = !packaged;
         if (packaged)
             return;
-        foreach (var b in Platforms.Windows.ExtensionInstaller.Detected())
+        foreach (var b in _desktop.DetectedBrowsers())
         {
             var seen = _settings.ExtensionSeen(b.Key) is not null;
             var grid = new Grid { ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)], ColumnSpacing = 8 };
@@ -325,12 +321,11 @@ public partial class SettingsPage : ContentPage
             grid.Add(text, 0, 0);
             var button = new Button { Text = _l["ExtInstallButton"], Style = (Style)Application.Current.Resources[seen ? "OutlineButton" : "PrimaryButton"], Padding = new Thickness(12, 6), VerticalOptions = LayoutOptions.Center };
             var browser = b;
-            button.Clicked += async (_, _) => { await Platforms.Windows.ExtensionSetup.InstallAsync(this, browser, _l); RefreshBrowsers(); };
+            button.Clicked += async (_, _) => { await _desktop.InstallExtensionAsync(this, browser); RefreshBrowsers(); };
             grid.Add(button, 1, 0);
             BrowsersBox.Add(grid);
         }
     }
-#endif
 
     // ------------------------------------------------------------------ almacenamiento
 
@@ -472,9 +467,7 @@ public partial class SettingsPage : ContentPage
         if (_loading)
             return;
         _settings.AllowScreenshots = e.Value;
-#if ANDROID
-        MainActivity.ApplyScreenshotPolicy();
-#endif
+        _android.ApplyScreenshotPolicy();
     }
 
     /// <summary>«Enseñar el principio de las notas seguras»: la lista lo recoge al volver a ella.</summary>

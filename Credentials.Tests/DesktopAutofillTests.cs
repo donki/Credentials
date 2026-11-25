@@ -12,6 +12,35 @@ public class DesktopAutofillTests
     private static Credential Entry(string title, string url = "", string user = "ana", string password = "p", bool fav = false) =>
         new() { Title = title, Url = url, Username = user, Password = password, Favorite = fav };
 
+    // ------------------------------------------------------------------ la ventanita de la lista
+
+    [Fact]
+    public void Popup_Rows_AndVisibility()
+    {
+        var withUser = Entry("Correo", user: "ana");
+        var noUser = Entry("Router", user: "");
+        var rows = AutofillPopupState.Rows([withUser, noUser]);
+        Assert.Equal([("Correo", "ana"), ("Router", null)], rows.Select(r => (r.Title, r.Subtitle)));
+        Assert.Same(noUser, rows[1].Entry);
+        Assert.Empty(AutofillPopupState.Rows([]));
+        Assert.Equal("sOC Credentials", AutofillPopupState.Header);
+
+        // Se enseña una vez (las siguientes solo cambian la lista) y se esconde una vez.
+        var state = new AutofillPopupState();
+        Assert.False(state.Visible);
+        Assert.False(state.Hide());
+        Assert.True(state.Show());
+        Assert.False(state.Show());
+        Assert.True(state.Visible);
+        Assert.True(state.Hide());
+        Assert.False(state.Hide());
+        // Si la ventana se cierra sola, la siguiente vez se vuelve a enseñar.
+        Assert.True(state.Show());
+        state.Closed();
+        Assert.False(state.Visible);
+        Assert.True(state.Show());
+    }
+
     // ------------------------------------------------------------------ que entradas casan
 
     [Fact]

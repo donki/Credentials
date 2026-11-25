@@ -24,7 +24,7 @@ namespace Credentials.Ui.Tests;
 /// </summary>
 internal sealed class TestHost : IDisposable
 {
-    private TestHost(string language)
+    private TestHost(string language, TestPlatform platform)
     {
         Root = Path.Combine(Path.GetTempPath(), "soccred-ui-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Root);
@@ -62,6 +62,12 @@ internal sealed class TestHost : IDisposable
         services.AddSingleton<IAppInfo>(AppInfo);
         services.AddSingleton<IDeviceInfo>(Device);
         services.AddSingleton<IFileSystem>(Files);
+        // Windows o Android de mentira (por defecto ninguno, como el destino net10.0).
+        Registry = new FakeRegistry();
+        DesktopHost = new FakeDesktopHost(Registry, Path.Combine(Root, "desktop"));
+        Desktop = new DesktopIntegration(Store, Settings, Texts, Toast, Dialogs, DesktopHost, () => DesktopSandbox);
+        services.AddSingleton<IDesktopIntegration>(platform == TestPlatform.Windows ? Desktop : new NoDesktopIntegration());
+        services.AddSingleton<IAndroidIntegration>(platform == TestPlatform.Android ? Android : new NoAndroidIntegration());
         Services = services.BuildServiceProvider();
         ServiceHelper.Initialize(Services);
 
@@ -69,7 +75,13 @@ internal sealed class TestHost : IDisposable
         Application.Current = App;
     }
 
-    public static TestHost Start(string language = "es") => new(language);
+    public static TestHost Start(string language = "es", TestPlatform platform = TestPlatform.None) => new(language, platform);
+
+    /// <summary>Como si fuera la aplicacion de Windows (escritorio de mentira sobre un registro en memoria).</summary>
+    public static TestHost Windows(string language = "es") => new(language, TestPlatform.Windows);
+
+    /// <summary>Como si fuera la aplicacion de Android (con <see cref="Android"/>).</summary>
+    public static TestHost OnAndroid(string language = "es") => new(language, TestPlatform.Android);
 
     public string Root { get; }
     public FakeFileSystem Files { get; }
@@ -94,6 +106,13 @@ internal sealed class TestHost : IDisposable
     public VaultStore Store { get; }
     public IServiceProvider Services { get; }
     public App App { get; }
+    public FakeRegistry Registry { get; }
+    public FakeDesktopHost DesktopHost { get; }
+    public DesktopIntegration Desktop { get; }
+    public FakeAndroid Android { get; } = new();
+
+    /// <summary>Lo que DesktopIntegration cree de VaultStore.Sandbox (las pruebas lo apagan para ver el arranque completo).</summary>
+    public bool DesktopSandbox { get; set; } = true;
 
     public string this[string key] => Texts[key];
 
@@ -109,6 +128,7 @@ internal sealed class TestHost : IDisposable
     public void Dispose()
     {
         Store.Lock();
+        VaultStore.SystemIdle = null;   // la de un escritorio de mentira no pasa a la siguiente prueba
         // Al bloquear, las paginas que siguen vivas sacan la puerta y se quedan esperandola: fuera,
         // para que la siguiente prueba empiece sin puerta.
         typeof(Pages.Gate).GetField("_showing", BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, false);
@@ -118,6 +138,9 @@ internal sealed class TestHost : IDisposable
         try { Directory.Delete(Root, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }
+
+/// <summary>Para que plataforma se monta la aplicacion de pruebas.</summary>
+internal enum TestPlatform { None, Windows, Android }
 
 /// <summary>El navegador de la entrada en la nube: vuelve al momento con un codigo, sin abrir nada.</summary>
 internal sealed class FakeOAuthBrowser : IOAuthBrowser

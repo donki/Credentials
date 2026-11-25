@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-    Empaqueta la extension de navegador para subirla a las tiendas (Chrome Web Store, Edge Add-ons, AMO).
+    Empaqueta la extension de navegador para subirla a las tiendas (Edge Add-ons, AMO).
 .DESCRIPTION
     Junta Extension\common con el manifiesto de cada navegador y deja dos zips en bin\extension\:
-    sOCCredentials-extension-chromium-<version>.zip (Chrome y Edge, mismo paquete) y
+    sOCCredentials-extension-chromium-<version>.zip (Edge) y
     sOCCredentials-extension-firefox-<version>.zip (AMO lo firma y devuelve un .xpi). La version es
-    la del manifiesto. Los zips llevan los ficheros en la raiz, como piden las tres tiendas.
+    la del manifiesto. Los zips llevan los ficheros en la raiz, como piden las dos tiendas. Chrome
+    no se admite desde el 2026-11-25 (su tienda cobra por publicar).
 
-    El zip de Chromium va SIN el campo «key»: Edge Add-ons y Chrome Web Store lo rechazan («El
+    El zip de Chromium va SIN el campo «key»: Edge Add-ons lo rechaza («El
     manifiesto no deberia contener el campo key»); el id lo pone la tienda. La «key» solo sirve para
     cargarla a mano con un id fijo, y esa carpeta la monta entregar.ps1 desde el codigo, con la key.
 .EXAMPLE

@@ -204,12 +204,13 @@ public partial class VaultPage : ContentPage
             SearchEntry.Unfocus();
             return true;
         }
-#if ANDROID
-        Platform.CurrentActivity?.MoveTaskToBack(true);
-        return true;
-#else
+        // En Android, sin nada que quitar, la aplicacion se va al fondo (no se cierra).
+        if (ServiceHelper.GetRequiredService<IAndroidIntegration>() is { IsAvailable: true } android)
+        {
+            android.MoveToBack();
+            return true;
+        }
         return base.OnBackButtonPressed();
-#endif
     }
 
     private void OnSearchChanged(object? sender, TextChangedEventArgs e)
@@ -324,14 +325,11 @@ public static class Gate
             Current = unlock;
             var tcs = new TaskCompletionSource();
             unlock.Disappearing += (_, _) => tcs.TrySetResult();
-#if WINDOWS
-            var restore = Compact(page.Window);
-#endif
+            // En Windows, mientras se pide la contraseña, la ventana en pequeño (IDesktopIntegration).
+            var restore = ServiceHelper.GetRequiredService<IDesktopIntegration>().CompactForGate(page.Window);
             await page.Navigation.PushModalAsync(unlock, animated: false);
             await tcs.Task;
-#if WINDOWS
             restore?.Invoke();
-#endif
         }
         finally
         {
@@ -340,86 +338,4 @@ public static class Gate
         }
         return store.IsUnlocked;
     }
-
-#if WINDOWS
-    /// <summary>
-    /// En Windows, mientras se pide la contraseña, la ventana se queda pequeña y abajo a la derecha
-    /// del escritorio (como un aviso del sistema). Devuelve lo que la deja como estaba.
-    /// </summary>
-    private static Action? Compact(Window? window)
-    {
-        try
-        {
-            if (window?.Handler?.PlatformView is not Microsoft.UI.Xaml.Window native)
-                return null;
-            var app = native.AppWindow;
-            var presenter = app.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
-            var wasMaximized = presenter?.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized;
-            if (wasMaximized)
-                presenter!.Restore();
-            var saved = new global::Windows.Graphics.RectInt32(app.Position.X, app.Position.Y, app.Size.Width, app.Size.Height);
-            PlaceSmall(native);
-            _compactWindow = native;
-            return () =>
-            {
-                _compactWindow = null;
-                try
-                {
-                    if (ServiceHelper.GetRequiredService<VaultStore>().IsUnlocked)
-                    {
-                        // Desbloqueada: la ventana se va directamente a la barra de tareas y el
-                        // tamaño de antes queda para cuando se restaure. Así no se ve crecer la
-                        // ventana pequeña con la pantalla de la contraseña todavía dentro.
-                        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(native);
-                        var display = Microsoft.UI.Windowing.DisplayArea.GetFromRect(saved, Microsoft.UI.Windowing.DisplayAreaFallback.Primary);
-                        Platforms.Windows.WindowPlacement.MinimizeWithRestoreBounds(hwnd, saved,
-                            display.WorkArea.X - display.OuterBounds.X, display.WorkArea.Y - display.OuterBounds.Y, wasMaximized);
-                        return;
-                    }
-                    app.MoveAndResize(saved);
-                    if (wasMaximized)
-                        presenter!.Maximize();
-                }
-                catch (Exception) { }
-            };
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>La ventana que está en pequeño pidiendo la contraseña, si la hay.</summary>
-    private static Microsoft.UI.Xaml.Window? _compactWindow;
-
-    /// <summary>Pequeña y abajo a la derecha de la zona de trabajo; el alto lo ajusta luego UnlockPage.</summary>
-    private static void PlaceSmall(Microsoft.UI.Xaml.Window native)
-    {
-        var app = native.AppWindow;
-        var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(app.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
-        var scale = native.Content?.XamlRoot?.RasterizationScale ?? 1.0;
-        int w = (int)(420 * scale), h = (int)(340 * scale), margin = (int)(12 * scale);
-        app.MoveAndResize(new global::Windows.Graphics.RectInt32(area.X + area.Width - w - margin, area.Y + area.Height - h - margin, w, h));
-    }
-
-    /// <summary>
-    /// Vuelve a dejar en pequeño la ventana que pide la contraseña. Hace falta al volver de la
-    /// bandeja: al bloquear Windows (Win+L) la bóveda se cierra y la puerta se prepara con la ventana
-    /// escondida; al volver al escritorio, sacarla de la bandeja la restauraba a su tamaño de antes
-    /// (incluso maximizada) con la contraseña dentro.
-    /// </summary>
-    public static void Recompact()
-    {
-        try
-        {
-            if (Current is null || _compactWindow is not { } native)
-                return;
-            if (native.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Maximized } presenter)
-                presenter.Restore();
-            PlaceSmall(native);
-            Current.RefitHeight();
-        }
-        catch (Exception) { }
-    }
-#endif
 }

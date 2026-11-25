@@ -26,6 +26,8 @@ public class TutorialPage : ContentPage
     private readonly ISettingsService _settings;
     private readonly IToastService _toast;
     private readonly INavigationService _navigation;
+    private readonly IDesktopIntegration _desktop;
+    private readonly IAndroidIntegration _android;
     private List<Step> _steps = [];
     private int _index;
     private IDispatcherTimer? _timer;
@@ -46,6 +48,8 @@ public class TutorialPage : ContentPage
         _settings = ServiceHelper.GetRequiredService<ISettingsService>();
         _toast = ServiceHelper.GetRequiredService<IToastService>();
         _navigation = ServiceHelper.GetRequiredService<INavigationService>();
+        _desktop = ServiceHelper.GetRequiredService<IDesktopIntegration>();
+        _android = ServiceHelper.GetRequiredService<IAndroidIntegration>();
 
         _action.Style = Res("PrimaryButton");
         _back.Style = Res("OutlineButton");
@@ -158,25 +162,39 @@ public class TutorialPage : ContentPage
     private List<Step> BuildSteps()
     {
         var steps = new List<Step>();
-#if WINDOWS
+        if (_desktop.IsAvailable)
+            AddWindowsSteps(steps);
+        else if (_android.IsAvailable)
+            AddAndroidSteps(steps);
+        steps.Add(new("ic_sync.png", _l["TutCloudTitle"], _l["TutCloudBody"],
+            () => _settings.Storage != StorageMode.Local,
+            _l["TutOpenSettings"],
+            () => _navigation.GoToAsync("//SettingsPage"),
+            Optional: true));
+        steps.Add(new("ic_check.png", _l["TutEndTitle"], _l["TutEndBody"]));
+        return steps;
+    }
+
+    /// <summary>Windows: bandeja y arranque, autocompletar de escritorio, la extension en cada navegador y su gestor propio.</summary>
+    private void AddWindowsSteps(List<Step> steps)
+    {
         steps.Add(new("ic_help.png", _l["TutWelcomeTitle"], _l["TutWelcomeWindows"]));
         steps.Add(new("ic_app.png", _l["TutTrayTitle"], _l["TutTrayBody"],
-            () => _settings.TrayOnMinimize && Platforms.Windows.WindowsStartup.IsEnabled("sOCCredentials"),
+            () => _settings.TrayOnMinimize && _desktop.StartWithWindows,
             _l["TutTrayAction"],
             () =>
             {
                 _settings.TrayOnMinimize = true;
-                if (App.Tray is { } tray)
-                    tray.MinimizeToTray = true;
-                Platforms.Windows.WindowsStartup.Set("sOCCredentials", true);
+                _desktop.SetMinimizeToTray(true);
+                _desktop.StartWithWindows = true;
                 return Task.CompletedTask;
             }));
         steps.Add(new("ic_key.png", _l["TutDesktopTitle"], _l["TutDesktopBody"],
             () => _settings.DesktopAutofill,
             _l["TutDesktopAction"],
             () => { _settings.DesktopAutofill = true; return Task.CompletedTask; }));
-        var browsers = Platforms.Windows.ExtensionInstaller.GuideBrowsers();
-        if (Platforms.Windows.ExtensionInstaller.Packaged)
+        var browsers = _desktop.GuideBrowsers();
+        if (_desktop.ExtensionsPackaged)
             // La de la Microsoft Store (MSIX) no puede registrar el puente con el navegador: se
             // explica y se lleva a la version exe.
             steps.Add(new("ic_web.png", _l["TutExtPackagedTitle"], _l["TutExtPackagedBody"],
@@ -189,31 +207,35 @@ public class TutorialPage : ContentPage
         {
             var browser = b;
             steps.Add(new("ic_web.png", F("TutExtTitle", b.Name),
-                F(b.StoreUrl is not null ? "TutExtBodyStore" : "TutExtBodyChromium", b.Name),
+                F("TutExtBodyStore", b.Name),
                 () => _settings.ExtensionSeen(browser.Key) is not null,
                 F("TutExtAction", b.Name),
-                () => Platforms.Windows.ExtensionSetup.InstallAsync(this, browser, _l)));
+                () => _desktop.InstallExtensionAsync(this, browser)));
         }
         if (browsers.Count > 0)
             steps.Add(new("ic_lock.png", _l["TutBrowserPmTitle"], _l["TutBrowserPmWindows"]));
-#elif ANDROID
+    }
+
+    /// <summary>Android: servicio de autocompletar, servicio preferido, cada navegador, la huella y las capturas.</summary>
+    private void AddAndroidSteps(List<Step> steps)
+    {
         steps.Add(new("ic_help.png", _l["TutWelcomeTitle"], _l["TutWelcomeAndroid"]));
-        if (Platforms.Android.AutofillSetup.Supported)
+        if (_android.AutofillSupported)
             steps.Add(new("ic_key.png", _l["TutAutofillTitle"], _l["TutAutofillBody"],
-                () => Platforms.Android.AutofillSetup.IsOurs,
+                () => _android.AutofillIsOurs,
                 _l["AutofillUseThis"],
-                () => { Platforms.Android.AutofillSetup.Request(); return Task.CompletedTask; }));
-        if (Platforms.Android.AutofillSetup.HasPreferredService)
+                () => { _android.RequestAutofill(); return Task.CompletedTask; }));
+        if (_android.HasPreferredService)
             steps.Add(new("ic_settings.png", _l["TutPreferredTitle"], _l["TutPreferredBody"],
                 null,
                 _l["AutofillPreferredOpen"],
                 () =>
                 {
-                    if (!Platforms.Android.AutofillSetup.OpenPreferredService())
+                    if (!_android.OpenPreferredService())
                         _toast.Show(_l["AutofillPreferredNoScreen"]);
                     return Task.CompletedTask;
                 }));
-        foreach (var (package, name) in Platforms.Android.AutofillSetup.InstalledBrowsers())
+        foreach (var (package, name) in _android.InstalledBrowsers())
         {
             var pkg = package;
             var body = package == "org.mozilla.firefox" ? F("TutBrowserFirefox", name) : F("TutBrowserChromium", name);
@@ -222,7 +244,7 @@ public class TutorialPage : ContentPage
                 F("TutBrowserAction", name),
                 () =>
                 {
-                    if (!Platforms.Android.AutofillSetup.OpenBrowserSettings(pkg))
+                    if (!_android.OpenBrowserSettings(pkg))
                         _toast.Show(_l["AutofillPreferredNoScreen"]);
                     return Task.CompletedTask;
                 }));
@@ -238,14 +260,6 @@ public class TutorialPage : ContentPage
             null,
             _l["TutOpenSettings"],
             () => _navigation.GoToAsync("//SettingsPage")));
-#endif
-        steps.Add(new("ic_sync.png", _l["TutCloudTitle"], _l["TutCloudBody"],
-            () => _settings.Storage != StorageMode.Local,
-            _l["TutOpenSettings"],
-            () => _navigation.GoToAsync("//SettingsPage"),
-            Optional: true));
-        steps.Add(new("ic_check.png", _l["TutEndTitle"], _l["TutEndBody"]));
-        return steps;
     }
 
     // ------------------------------------------------------------------ pantalla

@@ -203,6 +203,16 @@ public class ExtensionBridgeTests
             if (Broken) throw new UnauthorizedAccessException();
             Values.Remove((RegistryRoot.CurrentUser, key, name));
         }
+
+        public List<string> DeletedKeys { get; } = [];
+
+        public void DeleteKey(string key)
+        {
+            if (Broken) throw new UnauthorizedAccessException();
+            DeletedKeys.Add(key);
+            foreach (var k in Values.Keys.Where(k => k.Item1 == RegistryRoot.CurrentUser && k.Item2 == key).ToList())
+                Values.Remove(k);
+        }
     }
 
     /// <summary>Una carpeta de aplicacion falsa (con la extension y el host) y una raiz de datos, en temporal.</summary>
@@ -259,9 +269,10 @@ public class ExtensionBridgeTests
         using var ib = new InstallBox();
         Assert.Empty(ib.Core.Detected());
         var edge = ib.AddBrowser("msedge.exe", RegistryRoot.CurrentUser);
-        ib.AddBrowser("firefox.exe");
         // Una clave que apunta a un exe que ya no esta no cuenta.
-        ib.Registry.Values[(RegistryRoot.LocalMachine, ExtensionInstallerCore.AppPathsKey + "chrome.exe", null)] = Path.Combine(ib.Dir, "no-esta.exe");
+        ib.Registry.Values[(RegistryRoot.LocalMachine, ExtensionInstallerCore.AppPathsKey + "firefox.exe", null)] = Path.Combine(ib.Dir, "no-esta.exe");
+        Assert.Equal(["edge"], ib.Core.Detected().Select(b => b.Key));
+        ib.AddBrowser("firefox.exe");
 
         var found = ib.Core.Detected();
         Assert.Equal(["edge", "firefox"], found.Select(b => b.Key));
@@ -311,7 +322,8 @@ public class ExtensionBridgeTests
 
         Assert.Equal(ib.Launcher, ib.Registry.Values[(RegistryRoot.CurrentUser, ExtensionInstallerCore.AppKey, "AppPath")]);
         Assert.True(ib.Core.IsRegistered(edge));
-        Assert.False(ib.Core.IsRegistered(ExtensionInstallerCore.Known.Single(b => b.Key == "chrome")));
+        // Chrome no se admite: nada bajo la rama de Google.
+        Assert.DoesNotContain(ib.Registry.Values.Keys, k => k.Item2.StartsWith(@"Software\Google", StringComparison.Ordinal));
         ib.Registry.Broken = true;
         Assert.False(ib.Core.IsRegistered(edge));
     }
@@ -346,7 +358,7 @@ public class ExtensionBridgeTests
     public void RegisterForInstalledBrowsers_RegistersEveryDetectedBrowser()
     {
         using var ib = new InstallBox();
-        ib.AddBrowser("chrome.exe");
+        ib.AddBrowser("msedge.exe");
         ib.AddBrowser("firefox.exe");
         ib.LauncherEnv = Path.Combine(ib.Dir, "no-esta.exe");   // lanzador que no existe: el exe de la app
 
@@ -379,11 +391,11 @@ public class ExtensionBridgeTests
     {
         using var ib = new InstallBox();
         var edge = ExtensionInstallerCore.Known[0] with { Path = @"C:\edge.exe" };
-        var chrome = ExtensionInstallerCore.Known[1] with { Path = @"C:\chrome.exe" };
+        var firefox = ExtensionInstallerCore.Known[1] with { Path = @"C:\firefox.exe" };
         ib.Core.OpenExtensionsPage(edge);
-        ib.Core.OpenExtensionsPage(chrome);
-        ib.Core.OpenExtensionsPage(ExtensionInstallerCore.Known[2]);
-        Assert.Equal([(@"C:\edge.exe", ExtensionInstallerCore.EdgeStoreUrl), (@"C:\chrome.exe", "chrome://extensions/")], ib.Opened);
+        ib.Core.OpenExtensionsPage(firefox);
+        ib.Core.OpenExtensionsPage(ExtensionInstallerCore.Known[1]);
+        Assert.Equal([(@"C:\edge.exe", ExtensionInstallerCore.EdgeStoreUrl), (@"C:\firefox.exe", ExtensionInstallerCore.FirefoxStoreUrl)], ib.Opened);
 
         var failing = new ExtensionInstallerCore(ib.Registry, ib.Dir, ib.App, () => null, () => null, (_, _) => throw new InvalidOperationException());
         failing.OpenExtensionsPage(edge);
@@ -421,7 +433,6 @@ public class ExtensionBridgeTests
         public Queue<string?> Sheets { get; } = new();
         public Queue<bool> Alerts { get; } = new();
         public List<string> Log { get; } = [];
-        public bool ClipboardBroken { get; set; }
 
         public Task<string?> ActionSheetAsync(string title, string cancel, params string[] options)
         {
@@ -434,13 +445,6 @@ public class ExtensionBridgeTests
             Log.Add($"alert:{title}|{message}|{accept}|{cancel}");
             return Task.FromResult(Alerts.Count > 0 && Alerts.Dequeue());
         }
-
-        public Task CopyToClipboardAsync(string text)
-        {
-            if (ClipboardBroken) throw new InvalidOperationException();
-            Log.Add("copy:" + text);
-            return Task.CompletedTask;
-        }
     }
 
     [Fact]
@@ -450,14 +454,15 @@ public class ExtensionBridgeTests
         var l = box.Texts("es");
         using var ib = new InstallBox();
         ib.AddBrowser("msedge.exe");
-        ib.AddBrowser("chrome.exe");
+        ib.AddBrowser("firefox.exe");
+        ib.AddBrowser("chrome.exe");   // Chrome no se admite: ni se nombra
         box.Settings.SetExtensionSeen("edge");
         var prompts = new FakePrompts();
         prompts.Sheets.Enqueue(l["NotNow"]);
         var flow = new ExtensionSetupFlow(ib.Core);
 
         await flow.OfferAfterUnlockAsync(prompts, box.Settings, l);
-        Assert.Equal($"sheet:{string.Format(l["ExtOfferTitle"], "Google Chrome")}|{l["NotNow"]}|{l["ExtInstallNow"]},{l["ExtDontAsk"]}", Assert.Single(prompts.Log));
+        Assert.Equal($"sheet:{string.Format(l["ExtOfferTitle"], "Firefox")}|{l["NotNow"]}|{l["ExtInstallNow"]},{l["ExtDontAsk"]}", Assert.Single(prompts.Log));
         Assert.False(ib.Core.IsRegistered(ib.Core.Detected()[0]));
 
         // Una vez por sesion.
@@ -489,31 +494,106 @@ public class ExtensionBridgeTests
     }
 
     [Fact]
-    public async Task InstallNow_StoreBrowsers_And_UnpackedChrome()
+    public async Task InstallNow_OpensEachBrowsersStore()
     {
         using var box = Sandbox.Create();
         var l = box.Texts("es");
         using var ib = new InstallBox();
         ib.AddBrowser("msedge.exe");
-        ib.AddBrowser("chrome.exe");
+        ib.AddBrowser("firefox.exe");
         var prompts = new FakePrompts();
         prompts.Sheets.Enqueue(l["ExtInstallNow"]);
         prompts.Alerts.Enqueue(true);    // Edge: abrir la tienda
-        prompts.Alerts.Enqueue(true);    // Chrome: abrir el navegador
+        prompts.Alerts.Enqueue(true);    // Firefox: abrir la tienda
 
         await new ExtensionSetupFlow(ib.Core).OfferAfterUnlockAsync(prompts, box.Settings, l);
 
         var detected = ib.Core.Detected();
         Assert.All(detected, b => Assert.True(ib.Core.IsRegistered(b)));
-        var dir = ib.Core.ExtensionDir(false);
         Assert.Equal(
         [
-            $"sheet:{string.Format(l["ExtOfferTitle"], "Microsoft Edge, Google Chrome")}|{l["NotNow"]}|{l["ExtInstallNow"]},{l["ExtDontAsk"]}",
+            $"sheet:{string.Format(l["ExtOfferTitle"], "Microsoft Edge, Firefox")}|{l["NotNow"]}|{l["ExtInstallNow"]},{l["ExtDontAsk"]}",
             $"alert:{string.Format(l["ExtInstallIn"], "Microsoft Edge")}|{string.Format(l["ExtStepsStore"], "Microsoft Edge")}|{l["ExtOpenStore"]}|{l["Cancel"]}",
-            "copy:" + dir,
-            $"alert:{string.Format(l["ExtInstallIn"], "Google Chrome")}|{string.Format(l["ExtStepsChromium"], "Google Chrome", l["ExtLoadUnpacked_chrome"], dir)}|{string.Format(l["ExtOpenBrowser"], "Google Chrome")}|{l["Cancel"]}",
+            $"alert:{string.Format(l["ExtInstallIn"], "Firefox")}|{string.Format(l["ExtStepsStore"], "Firefox")}|{l["ExtOpenStore"]}|{l["Cancel"]}",
         ], prompts.Log);
-        Assert.Equal([(detected[0].Path!, ExtensionInstallerCore.EdgeStoreUrl), (detected[1].Path!, "chrome://extensions/")], ib.Opened);
+        Assert.Equal([(detected[0].Path!, ExtensionInstallerCore.EdgeStoreUrl), (detected[1].Path!, ExtensionInstallerCore.FirefoxStoreUrl)], ib.Opened);
+    }
+
+    // ------------------------------------------------------------------ Chrome, retirado (2026-11-25)
+
+    [Fact]
+    public async Task Chrome_IsNotSupported_EvenIfInstalled()
+    {
+        using var box = Sandbox.Create();
+        var l = box.Texts("es");
+        using var ib = new InstallBox();
+        ib.AddBrowser("chrome.exe");
+
+        Assert.DoesNotContain(ExtensionInstallerCore.Known, b => b.Key == "chrome" || b.Exe == "chrome.exe");
+        Assert.Equal(["edge", "firefox"], ExtensionInstallerCore.Known.Select(b => b.Key));
+        Assert.Empty(ib.Core.Detected());
+        Assert.Empty(ib.Core.GuideBrowsers());
+
+        // Ni se registra al arrancar ni se ofrece al desbloquear.
+        ib.Core.RegisterForInstalledBrowsers();
+        Assert.DoesNotContain(ib.Registry.Values.Keys, k => k.Item2.StartsWith(@"Software\Google", StringComparison.Ordinal));
+        var prompts = new FakePrompts();
+        await new ExtensionSetupFlow(ib.Core).OfferAfterUnlockAsync(prompts, box.Settings, l);
+        Assert.Empty(prompts.Log);
+    }
+
+    [Fact]
+    public void Chrome_HostKeyOfOlderVersions_IsRemovedAtStartup_AndNothingElse()
+    {
+        using var ib = new InstallBox();
+        var manifest = Path.Combine(ib.Core.HostDir, ExtensionInstallerCore.HostName + ".json");
+        const string otherHost = @"Software\Google\Chrome\NativeMessagingHosts\com.otra.aplicacion";
+        ib.Registry.Values[(RegistryRoot.CurrentUser, ExtensionInstallerCore.LegacyChromeHostKey, null)] = manifest;
+        ib.Registry.Values[(RegistryRoot.CurrentUser, otherHost, null)] = @"C:\otra.json";
+        ib.Registry.Values[(RegistryRoot.CurrentUser, @"Software\Google\Chrome", "Valor")] = "de Chrome";
+        ib.AddBrowser("msedge.exe");
+
+        ib.Core.RegisterForInstalledBrowsers();
+
+        Assert.Equal(@"Software\Google\Chrome\NativeMessagingHosts\com.socratic.credentials", ExtensionInstallerCore.LegacyChromeHostKey);
+        Assert.Equal([ExtensionInstallerCore.LegacyChromeHostKey], ib.Registry.DeletedKeys);
+        Assert.False(ib.Registry.Values.ContainsKey((RegistryRoot.CurrentUser, ExtensionInstallerCore.LegacyChromeHostKey, null)));
+        // Lo de otros programas y lo del propio Chrome, intacto; el manifiesto (el mismo que usa Edge), tambien.
+        Assert.Equal(@"C:\otra.json", ib.Registry.Values[(RegistryRoot.CurrentUser, otherHost, null)]);
+        Assert.Equal("de Chrome", ib.Registry.Values[(RegistryRoot.CurrentUser, @"Software\Google\Chrome", "Valor")]);
+        Assert.True(File.Exists(manifest));
+        Assert.True(ib.Core.IsRegistered(Assert.Single(ib.Core.Detected())));
+
+        // Sin clave vieja no se borra nada; con el registro roto, tampoco falla.
+        ib.Core.RegisterForInstalledBrowsers();
+        Assert.Single(ib.Registry.DeletedKeys);
+        ib.Registry.Broken = true;
+        ib.Core.RemoveLegacyChromeHost();
+    }
+
+    [Fact]
+    public void Chrome_HostKey_NotTouchedByTheStoreVersion()
+    {
+        // La de la Microsoft Store no registra ni borra nada (su registro va virtualizado).
+        using var ib = new InstallBox { Packaged = true };
+        ib.Registry.Values[(RegistryRoot.CurrentUser, ExtensionInstallerCore.LegacyChromeHostKey, null)] = "x.json";
+        ib.Core.RegisterForInstalledBrowsers();
+        Assert.Empty(ib.Registry.DeletedKeys);
+        Assert.Equal("x.json", ib.Registry.Values[(RegistryRoot.CurrentUser, ExtensionInstallerCore.LegacyChromeHostKey, null)]);
+    }
+
+    [Theory]
+    [InlineData("es")]
+    [InlineData("en")]
+    public void Chrome_NoLongerNamedInTheTexts(string language)
+    {
+        using var box = Sandbox.Create();
+        var l = box.Texts(language);
+        foreach (var key in new[] { "ExtSectionHint", "TutNoBrowsersBody", "TutExtBodyStore", "ExtStepsStore", "TutBrowserPmWindows", "TutWelcomeWindows" })
+            Assert.DoesNotContain("Chrome", l[key]);
+        // Los textos de la carga a mano (modo de desarrollador) ya no existen.
+        foreach (var key in new[] { "ExtStepsChromium", "ExtOpenBrowser", "ExtLoadUnpacked_chrome", "ExtLoadUnpacked_edge", "TutExtBodyChromium" })
+            Assert.Equal(key, l[key]);
     }
 
     [Fact]
@@ -523,12 +603,12 @@ public class ExtensionBridgeTests
         var l = box.Texts("es");
         using var ib = new InstallBox();
         var flow = new ExtensionSetupFlow(ib.Core);
-        var prompts = new FakePrompts { ClipboardBroken = true };
-        var chrome = ExtensionInstallerCore.Known[1] with { Path = @"C:\chrome.exe" };
+        var prompts = new FakePrompts();
+        var firefox = ExtensionInstallerCore.Known[1] with { Path = @"C:\firefox.exe" };
         var edge = ExtensionInstallerCore.Known[0] with { Path = @"C:\edge.exe" };
 
-        // Cancelar en los dos casos: no se abre nada (y sin portapapeles sigue igual).
-        await flow.InstallAsync(prompts, chrome, l);
+        // Cancelar en los dos: no se abre nada.
+        await flow.InstallAsync(prompts, firefox, l);
         await flow.InstallAsync(prompts, edge, l);
         Assert.Empty(ib.Opened);
         Assert.Equal(2, prompts.Log.Count);
@@ -536,7 +616,7 @@ public class ExtensionBridgeTests
         // Si instalar falla (la extension no esta), un aviso con el error y nada mas.
         using var empty = new InstallBox(withExtension: false);
         prompts.Log.Clear();
-        await new ExtensionSetupFlow(empty.Core).InstallAsync(prompts, chrome, l);
+        await new ExtensionSetupFlow(empty.Core).InstallAsync(prompts, firefox, l);
         Assert.StartsWith($"alert:{l["Error"]}|", Assert.Single(prompts.Log));
     }
 
@@ -570,7 +650,6 @@ public class ExtensionBridgeTests
     {
         using var ib = new InstallBox { Packaged = true };
         ib.AddBrowser("msedge.exe");
-        ib.AddBrowser("chrome.exe");
         ib.AddBrowser("firefox.exe");
         var appPaths = ib.Registry.Values.Count;
 
@@ -578,7 +657,7 @@ public class ExtensionBridgeTests
         Assert.True(ib.Core.Available);      // la aplicacion trae la extension...
         Assert.False(ib.Core.CanInstall);    // ...pero empaquetada no sirve de nada registrarla
         Assert.Empty(ib.Core.GuideBrowsers());
-        Assert.Equal(3, ib.Core.Detected().Count);
+        Assert.Equal(2, ib.Core.Detected().Count);
 
         // Ni al arrancar ni con «Instalar…»: ninguna clave en HKCU, ni la ruta de la app, ni ficheros.
         ib.Core.RegisterForInstalledBrowsers();
@@ -596,16 +675,16 @@ public class ExtensionBridgeTests
     public void NotPackaged_KeepsWorkingAsBefore()
     {
         using var ib = new InstallBox();
-        ib.AddBrowser("chrome.exe");
+        ib.AddBrowser("firefox.exe");
         Assert.False(ib.Core.Packaged);
         Assert.True(ib.Core.CanInstall);
-        Assert.Equal(["chrome"], ib.Core.GuideBrowsers().Select(b => b.Key));
+        Assert.Equal(["firefox"], ib.Core.GuideBrowsers().Select(b => b.Key));
         ib.Core.RegisterForInstalledBrowsers();
         Assert.True(ib.Core.IsRegistered(Assert.Single(ib.Core.Detected())));
 
         // Sin la extension en la carpeta, nada que proponer en la guia.
         using var empty = new InstallBox(withExtension: false);
-        empty.AddBrowser("chrome.exe");
+        empty.AddBrowser("msedge.exe");
         Assert.False(empty.Core.CanInstall);
         Assert.Empty(empty.Core.GuideBrowsers());
 
@@ -622,7 +701,7 @@ public class ExtensionBridgeTests
         var l = box.Texts("es");
         using var ib = new InstallBox { Packaged = true };
         ib.AddBrowser("msedge.exe");
-        ib.AddBrowser("chrome.exe");
+        ib.AddBrowser("firefox.exe");
         var prompts = new FakePrompts();
         var flow = new ExtensionSetupFlow(ib.Core);
 
